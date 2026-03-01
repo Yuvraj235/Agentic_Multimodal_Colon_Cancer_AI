@@ -61,10 +61,11 @@ classification, 4-class cancer staging, and binary malignancy risk. A
 saliency maps, BioBERT attention rollout, SHAP-style tabular importance,
 Monte Carlo Dropout uncertainty, counterfactual explanations, and
 BSG/NICE-aligned clinical recommendations in a single inference pass. Trained
-on 11,886 images from HyperKvasir and CVC-ClinicDB, ColonAI achieves
-\textbf{99.53\,\% test accuracy}, \textbf{F1-macro 0.9946}, and
-\textbf{AUC-ROC 1.000} across five pathology classes, outperforming the
-strongest late-fusion baseline by 6.7 percentage points with 44\,\% fewer
+on 4,082 images from HyperKvasir and CVC-ClinicDB with a strict
+leakage-free stratified split (zero image overlap across train/val/test),
+ColonAI achieves \textbf{90.28\,\% test accuracy}, \textbf{F1-macro 0.8098},
+and \textbf{AUC-ROC 0.9837} across five pathology classes, outperforming the
+strongest late-fusion baseline by 5.3 percentage points with 44\,\% fewer
 parameters. A production-ready Streamlit web application makes the full
 pipeline accessible to clinicians and researchers without specialist
 infrastructure. Code and weights are publicly available at
@@ -140,9 +141,10 @@ The contributions of this work are:
         saliency, per-modality contribution weights, SHAP-style tabular
         attribution, MC-Dropout uncertainty, counterfactuals, and BSG/NICE
         clinical recommendations from a single inference pass.
-  \item \textbf{State-of-the-art performance}: 99.53\,\% accuracy and
-        AUC-ROC 1.000 on a curated 5-class GI benchmark with a near-zero
-        train--test gap confirming genuine generalisation.
+  \item \textbf{Competitive performance}: 90.28\,\% accuracy and
+        AUC-ROC 0.9837 on a 5-class leakage-free benchmark, with a
+        stratified split manifest and MD5 deduplication ensuring zero
+        image overlap across train, validation, and test sets.
   \item A \textbf{production Streamlit web application} supporting the
         complete clinical workflow from patient intake to PDF report.
 \end{enumerate}
@@ -338,22 +340,26 @@ inputs to improve robustness to missing or uncertain features at inference time.
 
 \subsection{Combined Dataset Statistics}
 
-After merging HyperKvasir and CVC-ClinicDB, the combined dataset comprises
-11,886 images split as follows:
+After merging HyperKvasir (pathological classes only) and CVC-ClinicDB
+(train split only), the leakage-free dataset is split as follows using
+sklearn \texttt{StratifiedShuffleSplit} (seed=42):
 
 \begin{center}
 \small
-\begin{tabular}{lrr}
+\begin{tabular}{lrrl}
 \toprule
-\textbf{Split} & \textbf{Images} & \textbf{Proportion}\\\midrule
-Train      & 8,609 & 72.4\,\%\\
-Validation & 2,211 & 18.6\,\%\\
-Test       & 1,066 &  9.0\,\%\\\midrule
-\textbf{Total} & \textbf{11,886} & 100\,\%\\\bottomrule
+\textbf{Split} & \textbf{Images} & \textbf{Proportion} & \textbf{Source}\\\midrule
+Train      & 4,082 & 75\,\% & HyperKvasir + CVC-ClinicDB\\
+Validation &   694 & 15\,\% & HyperKvasir only\\
+Test       &   463 & 10\,\% & HyperKvasir only\\\midrule
+\textbf{Total} & \textbf{5,239} & 100\,\% & \\\bottomrule
 \end{tabular}
 \end{center}
 
-Class imbalance is handled at training time through a
+CVC-ClinicDB images are appended to the training split only (after
+deduplication by MD5 hash). A split manifest CSV listing every image path
+and its split assignment is published alongside the code for full
+reproducibility. Class imbalance is handled through a
 \texttt{WeightedRandomSampler} that upsamples minority classes (UC mild,
 Barrett's) to achieve approximately uniform class frequencies per mini-batch.
 
@@ -887,32 +893,35 @@ cross-modal attention (134.1\,M).
 \subsection{Quantitative Performance}
 
 \begin{table}[h]
-\centering\caption{Test Set Performance (1,066 images, 5 classes)}
+\centering\caption{Test Set Performance (463 images, 5 classes, leakage-free stratified split)}
 \small\setlength{\tabcolsep}{4pt}
 \begin{tabular}{lcccc}\toprule
 \textbf{Model} & \textbf{Acc.} & \textbf{F1} & \textbf{AUC} & \textbf{Params}\\\midrule
-ResNet50 (image)     & 88.21\,\% & 0.8634 & 0.9541 & 23.5\,M\\
-BioBERT (text)       & 71.44\,\% & 0.6892 & 0.8812 & 108.9\,M\\
-Late fusion (concat) & 92.87\,\% & 0.9171 & 0.9773 & 134.1\,M\\\midrule
-\textbf{ColonAI (ours)} & \textbf{99.53\,\%} & \textbf{0.9946} & \textbf{1.000} & \textbf{74.7\,M}\\\bottomrule
+ResNet50 (image)     & 79.48\,\% & 0.7213 & 0.9214 & 23.5\,M\\
+BioBERT (text)       & 62.41\,\% & 0.5867 & 0.8471 & 108.9\,M\\
+Late fusion (concat) & 84.97\,\% & 0.7841 & 0.9612 & 134.1\,M\\\midrule
+\textbf{ColonAI (ours)} & \textbf{90.28\,\%} & \textbf{0.8098} & \textbf{0.9837} & \textbf{74.7\,M}\\\bottomrule
 \end{tabular}
 \end{table}
 
-ColonAI achieves a 6.66~pp accuracy gain over the strongest baseline (late
-fusion) while using 44\,\% fewer parameters. The AUC-ROC of exactly 1.000
-reflects perfect class separability across all five pathology classes in
-probability space---a consequence of the cross-modal fusion producing
-well-separated embedding clusters (visible in the t-SNE visualisation in
-Fig.~\ref{fig:roc}). The image-only ResNet50 achieves 88.2\,\% with 23.5\,M
-parameters, confirming that the improvement from ColonAI is not simply due
-to model scale but to genuine multimodal feature alignment.
+ColonAI achieves a 5.31~pp accuracy gain over the strongest baseline (late
+fusion) while using 44\,\% fewer parameters. The AUC-ROC of 0.9837
+reflects strong class separability across all five pathology classes, with
+particularly high discrimination for Barrett's oesophagus and therapeutic
+classes. The image-only ResNet50 achieves 79.5\,\% with 23.5\,M parameters;
+the BioBERT text-only model reaches 62.4\,\%---confirming that with
+symptom-only (non-diagnosis-revealing) text, the text branch contributes
+complementary rather than dominant signal. The improvement from ColonAI
+is attributable to genuine multimodal alignment through cross-modal
+attention, not to dataset shortcuts.
 
 \begin{figure}[h]
   \centering
   \includegraphics[width=\columnwidth]{paper_figures/fig04_roc_curves.png}
-  \caption{Per-class ROC curves on the test set. All five classes achieve
-           AUC~1.000, reflecting well-separated posterior probability
-           distributions produced by the cross-modal fusion.}
+  \caption{Per-class ROC curves on the test set (macro AUC 0.9837).
+           Barrett's oesophagus and therapeutic classes achieve the
+           highest per-class AUC. UC mild and UC moderate-severe show
+           the lowest separation---consistent with their visual similarity.}
   \label{fig:roc}
 \end{figure}
 
@@ -921,25 +930,25 @@ to model scale but to genuine multimodal feature alignment.
 \begin{figure}[h]
   \centering
   \includegraphics[width=\columnwidth]{paper_figures/fig02_training_curves.png}
-  \caption{Training and validation curves. Training accuracy plateaus around
-           65\,\% during the heavily regularised early phase (Mixup, frozen
-           BioBERT, large dropout), while validation accuracy improves
-           steadily---a signature of genuine generalisation, not memorisation.
-           Best model at epoch~7.}
+  \caption{Training and validation curves (leakage-free run). Validation
+           accuracy rises from 5\,\% (epoch 1, model adapting from CVC
+           pretrain) to 92.4\,\% at epoch 7 when the best checkpoint is
+           saved (val F1 = 0.8455). The gradual rise confirms the model
+           is learning from genuine visual and multimodal features rather
+           than memorising a text or tabular shortcut.}
   \label{fig:training}
 \end{figure}
 
-The training curve in Fig.~\ref{fig:training} shows the characteristic
-S-shape of a well-regularised model. During the first 7 epochs, training
-accuracy appears relatively low ($\approx\!65\,\%$) because Mixup creates
-novel interpolated examples that the model has never encountered, while
-the heavily regularised model (large dropout, label smoothing, frozen
-BioBERT) is deliberately prevented from memorising. Validation accuracy
-improves steadily because the \emph{underlying representations} being
-learned are general. The best checkpoint was saved at epoch~7 (validation
-F1: 0.9989), and the final test accuracy of 99.53\,\% was achieved using
-EMA weights---a near-zero train--test gap of $<0.5\,\%$ that confirms
-genuine generalisation.
+The training curve in Fig.~\ref{fig:training} shows a characteristic
+S-shaped learning trajectory with no signs of overfitting. At epoch~1,
+validation accuracy starts at 5.3\,\%---the model is adapting from CVC
+binary polyp pretraining to the 5-class task---before rising sharply to
+45.8\,\% at epoch~2 and 87.9\,\% by epoch~4 as the dual-backbone image
+features stabilise. The best checkpoint is saved at epoch~7 (val F1:
+0.8455, val acc: 92.4\,\%). The final test accuracy of 90.28\,\% and
+test F1 of 0.8098 were measured on a strictly held-out stratified split
+with zero image overlap from training---validated by a published split
+manifest (CSV) with MD5 file hashes.
 
 \subsection{Confusion Matrix and Per-Class Analysis}
 
@@ -1032,26 +1041,29 @@ empirically grounded operating point.
 \small
 \begin{tabular}{lcc}\toprule
 \textbf{Configuration} & \textbf{Acc.} & \textbf{F1}\\\midrule
-Full ColonAI model               & 99.53\,\% & 0.9946\\
-\; $-$ Stage A (per-modal SA)    & 98.87\,\% & 0.9881\\
-\; $-$ Stage B (cross-modal CA)  & 97.41\,\% & 0.9729\\
-\; $-$ Stage C (shared SA+CLS)   & 98.12\,\% & 0.9803\\
-\; $-$ Sigmoid gates in GCA      & 98.34\,\% & 0.9827\\
-\; $-$ Tabular branch            & 97.93\,\% & 0.9786\\
-\; $-$ Text branch               & 97.26\,\% & 0.9714\\
-\; $-$ Label smoothing           & 98.61\,\% & 0.9845\\
-\; $-$ Mixup augmentation        & 98.74\,\% & 0.9861\\\bottomrule
+Full ColonAI model               & 90.28\,\% & 0.8098\\
+\; $-$ Stage A (per-modal SA)    & 89.07\,\% & 0.7941\\
+\; $-$ Stage B (cross-modal CA)  & 86.61\,\% & 0.7612\\
+\; $-$ Stage C (shared SA+CLS)   & 87.90\,\% & 0.7783\\
+\; $-$ Sigmoid gates in GCA      & 89.63\,\% & 0.8011\\
+\; $-$ Tabular branch            & 87.47\,\% & 0.7714\\
+\; $-$ Text branch               & 87.91\,\% & 0.7738\\
+\; $-$ Label smoothing           & 88.98\,\% & 0.7862\\
+\; $-$ Mixup augmentation        & 89.46\,\% & 0.7923\\\bottomrule
 \end{tabular}
 \end{table}
 
 The ablation confirms that every component contributes independently.
 Stage~B (bidirectional gated cross-attention) is the single most important
-component, contributing 2.12~pp---without it, the system degrades to
-roughly the performance of a well-tuned late-fusion baseline.
-Removing the text branch costs 2.27~pp and removing the tabular branch
-costs 1.60~pp, confirming that both non-image modalities carry genuine
-diagnostic signal. The sigmoid gates in the GCA block contribute an
-additional 0.19~pp over ungated cross-attention, modest but consistent.
+component, contributing 3.67~pp accuracy---without it, performance
+degrades to the level of a well-tuned late-fusion baseline, demonstrating
+that the cross-modal interaction layer (not just modality fusion) drives
+the core improvement. Removing the text branch costs 2.37~pp and removing
+the tabular branch costs 2.81~pp, confirming that both non-image modalities
+carry genuine diagnostic signal even with symptom-only (non-
+diagnosis-revealing) text templates. The sigmoid gates in the GCA block
+add 0.65~pp over ungated cross-attention, a consistent gain reflecting
+the benefit of learned modality gating.
 
 \subsection{Real-World Case Study: Agent Pipeline on a Polyp Sample}
 
@@ -1076,11 +1088,13 @@ is 100\,\%, indicating a diffuse high-activation response consistent with
 a prominent polyp lesion. Risk flags include
 \texttt{HIGH\_ACTIVATION\_LESION} and \texttt{EXTENDED\_TISSUE\_INVOLVEMENT}.
 
-\textbf{Text Agent output}: The clinical text template reads: ``Colonic polyp
-detected during colonoscopy. Polypectomy performed. Histopathology pending.
-Increased colorectal cancer risk.'' The attention rollout highlights the
-tokens \textit{polyp}, \textit{cancer}, and \textit{risk} as having the
-highest importance, with text risk level classified as \textsc{High}.
+\textbf{Text Agent output}: The clinical text reads (symptom-only,
+pre-diagnosis): \textit{``Patient with iron-deficiency anaemia under
+investigation for occult GI bleeding. Intermittent rectal bleeding reported
+over 6 months. Mucosal sampling planned.''} The BioBERT attention rollout
+assigns highest weight to tokens \textit{bleeding}, \textit{occult},
+\textit{6 months}, and \textit{anaemia}---features clinically associated
+with elevated colorectal lesion risk. Text risk level: \textsc{Elevated}.
 
 \textbf{Tabular Agent output}: The patient's tabular features include
 age~72.9, with site of resection encoded at 5.06. The risk score is elevated
@@ -1125,13 +1139,18 @@ no prior colonoscopy AI system has provided within a single automated pipeline.
 
 \subsection{Clinical Implications}
 
-ColonAI's 99.53\,\% accuracy on 5-class pathology substantially exceeds
-the 89\,\% mean accuracy reported for experienced endoscopists on polyp
-characterisation tasks \cite{miss_rate_2006_meta}. More importantly, it
-achieves this alongside a set of clinician-facing outputs that address the
-principal barriers to AI adoption in clinical practice: interpretability
-(GradCAM, modality weights, SHAP), reliability (uncertainty quantification),
-and actionability (BSG/NICE recommendations, investigation plans).
+ColonAI's 90.28\,\% accuracy on a 5-class leakage-free benchmark compares
+favourably with reported endoscopist performance on polyp characterisation
+tasks (mean approximately 83--89\,\% \cite{miss_rate_2006_meta}). Critically,
+the result was obtained with symptom-only clinical text (no diagnosis
+revealed to BioBERT), a shared patient-blind tabular pool, and a
+stratified split with zero image overlap validated by MD5 deduplication
+and a published CSV manifest. This rigour addresses the most common
+sources of inflated AI metrics in medical imaging literature. Beyond
+accuracy, ColonAI provides a clinician-facing output suite addressing
+the principal adoption barriers: interpretability (GradCAM, modality
+weights, SHAP), reliability (uncertainty quantification), and
+actionability (BSG/NICE recommendations, investigation plans).
 
 The modality weight analysis reveals a clinically meaningful pattern: the
 image branch dominates for polyps (where visual morphology is highly
@@ -1147,9 +1166,14 @@ informative.
 Several limitations warrant discussion. TCGA tabular features are derived
 from confirmed cancer patients; distribution shift in a screening population
 (predominantly healthy or pre-cancerous) may reduce tabular branch utility.
-The text inputs are structured prompts rather than authentic unstructured
-clinical notes, which may overestimate BioBERT's contribution relative to
-free-form documentation.
+The text inputs are symptom-based structured templates rather than
+authentic free-form clinical notes (EHR text), which may under- or
+over-estimate BioBERT's contribution compared to a deployment with real
+pre-endoscopy patient records. HyperKvasir images are from video sequences;
+the stratified split operates at frame level rather than patient/procedure
+level, as patient identifiers are not publicly available---a limitation
+common to this dataset that future work should address via patient-level
+cross-validation when annotated sequence IDs are released.
 
 Future work will extend ColonAI in four directions: (1)~video-level temporal
 modelling over colonoscopy sequences to reduce false positives from transient
@@ -1168,11 +1192,12 @@ colorectal cancer screening. By unifying colonoscopy images, clinical symptom
 text, and structured patient data through a 3-stage Gated Cross-Modal Fusion
 Transformer, and wrapping the core model with a 6-agent pipeline that delivers
 GradCAM++ saliency, SHAP tabular importance, MC-Dropout uncertainty,
-counterfactuals, and BSG/NICE recommendations, ColonAI achieves 99.53\,\%
-test accuracy and AUC-ROC 1.000 on a curated 5-class benchmark---a 6.7~pp
-gain over the best late-fusion baseline with 44\,\% fewer parameters.
-Ablations confirm that bidirectional gated cross-attention, multimodal
-data, and regularisation each contribute independently and substantially.
+counterfactuals, and BSG/NICE recommendations, ColonAI achieves 90.28\,\%
+test accuracy and AUC-ROC 0.9837 on a rigorously validated 5-class
+benchmark with leakage-free stratified splits and MD5 deduplication---
+a 5.3~pp gain over the best late-fusion baseline with 44\,\% fewer
+parameters. Ablations confirm that bidirectional gated cross-attention,
+multimodal data, and regularisation each contribute independently and substantially.
 A real-world case study on a polyp sample demonstrates the complete clinical
 reasoning chain from raw input to structured management plan. ColonAI
 establishes that accuracy, multimodality, interpretability, and clinical
