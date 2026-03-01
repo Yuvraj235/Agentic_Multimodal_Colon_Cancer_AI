@@ -19,21 +19,26 @@ class ClinicalExplanationAgent:
         # Base explanation templates
         # -----------------------------
         class_explanations = {
-            "anatomical-landmarks": (
-                "The model identified normal anatomical structures of the colon "
-                "without visual evidence of abnormal growth or lesions."
+            "polyps": (
+                "The model detected visual patterns consistent with colonic polyps. "
+                "Polypoid structures with irregular mucosal surface were identified, "
+                "indicating increased colorectal cancer risk."
             ),
-            "pathological-findings": (
-                "The model detected visual patterns consistent with pathological "
-                "findings, which may indicate abnormal tissue or lesion presence."
+            "uc-mild": (
+                "The model identified mild ulcerative colitis features: mucosal erythema "
+                "and loss of vascular pattern without deep ulceration."
             ),
-            "quality-of-mucosal-views": (
-                "The model assessed the image quality and found suboptimal mucosal "
-                "visualization, which may limit diagnostic reliability."
+            "uc-moderate-sev": (
+                "The model detected moderate-to-severe ulcerative colitis: extensive ulceration, "
+                "friability, and mucosal loss — indicating elevated malignancy risk."
             ),
-            "therapeutic-interventions": (
-                "The model identified features consistent with therapeutic "
-                "interventions such as clips or surgical tools."
+            "barretts-esoph": (
+                "The model identified upper GI pathology consistent with Barrett's esophagus "
+                "or esophagitis: salmon-pink intestinal metaplasia or mucosal erosions."
+            ),
+            "therapeutic": (
+                "The model identified post-polypectomy therapeutic intervention: dyed resection "
+                "sites indicating prior therapeutic endoscopic procedure."
             ),
         }
 

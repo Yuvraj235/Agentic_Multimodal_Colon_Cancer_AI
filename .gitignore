@@ -10,3 +10,7 @@ data/
 *.pt
 
 .ipynb_checkpoints/
+
+# Claude Code personal settings (keep launch.json)
+.claude/settings.local.json
+.claude/projects/
