@@ -974,37 +974,38 @@ is most valuable: symptom severity language (``significant bloody diarrhoea'',
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\columnwidth]{paper_figures/fig09_case_polyp_gradcam.png}
-  \caption{GradCAM++ saliency overlay on a representative colorectal polyp
-           from the HyperKvasir test set (procedure date: 07/06/2015,
-           17:49:08, elapsed time: 00:10:40). The heatmap transitions from
-           green (low activation) across the surrounding healthy mucosa to
-           intense \textbf{orange--red} concentrated in the lower-right quadrant
-           precisely at the sessile polyp body and its mucosal margin.
-           Bubble artefacts in the upper frame receive near-zero activation,
-           confirming the model ignores non-lesion clutter. This spatial
-           specificity---activation confined to the clinician-visible
-           lesion rather than diffusing across the frame---is the hallmark
-           of reliable CADe saliency.}
+  \includegraphics[width=\columnwidth]{paper_figures/fig06_gradcam_polyp_case.png}
+  \caption{\textbf{Grad-CAM++ Visual Explanation} --- Sample 003, class
+           \textit{polyps} (HyperKvasir test set). The colour scale
+           transitions from blue/green (near-zero activation) through
+           yellow to \textbf{orange/red} (maximum activation). The intense
+           red--orange hotspot is tightly localised to the sessile polyp
+           body in the lower-right quadrant and its immediate mucosal
+           margin, while the surrounding healthy colonic wall and
+           upper-frame bubble artefacts map to near-zero (blue/green).
+           This focal, lesion-centred saliency is clinically interpretable:
+           the model attends to the same anatomical structure an
+           endoscopist uses to identify the lesion.}
   \label{fig:gradcam}
 \end{figure}
 
-Fig.~\ref{fig:gradcam} illustrates the GradCAM++ output for a sessile
-colorectal polyp. The activation heatmap unambiguously localises to the
-lower-right quadrant where the pale-pink round polyp is visible, with
-peak intensity at the polyp body and falling off sharply at the mucosal
-boundary. The surrounding colonic wall, including mucosa with normal
-vascular pattern and the upper-frame bubble artefacts, maps to
-green (near-zero) activation---demonstrating that the convolutional
-features driving the \textit{polyps} classification are spatially
-specific to the lesion, not to global colour or texture statistics.
-This behaviour mirrors what an experienced endoscopist would consider
-diagnostically relevant, providing a meaningful explainability signal
-for clinical deployment. Across all five pathology classes the pattern
-holds: UC images yield diffuse mucosal activation consistent with
-pan-colonic inflammation; therapeutic post-polypectomy images focus on
-the dyed resection margin; Barrett's cases activate the
-gastro-oesophageal junction transition zone.
+Fig.~\ref{fig:gradcam} shows the Grad-CAM++ saliency map produced by
+the Image Agent for Sample~003---a colonoscopy frame containing a
+pale-pink sessile polyp with a broad mucosal base in the lower-right
+quadrant, morphologically consistent with a Paris~Is/IIa lesion. The
+GradCAM++ algorithm weights spatial activations from the final ResNet50
+convolutional layer using second-order gradient signals~\cite{gradcam_plus_plus_2018},
+producing a heatmap sensitive to both lesion presence and boundary.
+
+The resulting overlay places a sharp orange--red hotspot precisely
+co-localising with the polyp. The surrounding normal vascular mucosa,
+haustral folds, and reflective bubbles in the upper frame register
+green/blue (near-zero)---confirming that the classification is driven
+by genuine polyp morphology rather than frame-level colour statistics
+or imaging artefacts. This spatial coherence between AI saliency and
+clinical lesion morphology is essential for clinician trust and is
+the primary explainability output surfaced by the Image Agent in
+every ColonAI inference pass.
 
 \subsection{SHAP Tabular Importance}
 
