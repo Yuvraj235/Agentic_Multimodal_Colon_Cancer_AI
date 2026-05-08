@@ -39,3 +39,5 @@ sacremoses
 streamlit>=1.32.0
 plotly>=5.18.0
 reportlab>=4.1.0
+streamlit-extras>=0.4.0
+streamlit-lottie>=0.0.5

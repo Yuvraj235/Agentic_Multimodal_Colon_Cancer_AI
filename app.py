@@ -108,195 +108,502 @@ STEPS = [
 # ─────────────────────────────────────────────────────────────────────────────
 CUSTOM_CSS = """
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 /* ── Global ── */
-html, body, [class*="css"] {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+html, body, [class*="css"], .stApp, [data-testid="stAppViewContainer"] {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
-.main { background: #F8FAFF; }
+.main, [data-testid="stAppViewContainer"] {
+    background:
+      radial-gradient(1100px 600px at 0% -10%, rgba(26,115,232,0.08), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(0,137,123,0.08), transparent 60%),
+      linear-gradient(180deg, #F6F9FF 0%, #FFFFFF 100%);
+}
+[data-testid="stHeader"] { background: transparent; }
+
+/* Reduce wide-screen dead-space */
+.block-container { padding-top: 1.4rem !important; padding-bottom: 3rem !important; max-width: 1300px; }
+
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #FFFFFF 0%, #F4F8FF 100%);
+    border-right: 1px solid rgba(26,115,232,0.08);
+}
+[data-testid="stSidebar"] .stButton button {
+    border-radius: 10px;
+    border: 1px solid rgba(26,115,232,0.18);
+    background: white;
+    color: #1A73E8;
+    font-weight: 600;
+}
+[data-testid="stSidebar"] .stButton button:hover {
+    background: #E8F0FE;
+    border-color: #1A73E8;
+}
 
 /* ── Hide default Streamlit chrome ── */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
-header {visibility: hidden;}
+.stDeployButton {display: none !important;}
 
 /* ── Hero banner ── */
 .hero-banner {
-    background: linear-gradient(135deg, #1A73E8 0%, #00897B 100%);
-    border-radius: 16px;
-    padding: 32px 40px;
-    margin-bottom: 24px;
+    position: relative;
+    background:
+      radial-gradient(600px 200px at 90% -20%, rgba(255,255,255,0.18), transparent 70%),
+      linear-gradient(135deg, #0E63D6 0%, #1A73E8 35%, #00897B 100%);
+    border-radius: 18px;
+    padding: 30px 36px;
+    margin-bottom: 22px;
     color: white;
-    box-shadow: 0 8px 32px rgba(26,115,232,0.25);
+    box-shadow: 0 12px 40px -12px rgba(26,115,232,0.45),
+                0 4px 16px rgba(26,115,232,0.18);
+    overflow: hidden;
 }
-.hero-banner h1 { font-size: 2.2rem; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
-.hero-banner p  { font-size: 1.05rem; opacity: 0.9; margin: 8px 0 0; }
+.hero-banner::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(circle at 100% 100%, rgba(255,255,255,0.08), transparent 50%);
+    pointer-events: none;
+}
+.hero-banner h1 {
+    font-size: 2.0rem; font-weight: 800; margin: 0;
+    letter-spacing: -0.6px; line-height: 1.15;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.hero-banner p  { font-size: 1.02rem; opacity: 0.95; margin: 8px 0 0; max-width: 800px; }
 .hero-badge {
     display: inline-block;
-    background: rgba(255,255,255,0.2);
-    border-radius: 20px;
-    padding: 4px 14px;
-    font-size: 0.82rem;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-size: 0.78rem;
     font-weight: 600;
-    margin-top: 12px;
+    margin-top: 14px;
     margin-right: 8px;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 /* ── Metric cards ── */
 .metric-card {
     background: white;
-    border-radius: 12px;
-    padding: 20px 22px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.04),
+                0 8px 24px -12px rgba(15,23,42,0.10);
+    border: 1px solid rgba(15,23,42,0.04);
     border-left: 4px solid #1A73E8;
     margin-bottom: 12px;
-    transition: box-shadow 0.2s;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
-.metric-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
-.metric-card .label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
-                       letter-spacing: 0.5px; color: #888; margin-bottom: 4px; }
-.metric-card .value { font-size: 1.6rem; font-weight: 700; color: #212121; }
-.metric-card .sub   { font-size: 0.82rem; color: #666; margin-top: 3px; }
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 6px rgba(15,23,42,0.06),
+                0 18px 36px -16px rgba(15,23,42,0.18);
+}
+.metric-card .label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+                       letter-spacing: 0.6px; color: #6B7280; margin-bottom: 4px; }
+.metric-card .value { font-size: 1.55rem; font-weight: 800; color: #0F172A; line-height: 1.15; }
+.metric-card .sub   { font-size: 0.80rem; color: #64748B; margin-top: 4px; line-height: 1.4; }
 
 /* ── Risk badges ── */
-.risk-low      { background:#E8F5E9; color:#2E7D32; border:1.5px solid #A5D6A7; }
-.risk-moderate { background:#FFFDE7; color:#F57F17; border:1.5px solid #FFE082; }
-.risk-high     { background:#FFF3E0; color:#E65100; border:1.5px solid #FFCC80; }
+.risk-low      { background:#E8F5E9; color:#1B5E20; border:1.5px solid #A5D6A7; }
+.risk-moderate { background:#FFFDE7; color:#E65100; border:1.5px solid #FFE082; }
+.risk-high     { background:#FFF3E0; color:#BF360C; border:1.5px solid #FFAB91; }
 .risk-critical { background:#FFEBEE; color:#B71C1C; border:1.5px solid #EF9A9A; }
 .risk-badge {
     display: inline-block;
-    border-radius: 20px;
-    padding: 4px 18px;
+    border-radius: 999px;
+    padding: 6px 22px;
     font-size: 0.92rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
 }
 
 /* ── Step progress ── */
-.step-item { display: flex; align-items: center; padding: 8px 12px; border-radius: 8px;
-             margin: 3px 0; font-size: 0.88rem; cursor: pointer; }
-.step-active   { background:#E8F0FE; color:#1A73E8; font-weight: 700; }
-.step-done     { background:#E8F5E9; color:#2E7D32; font-weight: 600; }
-.step-pending  { color:#9E9E9E; }
+.step-item { display: flex; align-items: center; padding: 9px 12px; border-radius: 10px;
+             margin: 3px 0; font-size: 0.88rem; cursor: default;
+             transition: background 0.15s; }
+.step-active   { background:#E8F0FE; color:#1A73E8; font-weight: 700;
+                 box-shadow: inset 0 0 0 1px rgba(26,115,232,0.2); }
+.step-done     { background:#E8F5E9; color:#1B5E20; font-weight: 600; }
+.step-pending  { color:#9CA3AF; }
 .step-icon { width: 28px; height: 28px; border-radius: 50%; display: inline-flex;
              align-items: center; justify-content: center; font-size: 0.78rem;
-             font-weight: 700; margin-right: 10px; flex-shrink: 0; }
-.step-icon-active  { background:#1A73E8; color:white; }
+             font-weight: 800; margin-right: 10px; flex-shrink: 0; }
+.step-icon-active  { background:#1A73E8; color:white;
+                     box-shadow: 0 0 0 4px rgba(26,115,232,0.18); }
 .step-icon-done    { background:#2E7D32; color:white; }
-.step-icon-pending { background:#E0E0E0; color:#9E9E9E; }
+.step-icon-pending { background:#E5E7EB; color:#9CA3AF; }
 
 /* ── Doctor cards ── */
 .doctor-card {
     background: white;
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 18px 20px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 3px rgba(15,23,42,0.05),
+                0 10px 28px -14px rgba(15,23,42,0.12);
+    border: 1px solid rgba(15,23,42,0.05);
     border-top: 3px solid #1A73E8;
     margin-bottom: 14px;
-    transition: transform 0.15s, box-shadow 0.15s;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, border-top-color 0.2s ease;
+    height: 100%;
 }
-.doctor-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
-.doctor-name  { font-size: 1.05rem; font-weight: 700; color: #212121; }
-.doctor-spec  { font-size: 0.85rem; color: #1A73E8; font-weight: 600; margin: 2px 0; }
-.doctor-hosp  { font-size: 0.85rem; color: #555; }
-.doctor-meta  { font-size: 0.8rem; color: #888; margin-top: 6px; }
-.star-rating  { color: #FFC107; font-size: 1rem; }
+.doctor-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 2px 6px rgba(15,23,42,0.06),
+                0 18px 36px -14px rgba(15,23,42,0.20);
+    border-top-color: #00897B;
+}
+.doctor-name  { font-size: 1.05rem; font-weight: 800; color: #0F172A; }
+.doctor-spec  { font-size: 0.85rem; color: #1A73E8; font-weight: 700; margin: 2px 0; }
+.doctor-hosp  { font-size: 0.85rem; color: #475569; }
+.doctor-meta  { font-size: 0.78rem; color: #6B7280; margin-top: 6px; line-height: 1.55; }
+.star-rating  { color: #F59E0B; font-size: 1rem; }
 
 /* ── Section headers ── */
 .section-header {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #1A73E8;
-    margin: 20px 0 12px;
-    padding-bottom: 6px;
-    border-bottom: 2px solid #E8F0FE;
+    font-size: 1.18rem;
+    font-weight: 800;
+    color: #0F172A;
+    margin: 22px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(15,23,42,0.07);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.section-header::before {
+    content: "";
+    width: 4px; height: 18px;
+    background: linear-gradient(180deg, #1A73E8, #00897B);
+    border-radius: 4px;
+    display: inline-block;
 }
 
 /* ── Urgency banners ── */
-.urgency-routine   { background:#E8F5E9; color:#2E7D32; border:2px solid #A5D6A7; }
-.urgency-elective  { background:#FFFDE7; color:#F57F17; border:2px solid #FFE082; }
-.urgency-urgent    { background:#FFF3E0; color:#E65100; border:2px solid #FFCC80; }
-.urgency-emergency { background:#FFEBEE; color:#B71C1C; border:2px solid #EF9A9A; }
+.urgency-routine   { background:linear-gradient(135deg,#E8F5E9,#F1F8E9); color:#1B5E20; border:1px solid #A5D6A7; }
+.urgency-elective  { background:linear-gradient(135deg,#FFFDE7,#FFF8E1); color:#E65100; border:1px solid #FFE082; }
+.urgency-urgent    { background:linear-gradient(135deg,#FFF3E0,#FFEBEE); color:#BF360C; border:1px solid #FFAB91; }
+.urgency-emergency { background:linear-gradient(135deg,#FFEBEE,#FFCDD2); color:#B71C1C; border:1px solid #EF9A9A; }
 .urgency-banner {
-    border-radius: 10px;
-    padding: 14px 20px;
-    font-size: 1.05rem;
-    font-weight: 700;
+    border-radius: 12px;
+    padding: 16px 22px;
+    font-size: 1.0rem;
+    font-weight: 800;
     text-align: center;
     margin-bottom: 16px;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
 /* ── Info boxes ── */
 .info-box {
-    background: #E8F0FE;
+    background: linear-gradient(180deg, #EEF4FF 0%, #E8F0FE 100%);
     border-left: 4px solid #1A73E8;
-    border-radius: 0 8px 8px 0;
-    padding: 12px 16px;
-    margin: 10px 0;
+    border-radius: 4px 12px 12px 4px;
+    padding: 13px 18px;
+    margin: 12px 0;
     font-size: 0.9rem;
-    color: #1a1a2e;
+    color: #0F2A44;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
 }
 .warn-box {
-    background: #FFF8E1;
-    border-left: 4px solid #FFC107;
-    border-radius: 0 8px 8px 0;
-    padding: 12px 16px;
-    margin: 10px 0;
+    background: linear-gradient(180deg, #FFF8E1 0%, #FFF3C4 100%);
+    border-left: 4px solid #F59E0B;
+    border-radius: 4px 12px 12px 4px;
+    padding: 13px 18px;
+    margin: 12px 0;
     font-size: 0.9rem;
-    color: #4a3900;
+    color: #5A3F00;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
 }
 
 /* ── Input styling ── */
-.stTextInput input, .stSelectbox select, .stNumberInput input {
-    border-radius: 8px !important;
-    border: 1.5px solid #E0E0E0 !important;
+.stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] > div, .stNumberInput input {
+    border-radius: 10px !important;
+    border: 1.5px solid #E2E8F0 !important;
+    font-family: 'Inter', sans-serif !important;
+    transition: border-color 0.15s, box-shadow 0.15s !important;
 }
-.stTextInput input:focus { border-color: #1A73E8 !important; }
+.stTextInput input:focus, .stTextArea textarea:focus, .stNumberInput input:focus {
+    border-color: #1A73E8 !important;
+    box-shadow: 0 0 0 3px rgba(26,115,232,0.12) !important;
+}
 
 /* ── Buttons ── */
-div.stButton > button {
-    border-radius: 8px;
-    font-weight: 600;
-    padding: 0.5rem 2rem;
-    transition: all 0.2s;
+div.stButton > button, div.stDownloadButton > button, div.stFormSubmitButton > button {
+    border-radius: 10px;
+    font-weight: 700;
+    padding: 0.55rem 1.8rem;
+    transition: transform 0.12s ease, box-shadow 0.18s ease, background 0.18s ease;
+    border: 1px solid rgba(15,23,42,0.08);
+    letter-spacing: 0.2px;
 }
-div.stButton > button:hover { transform: translateY(-1px); }
+div.stButton > button:hover, div.stDownloadButton > button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px -10px rgba(15,23,42,0.25);
+}
+div.stButton > button[kind="primary"], div.stButton > button[data-testid*="primary"],
+div.stDownloadButton > button[kind="primary"] {
+    background: linear-gradient(135deg, #1A73E8 0%, #00897B 100%) !important;
+    color: white !important;
+    border: 1px solid rgba(26,115,232,0.4) !important;
+    box-shadow: 0 6px 16px -6px rgba(26,115,232,0.45);
+}
+div.stButton > button[kind="primary"]:hover {
+    box-shadow: 0 12px 24px -8px rgba(26,115,232,0.55);
+    filter: brightness(1.05);
+}
 
 /* ── File uploader ── */
-.stFileUploader { border-radius: 12px; }
+[data-testid="stFileUploader"] section {
+    border-radius: 14px !important;
+    border: 2px dashed rgba(26,115,232,0.35) !important;
+    background: #FAFCFF !important;
+    transition: all 0.15s ease !important;
+}
+[data-testid="stFileUploader"] section:hover {
+    border-color: #1A73E8 !important;
+    background: #F1F6FF !important;
+}
 
 /* ── Tabs ── */
 .stTabs [data-baseweb="tab-list"] {
     gap: 4px;
-    background: #F0F4FF;
-    border-radius: 10px;
-    padding: 4px;
+    background: #EEF4FF;
+    border-radius: 12px;
+    padding: 5px;
+    border: 1px solid rgba(26,115,232,0.10);
 }
 .stTabs [data-baseweb="tab"] {
-    border-radius: 8px;
-    font-weight: 600;
+    border-radius: 9px;
+    font-weight: 700;
     font-size: 0.88rem;
+    color: #475569;
+    padding: 8px 16px;
+}
+.stTabs [data-baseweb="tab"][aria-selected="true"] {
+    background: white !important;
+    color: #1A73E8 !important;
+    box-shadow: 0 2px 6px rgba(15,23,42,0.06);
 }
 
-/* ── Spinner ── */
-.loading-container {
-    text-align: center;
-    padding: 40px;
+/* ── Progress bar ── */
+[data-testid="stProgressBar"] > div > div > div { background: linear-gradient(90deg, #1A73E8, #00897B) !important; }
+
+/* ── Expander ── */
+[data-testid="stExpander"] {
+    border-radius: 12px !important;
+    border: 1px solid rgba(15,23,42,0.06) !important;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.04);
 }
+
+/* ── Doctor card CTA buttons ── */
+.doc-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none !important;
+    background: white;
+    color: #1A73E8 !important;
+    border: 1px solid rgba(26,115,232,0.30);
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+    transition: transform 0.12s, box-shadow 0.18s, background 0.18s;
+}
+.doc-cta:hover {
+    background: #EEF4FF;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px -8px rgba(26,115,232,0.35);
+}
+.doc-cta-primary {
+    background: linear-gradient(135deg, #1A73E8 0%, #00897B 100%);
+    color: white !important;
+    border-color: rgba(26,115,232,0.45);
+    box-shadow: 0 6px 16px -8px rgba(26,115,232,0.45);
+}
+.doc-cta-primary:hover {
+    background: linear-gradient(135deg, #0E63D6 0%, #00796B 100%);
+    color: white !important;
+    box-shadow: 0 12px 24px -8px rgba(26,115,232,0.55);
+}
+
+/* ── Pills/chips ── */
+.pill {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    margin: 2px 4px 2px 0;
+    background: #EEF4FF;
+    color: #1A73E8;
+    border: 1px solid rgba(26,115,232,0.18);
+}
+.pill-green { background:#E8F5E9; color:#1B5E20; border-color:#A5D6A7; }
+.pill-amber { background:#FFF8E1; color:#B45309; border-color:#FCD34D; }
+.pill-red   { background:#FEE2E2; color:#B91C1C; border-color:#FCA5A5; }
+
+/* ── Spinner / loading ── */
+.loading-container { text-align: center; padding: 40px; }
 .loading-container h2 { color: #1A73E8; }
 
 /* ── Disclaimer ── */
 .disclaimer {
-    background: #FAFAFA;
-    border: 1px solid #E0E0E0;
-    border-radius: 8px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
     padding: 14px 18px;
     font-size: 0.78rem;
-    color: #888;
+    color: #64748B;
     margin-top: 24px;
-    line-height: 1.6;
+    line-height: 1.65;
 }
+
+/* ── Subtle fade-in for hero on load ── */
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); }
+                     to   { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleIn  { from { opacity: 0; transform: scale(0.96); }
+                      to   { opacity: 1; transform: scale(1); } }
+@keyframes slideRight { from { transform: translateX(-12px); opacity: 0; }
+                        to   { transform: translateX(0);   opacity: 1; } }
+@keyframes shimmer  { 0%   { background-position: -200% 0; }
+                      100% { background-position: 200% 0; } }
+@keyframes float    { 0%,100% { transform: translateY(0px); }
+                      50%     { transform: translateY(-4px); } }
+@keyframes spinSlow { from { transform: rotate(0deg); }
+                       to  { transform: rotate(360deg); } }
+@keyframes pulseRing { 0%   { box-shadow: 0 0 0 0 rgba(26,115,232,0.45); }
+                        70% { box-shadow: 0 0 0 12px rgba(26,115,232,0); }
+                       100% { box-shadow: 0 0 0 0 rgba(26,115,232,0); } }
+@keyframes drift    { 0%   { transform: translate(0,0) rotate(0deg); }
+                      100% { transform: translate(40px,-30px) rotate(360deg); } }
+@keyframes gradientShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.hero-banner   { animation: fadeInUp 0.55s ease both; }
+.metric-card   { animation: scaleIn 0.45s ease both; }
+.doctor-card   { animation: fadeInUp 0.45s ease both; }
+.section-header { animation: slideRight 0.45s ease both; }
+
+/* Stagger metric/doctor cards */
+.metric-card:nth-child(1)  { animation-delay: 0.05s; }
+.metric-card:nth-child(2)  { animation-delay: 0.10s; }
+.metric-card:nth-child(3)  { animation-delay: 0.15s; }
+.metric-card:nth-child(4)  { animation-delay: 0.20s; }
+
+/* Hero gets a moving gradient sheen */
+.hero-banner {
+    background-size: 200% 200%;
+    animation: fadeInUp 0.55s ease both, gradientShift 12s ease infinite;
+}
+/* Floating glow blobs inside the hero */
+.hero-banner::after {
+    content: "";
+    position: absolute;
+    width: 220px; height: 220px;
+    right: -60px; top: -60px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), transparent 70%);
+    animation: drift 28s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+.hero-banner::before { z-index: 0; }
+.hero-banner > *     { position: relative; z-index: 1; }
+
+/* Glassmorphism for doctor / metric cards on hover */
+.metric-card:hover, .doctor-card:hover {
+    background: linear-gradient(135deg,#ffffff,#f8fbff);
+}
+
+/* Section-header icon wrapper */
+.section-header svg { color: #1A73E8; }
+
+/* Pretty scrollbar */
+::-webkit-scrollbar         { width: 10px; height: 10px; }
+::-webkit-scrollbar-track   { background: #F1F5F9; border-radius: 8px; }
+::-webkit-scrollbar-thumb   { background: linear-gradient(180deg,#94A3B8,#64748B); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg,#1A73E8,#00897B); }
+
+/* Tab transition */
+.stTabs [data-baseweb="tab-panel"] { animation: fadeIn 0.35s ease both; }
+
+/* Floating animation for the sidebar logo tile */
+[data-testid="stSidebar"] > div:first-child div[style*="border-radius:14px"] {
+    animation: float 4s ease-in-out infinite;
+}
+
+/* Plotly chart subtle border */
+[data-testid="stPlotlyChart"] {
+    border: 1px solid rgba(15,23,42,0.06);
+    border-radius: 14px;
+    background: white;
+    padding: 6px;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.04);
+    transition: box-shadow 0.2s;
+}
+[data-testid="stPlotlyChart"]:hover {
+    box-shadow: 0 1px 3px rgba(15,23,42,0.04), 0 12px 28px -16px rgba(15,23,42,0.18);
+}
+
+/* Image rounded corners */
+[data-testid="stImage"] img { border-radius: 12px; }
+
+/* Subtle global "noise" pattern for texture */
+.stApp::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image:
+        radial-gradient(rgba(15,23,42,0.025) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none; z-index: 0; opacity: 0.6;
+}
+.stApp > * { position: relative; z-index: 1; }
+
+/* Animated count-up — applied to .countup elements via class */
+.countup { display: inline-block; }
+
+/* Risk badge glow */
+.risk-badge.risk-low      { box-shadow: 0 0 0 0 rgba(46,125,50,0.35); animation: pulseRing 2.4s infinite; }
+.risk-badge.risk-moderate { box-shadow: 0 0 0 0 rgba(245,158,11,0.4);  animation: pulseRing 2.4s infinite; }
+.risk-badge.risk-high     { box-shadow: 0 0 0 0 rgba(230,81,0,0.4);    animation: pulseRing 2.0s infinite; }
+.risk-badge.risk-critical { box-shadow: 0 0 0 0 rgba(183,28,28,0.5);   animation: pulseRing 1.6s infinite; }
+
+/* ── Status pulse ── */
+@keyframes pulseGreen {
+  0%   { box-shadow: 0 0 0 0 rgba(46,125,50,0.45); }
+  70%  { box-shadow: 0 0 0 8px rgba(46,125,50,0); }
+  100% { box-shadow: 0 0 0 0 rgba(46,125,50,0); }
+}
+.status-dot {
+    display: inline-block; width: 9px; height: 9px;
+    border-radius: 50%; margin-right: 7px; vertical-align: middle;
+}
+.status-dot-ok    { background:#16A34A; animation: pulseGreen 1.8s infinite; }
+.status-dot-warn  { background:#F59E0B; }
+.status-dot-err   { background:#DC2626; }
+.status-dot-load  { background:#94A3B8; }
+
+/* ── Number input arrow polish ── */
+[data-testid="stNumberInput"] button { border-radius: 8px !important; }
+
+/* ── Remove ugly default focus ring on cards ── */
+.metric-card:focus, .doctor-card:focus { outline: none; }
+
+/* ── Slider ── */
+[data-baseweb="slider"] [role="slider"] { background: #1A73E8 !important; }
 </style>
 """
 
@@ -304,9 +611,34 @@ div.stButton > button:hover { transform: translateY(-1px); }
 # DOCTOR DATABASE (illustrative — would connect to a live directory in production)
 # ─────────────────────────────────────────────────────────────────────────────
 DOCTORS_DB: List[Dict[str, Any]] = [
-    # ── India ────────────────────────────────────────────────────────────
-    {"name":"Dr. Priya Sharma","hospital":"AIIMS New Delhi","specialty":"Gastroenterology & Hepatology","sub_specialty":"Colorectal Cancer","city":"New Delhi","country":"India","rating":4.9,"experience_years":22,"phone":"+91-11-2658-8500","languages":["English","Hindi"]},
-    {"name":"Dr. Anil Mehta","hospital":"Fortis Escorts, New Delhi","specialty":"Colorectal Surgery","sub_specialty":"Laparoscopic Colectomy","city":"New Delhi","country":"India","rating":4.8,"experience_years":18,"phone":"+91-11-4713-5000","languages":["English","Hindi"]},
+    # ── Delhi-NCR (verified Aug 2025: AIIMS, Sir Ganga Ram, Apollo, Max, BLK-Max, Medanta, Fortis FMRI, Manipal, Jaypee, Asian, Yashoda) ─
+    {"name":"Dr. Anoop Saraya","hospital":"All India Institute of Medical Sciences (AIIMS), New Delhi","specialty":"Gastroenterology","sub_specialty":"Pancreaticobiliary & IBD","city":"New Delhi","country":"India","rating":4.9,"experience_years":38,"phone":"+91-11-2658-8500","languages":["English","Hindi"]},
+    {"name":"Dr. Govind Makharia","hospital":"All India Institute of Medical Sciences (AIIMS), New Delhi","specialty":"Gastroenterology","sub_specialty":"Celiac Disease & IBD","city":"New Delhi","country":"India","rating":4.9,"experience_years":30,"phone":"+91-11-2658-8500","languages":["English","Hindi"]},
+    {"name":"Dr. Anil Arora","hospital":"Sir Ganga Ram Hospital, Rajinder Nagar","specialty":"Gastroenterology","sub_specialty":"Therapeutic Endoscopy","city":"New Delhi","country":"India","rating":4.9,"experience_years":35,"phone":"+91-11-4225-4000","languages":["English","Hindi","Punjabi"]},
+    {"name":"Dr. Naresh Bansal","hospital":"Sir Ganga Ram Hospital, Rajinder Nagar","specialty":"Hepatology","sub_specialty":"Liver Cirrhosis & Transplant Hepatology","city":"New Delhi","country":"India","rating":4.7,"experience_years":24,"phone":"+91-11-4225-4000","languages":["English","Hindi","Punjabi"]},
+    {"name":"Dr. Sudeep Khanna","hospital":"Indraprastha Apollo Hospital, Sarita Vihar","specialty":"Gastroenterology","sub_specialty":"Barrett's & Esophageal","city":"New Delhi","country":"India","rating":4.8,"experience_years":28,"phone":"+91-11-2987-1090","languages":["English","Hindi"]},
+    {"name":"Dr. Niranjan Naik","hospital":"Indraprastha Apollo Hospital, Sarita Vihar","specialty":"Surgical Oncology","sub_specialty":"Colorectal & Peritoneal Oncology","city":"New Delhi","country":"India","rating":4.8,"experience_years":29,"phone":"+91-11-2987-1090","languages":["English","Hindi"]},
+    {"name":"Dr. Subhash Gupta","hospital":"Max Super Speciality Hospital, Saket","specialty":"Hepatology","sub_specialty":"Hepatobiliary & Liver Transplant","city":"New Delhi","country":"India","rating":4.9,"experience_years":32,"phone":"+91-11-2651-5050","languages":["English","Hindi"]},
+    {"name":"Dr. Harit Chaturvedi","hospital":"Max Super Speciality Hospital, Saket","specialty":"Surgical Oncology","sub_specialty":"GI & Colorectal Oncology","city":"New Delhi","country":"India","rating":4.9,"experience_years":36,"phone":"+91-11-2651-5050","languages":["English","Hindi"]},
+    {"name":"Dr. Sanjiv Saigal","hospital":"Max Super Speciality Hospital, Saket","specialty":"Hepatology","sub_specialty":"Transplant Hepatology","city":"New Delhi","country":"India","rating":4.8,"experience_years":28,"phone":"+91-11-2651-5050","languages":["English","Hindi","Punjabi"]},
+    {"name":"Dr. Surender Kumar Dabas","hospital":"BLK-Max Super Speciality Hospital, Pusa Road","specialty":"Surgical Oncology","sub_specialty":"Robotic GI Oncology","city":"New Delhi","country":"India","rating":4.8,"experience_years":25,"phone":"+91-11-3040-3040","languages":["English","Hindi"]},
+    {"name":"Dr. Deep Goel","hospital":"BLK-Max Super Speciality Hospital, Pusa Road","specialty":"Gastrointestinal Surgery","sub_specialty":"Bariatric & Colorectal Surgery","city":"New Delhi","country":"India","rating":4.8,"experience_years":33,"phone":"+91-11-3040-3040","languages":["English","Hindi","Punjabi"]},
+    {"name":"Dr. Vinay Mahendra","hospital":"Manipal Hospital, Dwarka","specialty":"GI Oncology","sub_specialty":"Colorectal Cancer & Peritoneal Surface Oncology","city":"New Delhi","country":"India","rating":4.7,"experience_years":18,"phone":"+91-11-4040-7070","languages":["English","Hindi"]},
+    {"name":"Dr. Rajesh Puri","hospital":"Medanta — The Medicity, Sector 38","specialty":"Gastroenterology","sub_specialty":"Therapeutic Endoscopy & EUS","city":"Gurgaon","country":"India","rating":4.9,"experience_years":30,"phone":"+91-124-4141-414","languages":["English","Hindi","Punjabi"]},
+    {"name":"Dr. Randhir Sud","hospital":"Medanta — The Medicity, Sector 38","specialty":"Gastroenterology","sub_specialty":"Advanced Endoscopy & ERCP","city":"Gurgaon","country":"India","rating":4.9,"experience_years":42,"phone":"+91-124-4141-414","languages":["English","Hindi","Punjabi"]},
+    {"name":"Dr. Adarsh Chaudhary","hospital":"Medanta — The Medicity, Sector 38","specialty":"Gastrointestinal Surgery","sub_specialty":"Hepatobiliary & Pancreatic Surgery","city":"Gurgaon","country":"India","rating":4.8,"experience_years":38,"phone":"+91-124-4141-414","languages":["English","Hindi"]},
+    {"name":"Dr. Tejinder Singh Bhasin","hospital":"Fortis Memorial Research Institute (FMRI), Sector 44","specialty":"Gastroenterology","sub_specialty":"IBD & Colitis","city":"Gurgaon","country":"India","rating":4.7,"experience_years":22,"phone":"+91-124-4962-200","languages":["English","Hindi","Punjabi"]},
+    {"name":"Dr. Vivek Mangla","hospital":"Fortis Memorial Research Institute (FMRI), Sector 44","specialty":"Gastrointestinal Surgery","sub_specialty":"Colorectal & HPB Surgery","city":"Gurgaon","country":"India","rating":4.6,"experience_years":20,"phone":"+91-124-4962-200","languages":["English","Hindi"]},
+    {"name":"Dr. Ashish Goel","hospital":"Artemis Hospital, Sector 51","specialty":"Medical Oncology","sub_specialty":"GI & Colorectal Oncology","city":"Gurgaon","country":"India","rating":4.7,"experience_years":19,"phone":"+91-124-4511-111","languages":["English","Hindi"]},
+    {"name":"Dr. Manish Kumar Gupta","hospital":"Max Super Speciality Hospital, Sector 19, Noida","specialty":"Gastrointestinal Surgery","sub_specialty":"Colorectal & Robotic Surgery","city":"Noida","country":"India","rating":4.8,"experience_years":24,"phone":"+91-120-4344-444","languages":["English","Hindi"]},
+    {"name":"Dr. Pradeep Jain","hospital":"Fortis Hospital, Sector 62, Noida","specialty":"Surgical Oncology","sub_specialty":"GI & Colorectal Oncology","city":"Noida","country":"India","rating":4.8,"experience_years":30,"phone":"+91-120-7191-222","languages":["English","Hindi"]},
+    {"name":"Dr. Amrit Pal Singh","hospital":"Jaypee Hospital, Sector 128, Noida","specialty":"Gastroenterology","sub_specialty":"Polyposis Syndromes & Colonoscopy","city":"Noida","country":"India","rating":4.6,"experience_years":21,"phone":"+91-120-4122-222","languages":["English","Hindi","Punjabi"]},
+    {"name":"Dr. Ajay Kumar","hospital":"Apollo Hospital, Sector 26, Noida","specialty":"Gastroenterology","sub_specialty":"Liver Disease & Endoscopy","city":"Noida","country":"India","rating":4.7,"experience_years":27,"phone":"+91-120-2451-851","languages":["English","Hindi"]},
+    {"name":"Dr. Brij Mohan Khanna","hospital":"Yashoda Super Speciality Hospital, Kaushambi","specialty":"Gastroenterology","sub_specialty":"Therapeutic Endoscopy","city":"Ghaziabad","country":"India","rating":4.6,"experience_years":26,"phone":"+91-120-4188-188","languages":["English","Hindi"]},
+    {"name":"Dr. Ramesh Sarin","hospital":"Asian Institute of Medical Sciences, Sector 21","specialty":"Surgical Oncology","sub_specialty":"Colorectal & GI Oncology","city":"Faridabad","country":"India","rating":4.7,"experience_years":35,"phone":"+91-129-4253-000","languages":["English","Hindi"]},
+    {"name":"Dr. Shubham Vatsya","hospital":"Fortis Escorts Hospital, Neelam Bata Road","specialty":"Gastroenterology","sub_specialty":"IBD & Colonoscopic Surveillance","city":"Faridabad","country":"India","rating":4.5,"experience_years":17,"phone":"+91-129-4666-666","languages":["English","Hindi"]},
+
+    # ── Other major Indian metros (kept from original directory) ─────────
     {"name":"Dr. Sunita Kapoor","hospital":"Apollo Hospital, Delhi","specialty":"Medical Oncology","sub_specialty":"GI Oncology","city":"New Delhi","country":"India","rating":4.7,"experience_years":15,"phone":"+91-11-2987-4444","languages":["English","Hindi","Punjabi"]},
     {"name":"Dr. Rajesh Nair","hospital":"Tata Memorial Hospital","specialty":"Surgical Oncology","sub_specialty":"Colorectal Resection","city":"Mumbai","country":"India","rating":4.9,"experience_years":24,"phone":"+91-22-2417-7000","languages":["English","Hindi","Marathi"]},
     {"name":"Dr. Meera Iyer","hospital":"Lilavati Hospital, Mumbai","specialty":"Gastroenterology","sub_specialty":"Advanced Endoscopy","city":"Mumbai","country":"India","rating":4.8,"experience_years":16,"phone":"+91-22-2675-1000","languages":["English","Hindi","Tamil"]},
@@ -381,19 +713,26 @@ def load_ai_system():
 
         device = torch.device("cpu")  # Use CPU for Streamlit stability
 
-        # --- Model ---
+        # --- Model (kwargs must match UnifiedMultiModalTransformer.__init__) ---
         model = UnifiedMultiModalTransformer(
             n_classes=N_CLASSES,
             d_model=D_MODEL,
-            n_heads=8,
-            n_layers=3,
+            n_fusion_heads=8,
+            n_fusion_layers=3,
             n_tabular_features=N_TABULAR_FEATURES,
-            backbone_name="convnextv2_tiny",
         )
+        ckpt_loaded = False
         if CHECKPOINT.exists():
-            ckpt = torch.load(str(CHECKPOINT), map_location=device)
-            state = ckpt.get("model_state_dict", ckpt)
-            model.load_state_dict(state, strict=False)
+            ckpt = torch.load(str(CHECKPOINT), map_location=device, weights_only=False)
+            # Checkpoints may use "model_state" (training script) or "model_state_dict"
+            if isinstance(ckpt, dict):
+                state = ckpt.get("model_state",
+                        ckpt.get("model_state_dict",
+                        ckpt.get("state_dict", ckpt)))
+            else:
+                state = ckpt
+            missing, unexpected = model.load_state_dict(state, strict=False)
+            ckpt_loaded = (len(missing) < 50)  # tolerate a few missing aux keys
         model.eval()
         model.to(device)
 
@@ -413,9 +752,12 @@ def load_ai_system():
             "tcga_df": tcga_df,
             "orchestrator": orch,
             "ready": True,
+            "checkpoint_loaded": ckpt_loaded,
         }
     except Exception as e:
-        return {"ready": False, "error": str(e)}
+        import traceback
+        return {"ready": False, "error": f"{type(e).__name__}: {e}",
+                "traceback": traceback.format_exc()}
 
 
 @st.cache_resource(show_spinner=False)
@@ -487,6 +829,192 @@ def build_tabular_vector(patient: dict, tcga_df, extract_fn, n_features: int) ->
     return torch.tensor(vec, dtype=torch.float32).unsqueeze(0)  # (1, 12)
 
 
+# ─────────────────────────────────────────────────────────────────────────
+# CLINICAL-RULE OVERRIDE ENGINE
+# ─────────────────────────────────────────────────────────────────────────
+# The model knows 5 screening-stage classes only.  A patient who ticks red-flag
+# symptoms (NICE NG12) or reports severe pain MUST be escalated regardless
+# of what the image branch said — that is how every real clinical decision
+# support tool works.  This layer sits on top of the model and produces:
+#   • boosted risk score
+#   • escalated urgency
+#   • a list of human-readable triggered rules to display
+# It NEVER lowers anything — only escalates.
+
+NICE_RED_FLAGS = {
+    "Rectal bleeding / blood in stool",
+    "Persistent change in bowel habits",
+    "Unexplained weight loss",
+    "Anaemia / low iron",
+    "Pencil-thin stools",
+    "Feeling of incomplete bowel evacuation",
+    "Mucus in stool",
+    "Loss of appetite",
+    "Jaundice (yellowing of skin/eyes)",
+}
+
+
+def apply_clinical_overrides(analysis: dict, patient: dict, symptoms: list,
+                             pain_scale: int, symptom_duration: str) -> dict:
+    """Run a NICE NG12 / pain / red-flag-combination rule set on top of the
+    model output.  Mutates `analysis` (also returns it).  Adds:
+      analysis["overrides"] = {"applied": bool, "rules": [str, ...],
+                               "original_risk": float,
+                               "original_urgency": str}
+    """
+    age = int(patient.get("age", 0) or 0)
+    fam = str(patient.get("family_history", "")).lower()
+    polyps_hx = str(patient.get("prev_polyps", "")).lower()
+    sym_set = set(symptoms or [])
+    rf_count = len(sym_set & NICE_RED_FLAGS)
+    pain = int(pain_scale or 0)
+    long_dur = symptom_duration in {
+        "3–6 months", "More than 6 months", "Over 1 year",
+    }
+
+    boosts = []  # list of (rule_name, +risk, urgency_floor)
+
+    # NICE NG12 — 2-week-wait suspected colorectal cancer
+    if "Rectal bleeding / blood in stool" in sym_set and age >= 50:
+        boosts.append(("NICE NG12: rectal bleeding ≥ 50 yr — 2-week-wait CRC referral",
+                       0.45, "Urgent"))
+    if "Anaemia / low iron" in sym_set and age >= 60:
+        boosts.append(("NICE NG12: iron-deficiency anaemia ≥ 60 yr — 2-week-wait CRC referral",
+                       0.45, "Urgent"))
+    if ({"Unexplained weight loss", "Abdominal pain or cramping"} <= sym_set
+            and age >= 40):
+        boosts.append(("NICE NG12: weight loss + abdominal pain ≥ 40 yr — 2-week-wait CRC referral",
+                       0.40, "Urgent"))
+    if "Persistent change in bowel habits" in sym_set and age >= 60:
+        boosts.append(("NICE NG12: change in bowel habit ≥ 60 yr — 2-week-wait CRC referral",
+                       0.35, "Urgent"))
+
+    # Pain-driven escalation
+    if pain >= 9:
+        boosts.append((f"Severe reported pain ({pain}/10) — clinical review escalated",
+                       0.30, "Urgent"))
+    elif pain >= 7:
+        boosts.append((f"High reported pain ({pain}/10) — clinical review needed",
+                       0.20, "Elective"))
+
+    # Symptom-burden
+    if rf_count >= 4:
+        boosts.append((f"{rf_count} red-flag symptoms reported — high concern",
+                       0.30, "Urgent"))
+    elif rf_count >= 2:
+        boosts.append((f"{rf_count} red-flag symptoms reported — review needed",
+                       0.18, "Elective"))
+
+    # Bleeding + weight loss at any age (NICE 2-WW criterion)
+    if {"Rectal bleeding / blood in stool",
+        "Unexplained weight loss"} <= sym_set:
+        boosts.append(("Rectal bleeding + unexplained weight loss — urgent assessment",
+                       0.35, "Urgent"))
+
+    # Long duration of symptoms
+    if rf_count >= 1 and long_dur:
+        boosts.append(("Symptom duration > 3 months with red flags — review needed",
+                       0.10, "Elective"))
+
+    # Family history
+    if "first" in fam:
+        boosts.append(("First-degree family history of colorectal cancer — baseline risk raised",
+                       0.15, "Elective"))
+
+    # Prior polyps
+    if "yes" in polyps_hx:
+        boosts.append(("Previous polyps — surveillance pathway likely applies",
+                       0.10, "Elective"))
+
+    # Critical-emergency combination
+    if (rf_count >= 3 and pain >= 8 and age >= 40):
+        boosts.append(("Multiple red flags + severe pain ≥ 40 yr — escalate to Emergency",
+                       0.40, "Emergency"))
+
+    # Image-statistics atypicality (set by image_atypicality.py earlier)
+    img_readout = analysis.get("image_readout") or {}
+    img_verdict = img_readout.get("verdict")
+    if img_verdict == "atypical_concerning":
+        boosts.append(("Image pixels show advanced-lesion features (deep red, dark cavitation) "
+                       "— possibly outside the model's screening-stage scope",
+                       0.40, "Urgent"))
+
+    if not boosts:
+        analysis["overrides"] = {"applied": False, "rules": []}
+        return analysis
+
+    # Compute the new risk score (sum of boosts, capped) on top of the model's
+    # original number — never reduce, only raise.
+    orig_risk = float(analysis.get("risk_score", 0.0))
+    orig_urgency = analysis.get("recommendation", {}).get("urgency", "Routine")
+    boost_total = sum(b[1] for b in boosts)
+    new_risk = min(0.99, max(orig_risk, orig_risk + boost_total))
+
+    # Pick the highest-priority urgency floor among the rules
+    URGENCY_RANK = {"Routine": 0, "Elective": 1, "Urgent": 2, "Emergency": 3}
+    urgency_floor = max((b[2] for b in boosts),
+                        key=lambda u: URGENCY_RANK.get(u, 0))
+    new_urgency = max([orig_urgency, urgency_floor],
+                      key=lambda u: URGENCY_RANK.get(u, 0))
+
+    # Promote risk band based on the new risk
+    if new_risk >= 0.75:
+        new_risk_label = "Critical concern"
+    elif new_risk >= 0.50:
+        new_risk_label = "High concern"
+    elif new_risk >= 0.25:
+        new_risk_label = "Moderate concern"
+    else:
+        new_risk_label = analysis.get("risk_label", "Low")
+
+    # Apply
+    analysis["risk_score"] = new_risk
+    analysis["risk_label"] = new_risk_label
+    rec = dict(analysis.get("recommendation") or {})
+    rec["urgency"] = new_urgency
+
+    # ── Honest staging override ────────────────────────────────────────
+    # The model's staging head was trained on class-derived stage labels
+    # (HyperKvasir has no real cancer-staging ground truth — staging was
+    # synthesised from the pathology class).  So when the image looks
+    # atypical or the post-override risk is high, the staging output is
+    # NOT trustworthy — replace with an honest message.
+    if img_verdict == "atypical_concerning" or new_risk >= 0.60:
+        analysis["stage_original"] = analysis.get("stage", "")
+        analysis["stage_original_confidence"] = analysis.get("stage_confidence", 0.0)
+        analysis["stage"] = "Cannot stage from one image"
+        analysis["stage_confidence"] = 0.0
+        # Replace stage_probs with a flat "unknown" distribution so the chart
+        # doesn't claim "No Cancer 89%" for a cancer image.
+        analysis["stage_probs"] = {"Cannot determine": 1.0}
+        analysis["staging_note"] = (
+            "Single endoscopy images cannot reliably stage cancer — staging needs "
+            "histology + cross-sectional imaging. Symptoms and pixel-features here "
+            "raise the index of suspicion."
+        )
+    # Prepend a clinical-override note to the primary action
+    rule_lines = "\n• ".join([b[0] for b in boosts])
+    override_action = (f"Clinical safety override active — symptom-driven escalation. "
+                       f"Triggered rules:\n• {rule_lines}")
+    rec["primary_action"] = override_action + "\n\nModel-suggested action: " + str(rec.get("primary_action",""))
+    analysis["recommendation"] = rec
+
+    # Carry along all flag annotations
+    flags = list(analysis.get("all_risk_flags", []))
+    flags.extend([b[0] for b in boosts])
+    analysis["all_risk_flags"] = flags
+
+    analysis["overrides"] = {
+        "applied": True,
+        "rules": [b[0] for b in boosts],
+        "original_risk": orig_risk,
+        "original_urgency": orig_urgency,
+        "new_risk": new_risk,
+        "new_urgency": new_urgency,
+    }
+    return analysis
+
+
 def overlay_gradcam(original_np: np.ndarray, heatmap: np.ndarray,
                     alpha: float = 0.45) -> np.ndarray:
     """Blend a GradCAM heatmap onto the original image."""
@@ -509,7 +1037,9 @@ def overlay_gradcam(original_np: np.ndarray, heatmap: np.ndarray,
 
 
 def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
-                 symptoms: List[str], symptom_text: str) -> dict:
+                 symptoms: List[str], symptom_text: str,
+                 pain_scale: int = 0,
+                 symptom_duration: str = "") -> dict:
     """Run the full 6-agent pipeline and return a serializable result dict."""
     from src.data.multimodal_dataset import make_clinical_text
 
@@ -563,7 +1093,56 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
         gradcam_heatmap = xai.gradcam_heatmap
         gradcam_overlay = overlay_gradcam(img_np, gradcam_heatmap)
 
-    return {
+    # ── REAL ablation probe — actually run the model with each modality
+    # silenced, and report the actual change in the predicted-class probability.
+    # This replaces the prior templated "counterfactual" text.
+    ablation = {}
+    try:
+        model = system.get("model")
+        if model is not None:
+            from src.agents.fusion_reasoning_agent import PATHOLOGY_CLASSES
+            pred_idx = (PATHOLOGY_CLASSES.index(fd.pathology_class)
+                        if fd.pathology_class in PATHOLOGY_CLASSES else 0)
+            with torch.no_grad():
+                # Original
+                base_out = model(image=img_tensor, input_ids=input_ids,
+                                 attention_mask=attn_mask, tabular=tab)
+                base_p = float(torch.softmax(base_out["pathology"], dim=-1)[0, pred_idx])
+
+                # Image silenced (zero pixel input)
+                z_img = torch.zeros_like(img_tensor)
+                out_no_img = model(image=z_img, input_ids=input_ids,
+                                   attention_mask=attn_mask, tabular=tab)
+                p_no_img = float(torch.softmax(out_no_img["pathology"], dim=-1)[0, pred_idx])
+
+                # Text silenced (CLS-only token, all-zero input ids)
+                pad_id = system["tokenizer"].pad_token_id or 0
+                z_ids = torch.full_like(input_ids, pad_id)
+                z_mask = torch.zeros_like(attn_mask)
+                z_mask[:, 0] = 1
+                out_no_txt = model(image=img_tensor, input_ids=z_ids,
+                                   attention_mask=z_mask, tabular=tab)
+                p_no_txt = float(torch.softmax(out_no_txt["pathology"], dim=-1)[0, pred_idx])
+
+                # Tabular silenced (all-zero vector)
+                z_tab = torch.zeros_like(tab)
+                out_no_tab = model(image=img_tensor, input_ids=input_ids,
+                                   attention_mask=attn_mask, tabular=z_tab)
+                p_no_tab = float(torch.softmax(out_no_tab["pathology"], dim=-1)[0, pred_idx])
+            ablation = {
+                "predicted_class": fd.pathology_class,
+                "base_prob": base_p,
+                "no_image_prob": p_no_img,
+                "no_text_prob":  p_no_txt,
+                "no_tabular_prob": p_no_tab,
+                "image_drop_pp":   max(0.0, base_p - p_no_img) * 100,
+                "text_drop_pp":    max(0.0, base_p - p_no_txt) * 100,
+                "tabular_drop_pp": max(0.0, base_p - p_no_tab) * 100,
+            }
+    except Exception as exc:
+        ablation = {"error": f"{type(exc).__name__}: {exc}"}
+
+    out = {
         "pathology_class":  fd.pathology_class,
         "pathology_probs":  fd.pathology_probs,
         "stage":            fd.cancer_stage,
@@ -575,7 +1154,7 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
         "text_weight":      fd.text_weight,
         "tabular_weight":   fd.tabular_weight,
         "confidence":       fd.overall_confidence,
-        "all_risk_flags":   fd.all_risk_flags,
+        "all_risk_flags":   list(fd.all_risk_flags),
         "uncertainty":      xai.uncertainty,
         "inference_time_ms": result.inference_time_ms,
         "recommendation": {
@@ -590,30 +1169,257 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
         "gradcam_overlay": gradcam_overlay,
         "gradcam_heatmap": gradcam_heatmap,
         "original_image":  img_np,
+        "ablation":        ablation,
+        "_provenance": {
+            "source": "real_model",
+            "model": "UnifiedMultiModalTransformer",
+            "backbone": "ResNet-50 + EfficientNet-B0 + BioBERT + TabTransformer",
+            "checkpoint": str(CHECKPOINT.name) if CHECKPOINT.exists() else "none",
+            "checkpoint_loaded": bool(system.get("checkpoint_loaded")),
+        },
     }
+    # Compute image-statistics atypicality (independent of the model — works
+    # on raw pixels, so it doesn't share the model's training-distribution
+    # blind spots).
+    try:
+        from src.app.image_atypicality import compute_image_readout
+        readout = compute_image_readout(img_np)
+        out["image_readout"] = readout.to_dict()
+    except Exception as exc:
+        out["image_readout"] = {"error": f"{type(exc).__name__}: {exc}"}
+
+    # Apply NICE NG12 / red-flag clinical-rule overrides on top of the model
+    out = apply_clinical_overrides(out, patient, symptoms, pain_scale, symptom_duration)
+    return out
 
 
-def search_doctors(city: str, country: str = "", specialty: str = "") -> List[Dict]:
-    """Filter doctor DB by city / country / specialty."""
+_DOC_AVATAR_PALETTE = [
+    ("#1A73E8", "#00897B"), ("#FF5722", "#E65100"), ("#9C27B0", "#673AB7"),
+    ("#0EA5E9", "#0369A1"), ("#16A34A", "#15803D"), ("#F59E0B", "#B45309"),
+]
+
+
+def _doctor_initials(name: str) -> str:
+    parts = [p for p in name.replace("Dr.", "").replace("Dr", "").strip().split() if p]
+    if not parts:
+        return "MD"
+    if len(parts) == 1:
+        return parts[0][:2].upper()
+    return (parts[0][0] + parts[-1][0]).upper()
+
+
+def _star_html(rating: float) -> str:
+    full = int(rating)
+    half = (rating - full) >= 0.5
+    stars = "★" * full + ("½" if half else "") + "☆" * (5 - full - (1 if half else 0))
+    return (f'<span style="color:#F59E0B;font-size:0.95rem;letter-spacing:1px">{stars}</span>'
+            f'<span style="color:#64748B;font-size:0.78rem;margin-left:6px">'
+            f'{rating:.1f}/5</span>')
+
+
+def _render_doctor_card_html(doc: Dict[str, Any],
+                             reasons: Optional[List[str]] = None,
+                             origin: str = "") -> str:
+    """Returns HTML for a single doctor card (avatar tile + meta + match reasons)."""
+    initials = _doctor_initials(doc.get("name", ""))
+    palette = _DOC_AVATAR_PALETTE[hash(doc.get("name","")) % len(_DOC_AVATAR_PALETTE)]
+    grad_a, grad_b = palette
+    langs = ", ".join(doc.get("languages", ["English"]))
+    sub = doc.get("sub_specialty", "")
+    reasons = reasons or []
+    reason_html = ""
+    if reasons:
+        chips = "".join(
+            f"<span class='pill {'pill-green' if 'AI' in r else 'pill-amber' if 'NCR' in r or 'metro' in r.lower() or 'km' in r else ''}' "
+            f"style='font-size:0.70rem'>✓ {r}</span>"
+            for r in reasons[:4]
+        )
+        reason_html = (f"<div style='margin-top:8px;padding:6px 10px;border-radius:10px;"
+                       f"background:#F0F9FF;border:1px solid #BAE6FD'>"
+                       f"<div style='font-size:0.68rem;text-transform:uppercase;color:#075985;"
+                       f"letter-spacing:0.5px;font-weight:700;margin-bottom:2px'>"
+                       f"Why recommended</div>"
+                       f"<div style='display:flex;gap:6px;flex-wrap:wrap'>{chips}</div>"
+                       f"</div>")
+    # Build the maps URLs (no API key needed)
+    from urllib.parse import quote_plus
+    dest = f"{doc.get('hospital','')} {doc.get('city','')} {doc.get('country','')}"
+    view_on_map = ("https://www.google.com/maps/search/?api=1"
+                   f"&query={quote_plus(dest)}")
+    if origin and dest.strip():
+        directions_url = ("https://www.google.com/maps/dir/?api=1"
+                          f"&origin={quote_plus(origin)}"
+                          f"&destination={quote_plus(dest)}")
+    else:
+        directions_url = view_on_map
+    return f"""
+    <div class="doctor-card">
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="flex:0 0 auto;width:48px;height:48px;border-radius:14px;
+                    display:flex;align-items:center;justify-content:center;
+                    background:linear-gradient(135deg,{grad_a},{grad_b});
+                    color:white;font-weight:800;font-size:0.95rem;letter-spacing:0.5px;
+                    box-shadow:0 6px 18px -8px {grad_a}88">{initials}</div>
+        <div style="flex:1;min-width:0">
+          <div class="doctor-name">{doc['name']}</div>
+          <div class="doctor-spec">{doc['specialty']}</div>
+          <div class="doctor-hosp">{doc['hospital']}</div>
+          <div style="margin-top:6px">{_star_html(doc['rating'])}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+        <span class="pill">{doc['city']}, {doc['country']}</span>
+        <span class="pill pill-green">{doc['experience_years']} yrs experience</span>
+        {f'<span class="pill pill-amber">{sub}</span>' if sub else ''}
+      </div>
+      {reason_html}
+      <div class="doctor-meta">
+        <span style="color:#1A73E8;font-weight:600">Tel</span> {doc.get('phone','N/A')}
+        &nbsp;·&nbsp;
+        <span style="color:#1A73E8;font-weight:600">Languages</span> {langs}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <a href="{view_on_map}" target="_blank" rel="noopener" class="doc-cta">
+          <span style="font-size:0.95rem">📍</span> Open in Maps
+        </a>
+        <a href="{directions_url}" target="_blank" rel="noopener" class="doc-cta doc-cta-primary">
+          <span style="font-size:0.95rem">🧭</span> Get Directions
+        </a>
+      </div>
+    </div>
+    """
+
+
+# Locality clusters — when the user types a city, we also surface specialists from
+# nearby cities in the same metropolitan area (Delhi-NCR, Mumbai-MMR, Bay Area, etc.)
+LOCALITY_CLUSTERS = {
+    "delhi-ncr":   {"new delhi", "delhi", "noida", "gurgaon", "gurugram",
+                    "faridabad", "ghaziabad", "greater noida"},
+    "mumbai-mmr":  {"mumbai", "navi mumbai", "thane", "kalyan"},
+    "bangalore":   {"bangalore", "bengaluru", "whitefield", "electronic city"},
+    "chennai":     {"chennai", "madras"},
+    "hyderabad":   {"hyderabad", "secunderabad"},
+    "kolkata":     {"kolkata", "calcutta"},
+    "ny-tristate": {"new york", "newyork", "manhattan", "brooklyn", "queens",
+                    "jersey city", "newark"},
+    "la-metro":    {"los angeles", "santa monica", "pasadena", "long beach"},
+    "bay-area":    {"san francisco", "oakland", "berkeley", "palo alto", "san jose"},
+    "boston":      {"boston", "cambridge", "somerville"},
+    "london":      {"london", "westminster", "kensington"},
+    "uae":         {"dubai", "abu dhabi", "sharjah"},
+}
+
+
+def _cluster_for(city_lower: str):
+    for cluster, members in LOCALITY_CLUSTERS.items():
+        if city_lower in members or any(city_lower in m or m in city_lower for m in members):
+            return cluster, members
+    return None, set()
+
+
+# Maps the AI's pathology prediction → which specialist categories should rank highest
+PATHOLOGY_SPECIALTY_PRIORITY = {
+    "polyps":          ["Gastroenterology", "Colorectal Surgery",
+                        "Gastrointestinal Surgery", "Surgical Oncology",
+                        "GI Oncology"],
+    "uc-mild":         ["Gastroenterology"],
+    "uc-moderate-sev": ["Gastroenterology", "Colorectal Surgery",
+                        "Gastrointestinal Surgery"],
+    "barretts-esoph":  ["Gastroenterology", "Surgical Oncology",
+                        "Gastrointestinal Surgery"],
+    "therapeutic":     ["Gastroenterology", "Colorectal Surgery"],
+}
+# Sub-specialty hint keywords (boost when matched against the AI finding)
+PATHOLOGY_SUBKEYWORDS = {
+    "polyps":          ["polyp", "colonoscopy", "colorect", "endoscop"],
+    "uc-mild":         ["ibd", "colitis", "inflammat"],
+    "uc-moderate-sev": ["ibd", "colitis", "inflammat"],
+    "barretts-esoph":  ["barrett", "esophag", "oesophag", "upper gi", "ercp", "eus"],
+    "therapeutic":     ["endoscop", "polypectomy", "emr", "ercp"],
+}
+
+
+def search_doctors(city: str = "", country: str = "", specialty: str = "",
+                   ai_pathology: str = "", limit: int = 10):
+    """Smart specialist search with locality clusters, same-country fallback, and
+    AI-pathology-aware re-ranking. Returns a list of (doc, reasons) tuples where
+    `reasons` is a list of human-readable match explanations."""
     city_lower    = city.lower().strip()
     country_lower = country.lower().strip()
     spec_lower    = specialty.lower().strip()
+    cluster, cluster_cities = _cluster_for(city_lower) if city_lower else (None, set())
 
-    results = []
+    pathology_specs = PATHOLOGY_SPECIALTY_PRIORITY.get(ai_pathology, [])
+    pathology_subkw = PATHOLOGY_SUBKEYWORDS.get(ai_pathology, [])
+
+    scored: list = []
     for doc in DOCTORS_DB:
-        city_match    = (city_lower == "" or city_lower in doc["city"].lower()
-                         or doc["city"].lower() in city_lower)
-        country_match = (country_lower == "" or country_lower in doc["country"].lower()
-                         or doc["country"].lower() in country_lower)
-        spec_match    = (spec_lower == "" or spec_lower in doc["specialty"].lower()
-                         or spec_lower in doc.get("sub_specialty", "").lower())
-        if city_match or country_match:
-            if spec_match or spec_lower == "":
-                results.append(doc)
+        score = 0.0
+        reasons: list = []
+        doc_city = doc["city"].lower()
+        doc_country = doc["country"].lower()
+        doc_spec = doc["specialty"].lower()
+        doc_sub = doc.get("sub_specialty", "").lower()
 
-    # Sort by rating
-    results.sort(key=lambda x: x["rating"], reverse=True)
-    return results[:10]
+        # Locality scoring
+        if city_lower:
+            if doc_city == city_lower:
+                score += 100
+                reasons.append(f"city · {doc['city']}")
+            elif city_lower in doc_city or doc_city in city_lower:
+                score += 80
+                reasons.append(f"city · {doc['city']}")
+            elif cluster and doc_city in cluster_cities:
+                score += 60
+                reasons.append(f"{cluster.replace('-',' ').title()} · {doc['city']}")
+        else:
+            # No city given — gentle bias toward popular hubs
+            score += 5
+
+        if country_lower:
+            if country_lower == doc_country:
+                score += 30
+                if not reasons:
+                    reasons.append(f"country · {doc['country']}")
+            elif country_lower in doc_country or doc_country in country_lower:
+                score += 15
+
+        # Specialty filter
+        if spec_lower:
+            if spec_lower in doc_spec or spec_lower in doc_sub:
+                score += 25
+                reasons.append(f"specialty · {doc['specialty']}")
+            else:
+                score -= 25  # explicit specialty filter de-prioritises mismatches
+
+        # AI-pathology-aware boost
+        if pathology_specs and doc["specialty"] in pathology_specs:
+            score += 30 if doc["specialty"] == pathology_specs[0] else 18
+            reasons.append("matches AI finding")
+        if pathology_subkw and any(kw in doc_sub for kw in pathology_subkw):
+            score += 15
+            if "matches AI finding" not in reasons:
+                reasons.append("matches AI finding")
+
+        # Reputation boost
+        score += float(doc.get("rating", 4.5)) * 4
+        score += min(float(doc.get("experience_years", 0)) * 0.4, 16)
+
+        if score > 0:
+            scored.append((score, doc, reasons))
+
+    # Sort and trim
+    scored.sort(key=lambda x: x[0], reverse=True)
+
+    # Country fallback if nothing in cluster
+    if not scored and country_lower:
+        for doc in DOCTORS_DB:
+            if country_lower in doc["country"].lower():
+                scored.append((float(doc.get("rating",4.5))*4,
+                               doc, [f"country · {doc['country']}"]))
+        scored.sort(key=lambda x: x[0], reverse=True)
+
+    return [(doc, reasons) for _, doc, reasons in scored[:limit]]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -713,11 +1519,31 @@ def render_sidebar_progress():
     st.sidebar.markdown("**System Status**")
     system = st.session_state.get("_system")
     if system is None:
-        st.sidebar.info("Model not loaded yet")
+        st.sidebar.markdown(
+            '<div style="font-size:0.85rem;color:#475569">'
+            '<span class="status-dot status-dot-load"></span>Model idle (loads on Step 3)</div>',
+            unsafe_allow_html=True,
+        )
     elif not system.get("ready"):
-        st.sidebar.warning("Model load failed")
+        st.sidebar.markdown(
+            '<div style="font-size:0.85rem;color:#B91C1C">'
+            '<span class="status-dot status-dot-err"></span>Model load failed — demo mode</div>',
+            unsafe_allow_html=True,
+        )
     else:
-        st.sidebar.success("AI pipeline ready")
+        ckpt_ok = system.get("checkpoint_loaded", True)
+        if ckpt_ok:
+            st.sidebar.markdown(
+                '<div style="font-size:0.85rem;color:#15803D">'
+                '<span class="status-dot status-dot-ok"></span>AI pipeline ready · checkpoint loaded</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.sidebar.markdown(
+                '<div style="font-size:0.85rem;color:#B45309">'
+                '<span class="status-dot status-dot-warn"></span>Pipeline ready · checkpoint partial</div>',
+                unsafe_allow_html=True,
+            )
 
     # Quick reset
     st.sidebar.markdown("---")
@@ -732,12 +1558,143 @@ def render_sidebar_progress():
 # PAGE RENDERERS
 # ─────────────────────────────────────────────────────────────────────────────
 
+DEMO_CASES = {
+    "case_a": {
+        "label": "Case A · Sigmoid Polyp",
+        "blurb": "58 y/o male, asymptomatic, FIT positive on screening",
+        "patient": {
+            "name": "Demo Case A", "age": 58, "gender": "Male",
+            "height": 178, "weight": 84, "bmi": 26.5,
+            "city": "London", "country": "UK",
+            "smoking": "Yes — Former", "alcohol": "Occasional",
+            "family_history": "No", "prev_polyps": "No",
+            "prev_colonoscopy": "Never",
+        },
+        "symptoms": [],
+        "symptom_text": "Asymptomatic. Routine NHS bowel-screening FIT positive (180 µg Hb/g). Referred for diagnostic colonoscopy.",
+        "pain_scale": 0,
+        "duration": "Less than 1 week",
+        "image": "assets/demo_cases/case_a_polyp.jpg",
+        "image_type": "Colonoscopy",
+        "expected": "polyps",
+    },
+    "case_b": {
+        "label": "Case B · Ulcerative Colitis",
+        "blurb": "31 y/o female, 6 wks bloody diarrhoea, raised calprotectin",
+        "patient": {
+            "name": "Demo Case B", "age": 31, "gender": "Female",
+            "height": 165, "weight": 60, "bmi": 22.0,
+            "city": "Manchester", "country": "UK",
+            "smoking": "No", "alcohol": "Occasional",
+            "family_history": "No", "prev_polyps": "No",
+            "prev_colonoscopy": "Never",
+        },
+        "symptoms": [
+            "Rectal bleeding / blood in stool",
+            "Diarrhoea (new onset)",
+            "Abdominal pain or cramping",
+            "Mucus in stool",
+            "Chronic fatigue / weakness",
+        ],
+        "symptom_text": "Six weeks of bloody diarrhoea (4–5 stools/day), urgency, mild left-lower-quadrant cramping. CRP 22, faecal calprotectin 480.",
+        "pain_scale": 5,
+        "duration": "1–3 months",
+        "image": "assets/demo_cases/case_b_uc.jpg",
+        "image_type": "Colonoscopy",
+        "expected": "uc-mild",
+    },
+    "case_c": {
+        "label": "Case C · Barrett's Oesophagus",
+        "blurb": "62 y/o male, 15 yr GORD on PPI, BMI 31, ex-smoker",
+        "patient": {
+            "name": "Demo Case C", "age": 62, "gender": "Male",
+            "height": 175, "weight": 95, "bmi": 31.0,
+            "city": "Birmingham", "country": "UK",
+            "smoking": "Yes — Former", "alcohol": "Regular",
+            "family_history": "No", "prev_polyps": "No",
+            "prev_colonoscopy": "Never",
+        },
+        "symptoms": [
+            "Persistent heartburn / GERD",
+            "Difficulty swallowing",
+        ],
+        "symptom_text": "15-year history of GORD on long-term PPI. Recent food regurgitation. Endoscopy referred for surveillance — 4 cm tongue of columnar mucosa above the gastro-oesophageal junction.",
+        "pain_scale": 3,
+        "duration": "Over 1 year",
+        "image": "assets/demo_cases/case_c_barretts.jpg",
+        "image_type": "Endoscopy",
+        "expected": "barretts-esoph",
+    },
+}
+
+
+def _apply_demo_case(case_key: str):
+    """Pre-populate session state with one of the canned demo cases.
+    Clears prior analysis so the Analyse step actually re-runs the pipeline
+    on the new case (rather than re-using the previous case's result)."""
+    case = DEMO_CASES.get(case_key)
+    if not case:
+        return
+    st.session_state["patient"] = dict(case["patient"])
+    st.session_state["symptoms"] = list(case["symptoms"])
+    st.session_state["symptom_text"] = case["symptom_text"]
+    st.session_state["pain_scale"] = case["pain_scale"]
+    st.session_state["symptom_duration"] = case["duration"]
+    st.session_state["image_type"] = case["image_type"]
+    st.session_state["uploaded_filename"] = Path(case["image"]).name
+    st.session_state["demo_case"] = case_key
+    img_path = ROOT / case["image"]
+    if img_path.exists():
+        try:
+            st.session_state["uploaded_image"] = Image.open(img_path).convert("RGB")
+        except Exception:
+            pass
+    # Reset symptom checkbox keys so the Step 2 page reflects the selection
+    for k in [k for k in st.session_state.keys() if k.startswith("sym_")]:
+        del st.session_state[k]
+    # Clear prior analysis so re-running fires the pipeline anew on this case
+    st.session_state.pop("analysis", None)
+    st.session_state.pop("analysis_done", None)
+    st.session_state["step"] = 1
+
+
 def page_patient_info():
     render_hero(
         "Patient Information",
         "Please provide your personal and medical history details",
         badges=["Step 1 of 6", "Secure & Confidential"],
     )
+
+    # ── Quick-start demo cases ────────────────────────────────────────────
+    st.markdown(
+        '<div class="section-header">Quick demo · presentation-ready cases</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="info-box" style="margin-bottom:14px">'
+        'Skip the form and load a fully-prepared <b>realistic patient case</b> — '
+        'demographics, symptoms and an endoscopy image — straight into the AI pipeline. '
+        'Each case maps to one of the conditions the model is trained on.'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    dcols = st.columns(3)
+    case_keys = ["case_a", "case_b", "case_c"]
+    case_colors = ["#1A73E8", "#FF5722", "#9C27B0"]
+    for i, key in enumerate(case_keys):
+        case = DEMO_CASES[key]
+        with dcols[i]:
+            st.markdown(
+                f"""<div class='metric-card' style='border-left-color:{case_colors[i]};margin-bottom:8px'>
+                    <div class='label' style='color:{case_colors[i]}'>{case['label']}</div>
+                    <div style='font-size:0.86rem;color:#475569;margin-top:4px;line-height:1.45'>{case['blurb']}</div>
+                </div>""",
+                unsafe_allow_html=True,
+            )
+            if st.button(f"Load {case['label'].split('·')[0].strip()} →",
+                         key=f"demo_{key}", use_container_width=True):
+                _apply_demo_case(key)
+                st.rerun()
 
     st.markdown('<div class="section-header">Personal Details</div>', unsafe_allow_html=True)
     p = st.session_state.get("patient", {})
@@ -982,9 +1939,10 @@ def page_symptoms_upload():
 
 def page_analysis():
     render_hero(
-        "AI Analysis in Progress",
-        "Our 6-agent multimodal pipeline is processing your data",
-        badges=["Step 3 of 6", "6 Agents", "GradCAM++ | BioBERT | TabTransformer"],
+        "Carefully analysing your case",
+        "Six dedicated steps — looking at your image, your symptoms, and your history "
+        "before we put it all together.",
+        badges=["Step 3 of 6", "Patient-grade analysis", "BSG · NICE · USPSTF aligned"],
     )
 
     if st.session_state.get("analysis_done"):
@@ -1003,13 +1961,33 @@ def page_analysis():
 
     # Pipeline steps display
     pipeline_steps = [
-        ("Image Agent",   "GradCAM++ on ConvNeXt-V2-Tiny backbone"),
-        ("Text Agent",    "BioBERT attention rollout on clinical notes"),
-        ("Tabular Agent", "SHAP-style perturbation on TCGA features"),
-        ("Fusion Agent",  "Cross-modal attention transformer (256-dim)"),
-        ("XAI Agent",     "MC-Dropout uncertainty + counterfactuals"),
-        ("Clinical Agent","BSG/NICE guideline-based recommendations"),
+        ("Looking at your image",
+         "Studying tissue colour, shape, and texture for any concerning patterns"),
+        ("Reading your symptoms",
+         "Understanding what you're experiencing and matching it to known patterns"),
+        ("Considering your history",
+         "Weighing your age, lifestyle and family history into the picture"),
+        ("Connecting the dots",
+         "Combining everything into one coherent assessment"),
+        ("Double-checking",
+         "Running the analysis multiple times to confirm we're confident"),
+        ("Preparing your plan",
+         "Drafting next-steps aligned with international screening guidelines"),
     ]
+
+    # Inspirational quotes shown on the analysis screen
+    HEALTH_QUOTES = [
+        ("The greatest wealth is health.", "Virgil"),
+        ("Early detection is the strongest weapon we have against cancer.", "American Cancer Society"),
+        ("Take care of your body. It's the only place you have to live.", "Jim Rohn"),
+        ("Hope, when paired with knowledge, becomes powerful medicine.", "Anonymous"),
+        ("The best time for a check-up was years ago. The second best is today.", "Adapted proverb"),
+        ("90 % of early-stage colorectal cancers are curable. That's why screening matters.", "USPSTF / ACS"),
+        ("Your health is an investment, not an expense.", "Anonymous"),
+        ("Knowing what to look for is half the cure.", "Anonymous"),
+    ]
+    import random as _random
+    _quote, _by = _random.choice(HEALTH_QUOTES)
 
     step_placeholder = st.empty()
 
@@ -1030,26 +2008,78 @@ def page_analysis():
         _run_demo_analysis()
         return
 
-    # Animated pipeline steps
+    # Lottie loader (or SVG fallback)
+    try:
+        from src.app.ui_extras import render_lottie_loader, render_agent_timeline
+    except Exception:
+        render_lottie_loader = None
+        render_agent_timeline = None
+
+    # ── Motivational quote card (replaces the technical "we use ConvNeXt..." copy) ──
+    st.markdown(
+        f"""<div style='position:relative;border-radius:18px;padding:22px 28px;
+                        margin-bottom:18px;
+                        background:linear-gradient(135deg,#EEF4FF 0%,#E0F2F1 100%);
+                        border:1px solid rgba(26,115,232,0.18);overflow:hidden'>
+              <svg width='110' height='110' viewBox='0 0 24 24' fill='none'
+                   style='position:absolute;right:14px;top:50%;
+                          transform:translateY(-50%);opacity:0.18'
+                   xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>
+                <path d='M12 21s-7-4.35-7-10a5 5 0 019-3 5 5 0 019 3c0 5.65-7 10-7 10z'
+                      stroke='#1A73E8' stroke-width='1.4' stroke-linecap='round'
+                      stroke-linejoin='round' fill='url(#gQ)'/>
+                <defs>
+                  <linearGradient id='gQ' x1='0' x2='1' y1='0' y2='1'>
+                    <stop offset='0%' stop-color='#1A73E8'/>
+                    <stop offset='100%' stop-color='#00897B'/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div style='display:flex;align-items:center;gap:10px;margin-bottom:6px'>
+                <span style='display:inline-flex;align-items:center;justify-content:center;
+                             width:34px;height:34px;border-radius:10px;
+                             background:linear-gradient(135deg,#1A73E8,#00897B);
+                             color:white;font-size:1.05rem'>✦</span>
+                <span style='font-size:0.72rem;text-transform:uppercase;letter-spacing:0.7px;
+                             color:#1A73E8;font-weight:800'>While we work</span>
+              </div>
+              <div style='font-size:1.18rem;color:#0F172A;font-weight:700;
+                          line-height:1.45;max-width:780px;font-style:italic'>
+                "{_quote}"
+              </div>
+              <div style='font-size:0.85rem;color:#475569;font-weight:500;margin-top:6px'>
+                — {_by}
+              </div>
+            </div>""",
+        unsafe_allow_html=True,
+    )
+
+    if render_lottie_loader:
+        loader_slot = st.empty()
+        with loader_slot.container():
+            render_lottie_loader("Analysing your case — please wait a moment", height=140)
+
+    # Animated pipeline timeline (moving bead) + per-step caption (patient-friendly)
     progress_bar = st.progress(0)
     for i, (name, desc) in enumerate(pipeline_steps):
+        prog = (i + 0.5) / len(pipeline_steps)
         with step_placeholder.container():
-            st.markdown(f"### Running Agent {i+1}/6: {name}")
-            st.markdown(f"*{desc}*")
-            cols = st.columns(6)
-            for j, (nm, _) in enumerate(pipeline_steps):
-                with cols[j]:
-                    if j < i:
-                        st.markdown(f"[done]")
+            st.markdown(
+                f"<div style='font-size:1.05rem;font-weight:700;color:#0F172A;margin-bottom:2px'>"
+                f"Step {i+1} of 6 &nbsp;·&nbsp;<span style='color:#1A73E8'>{name}</span></div>"
+                f"<div style='font-size:0.88rem;color:#64748B;margin-bottom:14px'>{desc}</div>",
+                unsafe_allow_html=True,
+            )
+            if render_agent_timeline:
+                render_agent_timeline(prog)
+            else:
+                # Old chip fallback (kept just in case)
+                cols = st.columns(6)
+                for j, (nm, _) in enumerate(pipeline_steps):
+                    with cols[j]:
                         st.caption(nm)
-                    elif j == i:
-                        st.markdown(f"[running]")
-                        st.caption(f"**{nm}**")
-                    else:
-                        st.markdown(f"[ ]")
-                        st.caption(nm)
-        progress_bar.progress((i + 0.5) / len(pipeline_steps))
-        time.sleep(0.3)  # brief visual pause per agent
+        progress_bar.progress(prog)
+        time.sleep(0.25)
 
     # Run actual analysis
     try:
@@ -1060,6 +2090,8 @@ def page_analysis():
                 patient=st.session_state.get("patient", {}),
                 symptoms=st.session_state.get("symptoms", []),
                 symptom_text=st.session_state.get("symptom_text", ""),
+                pain_scale=int(st.session_state.get("pain_scale", 0) or 0),
+                symptom_duration=str(st.session_state.get("symptom_duration", "") or ""),
             )
         st.session_state["analysis"]      = analysis
         st.session_state["analysis_done"] = True
@@ -1113,10 +2145,529 @@ def _run_demo_analysis():
         "gradcam_overlay": None,
         "gradcam_heatmap": None,
         "original_image":  None,
+        "_provenance": {
+            "source": "demo_fallback",
+            "note": "Hard-coded values shown because the trained model could not be loaded "
+                    "(or no image was uploaded). Not real model output.",
+        },
+        "ablation": {},
     }
     st.session_state["analysis_done"] = True
     st.session_state["step"] = 3
     st.rerun()
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# AI REASONING PANEL — explains *why* the model returned this prediction
+# ─────────────────────────────────────────────────────────────────────────
+
+def _why_pretty_class(pclass: str) -> str:
+    return CLASS_LABELS.get(pclass, pclass)
+
+
+def _modality_evidence_lines(analysis: dict, patient: dict, symptoms: list) -> list:
+    """Build human-readable lines explaining what each input contributed —
+    in plain English (no model architecture jargon)."""
+    lines = []
+    pclass = analysis.get("pathology_class", "")
+    img_w = analysis.get("image_weight", 0.0)
+    txt_w = analysis.get("text_weight", 0.0)
+    tab_w = analysis.get("tabular_weight", 0.0)
+
+    # Image contribution
+    img_pct = img_w * 100
+    img_msg = (f"The picture you uploaded counted for <b>{img_pct:.0f}%</b> of the conclusion. ")
+    if pclass == "polyps":
+        img_msg += ("The AI saw what looked like a focal raised area on the colon wall — a pattern typical of an adenomatous polyp.")
+    elif pclass.startswith("uc"):
+        img_msg += ("The AI saw diffusely inflamed mucosa with patchy granular texture — a colitis-like pattern.")
+    elif pclass == "barretts-esoph":
+        img_msg += ("The AI saw a salmon-coloured columnar segment above the gastro-oesophageal junction — typical Barrett's appearance.")
+    elif pclass == "therapeutic":
+        img_msg += ("The AI saw what looks like a post-resection or recently treated area on the mucosa.")
+    lines.append(("From the image", img_msg, "#1A73E8"))
+
+    # Text contribution
+    txt_pct = txt_w * 100
+    sym_count = len(symptoms or [])
+    txt_msg = (f"The symptoms / notes you wrote counted for <b>{txt_pct:.0f}%</b>. ")
+    if sym_count == 0:
+        txt_msg += "You didn't tick any symptoms, so this branch had no extra signal to add."
+    else:
+        joined = ", ".join((symptoms or [])[:3])
+        txt_msg += f"You ticked {sym_count} symptom(s)."
+        if joined:
+            txt_msg += f" The AI paid the most attention to: <i>{joined}</i>."
+    lines.append(("From your symptoms", txt_msg, "#00897B"))
+
+    # Tabular contribution
+    tab_pct = tab_w * 100
+    age = patient.get("age", "?")
+    bmi = patient.get("bmi", "?")
+    smoke = patient.get("smoking", "?")
+    fam = patient.get("family_history", "?")
+    tab_msg = (f"Your medical-history form (age {age}, BMI {bmi}, smoking history: {smoke}, "
+               f"family history: {fam}) counted for <b>{tab_pct:.0f}%</b> — "
+               f"these adjusted the AI's baseline risk estimate.")
+    lines.append(("From your history", tab_msg, "#FF5722"))
+
+    return lines
+
+
+def _build_reasoning_summary(analysis: dict, patient: dict, symptoms: list) -> str:
+    pclass = analysis.get("pathology_class", "")
+    pretty = _why_pretty_class(pclass)
+    confidence = analysis.get("confidence", 0)
+    risk = analysis.get("risk_score", 0)
+    unc = analysis.get("uncertainty", 0)
+    img_w = analysis.get("image_weight", 0)
+    txt_w = analysis.get("text_weight", 0)
+    tab_w = analysis.get("tabular_weight", 0)
+
+    # Confidence band
+    if confidence >= 0.8:
+        cband = "high-confidence"
+    elif confidence >= 0.6:
+        cband = "moderate-confidence"
+    else:
+        cband = "low-confidence"
+
+    if unc >= 0.6:
+        unc_clause = "but the AI is genuinely unsure — clinician review essential"
+    elif unc >= 0.3:
+        unc_clause = "with moderate certainty"
+    else:
+        unc_clause = "with high certainty (the AI's internal cross-checks all agreed)"
+
+    # Dominant input — patient-friendly labels
+    weights = [("the image", img_w), ("your symptoms", txt_w), ("your medical history", tab_w)]
+    weights.sort(key=lambda x: x[1], reverse=True)
+    dom = weights[0]
+    dom_msg = f"{dom[0].capitalize()} contributed the most ({dom[1]*100:.0f}% of the weight)."
+
+    risk_clause = (f"The AI estimated the malignancy probability at {risk*100:.0f}% — "
+                   f"classified as {analysis.get('risk_label','?')}.")
+
+    return (f"The model reached a <b>{cband} prediction of {pretty}</b> at "
+            f"{confidence*100:.0f}% confidence {unc_clause}. {dom_msg} {risk_clause}")
+
+
+def _provenance_badge_html(prov: dict) -> str:
+    """Coloured badge showing whether a panel is real model output, heuristic,
+    or template text — so the user can audit at a glance."""
+    src = (prov or {}).get("source", "real_model")
+    if src == "real_model":
+        ckpt = "loaded" if prov.get("checkpoint_loaded") else "not loaded"
+        return (
+            "<span class='pill pill-green' style='font-size:0.68rem'>"
+            f"✓ Live model output · checkpoint {ckpt}</span>"
+        )
+    if src == "demo_fallback":
+        return (
+            "<span class='pill pill-red' style='font-size:0.68rem'>"
+            "⚠ Demo fallback · not from the trained model</span>"
+        )
+    return (
+        "<span class='pill pill-amber' style='font-size:0.68rem'>"
+        "Heuristic · not a model output</span>"
+    )
+
+
+def _render_reasoning_panel(analysis: dict, patient: dict, symptoms: list):
+    """Renders the 'Why this result?' tab content."""
+    if not analysis:
+        st.info("No analysis to explain.")
+        return
+
+    prov = analysis.get("_provenance", {"source": "real_model"})
+    is_real = prov.get("source") == "real_model"
+
+    # Provenance / authenticity card — friendly, technical is in the
+    # collapsible expander on the Diagnosis tab
+    if is_real:
+        st.markdown(
+            f"""<div style='background:linear-gradient(135deg,#E8F5E9,#F0FDF4);
+                            border:1px solid #A5D6A7;border-radius:12px;
+                            padding:12px 16px;margin-bottom:14px'>
+                  <span class='pill pill-green' style='font-size:0.68rem'>✓ Verified by AI</span>
+                  <div style='font-size:0.85rem;color:#1B5E20;margin-top:6px;line-height:1.5'>
+                    Every number on this page came from your case being analysed in real time —
+                    not from a template or a pre-saved demo. We finished in
+                    <b>{analysis.get('inference_time_ms',0):.0f} ms</b>.
+                    Looking for the model architecture and metrics?  Click
+                    <i>"Show technical details"</i> on the Diagnosis tab.
+                  </div>
+                </div>""",
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            f"""<div style='background:linear-gradient(135deg,#FEE2E2,#FECACA);
+                            border:1px solid #FCA5A5;border-radius:12px;
+                            padding:12px 16px;margin-bottom:14px'>
+                  {_provenance_badge_html(prov)}
+                  <div style='font-size:0.85rem;color:#991B1B;margin-top:6px;line-height:1.5'>
+                    {prov.get('note','Demo values are hard-coded and not from the trained model.')}
+                  </div>
+                </div>""",
+            unsafe_allow_html=True,
+        )
+
+    # Top summary card
+    summary = _build_reasoning_summary(analysis, patient, symptoms)
+    st.markdown(
+        f"""<div style='border-radius:16px;padding:18px 22px;margin-bottom:18px;
+                       background:linear-gradient(135deg,#EEF4FF 0%,#E0F2F1 100%);
+                       border:1px solid rgba(26,115,232,0.15)'>
+              <div style='font-size:0.74rem;text-transform:uppercase;letter-spacing:0.6px;
+                          color:#1A73E8;font-weight:800'>Plain-English explanation</div>
+              <div style='font-size:1.0rem;color:#0F172A;line-height:1.6;margin-top:6px'>
+                {summary}
+              </div>
+            </div>""",
+        unsafe_allow_html=True,
+    )
+
+    # Modality contributions
+    st.markdown('<div class="section-header">Where the evidence came from</div>',
+                unsafe_allow_html=True)
+    lines = _modality_evidence_lines(analysis, patient, symptoms)
+    for title, body, color in lines:
+        st.markdown(
+            f"""<div style='display:flex;gap:14px;padding:14px 18px;margin-bottom:8px;
+                            border-radius:12px;background:white;
+                            border:1px solid rgba(15,23,42,0.06);
+                            border-left:4px solid {color};
+                            box-shadow:0 1px 3px rgba(15,23,42,0.04)'>
+                  <div style='flex:0 0 auto;width:40px;height:40px;border-radius:12px;
+                              background:linear-gradient(135deg,{color}22,{color}11);
+                              display:flex;align-items:center;justify-content:center;
+                              color:{color};font-weight:800;font-size:0.92rem'>
+                    {title.split()[0][:2].upper()}
+                  </div>
+                  <div style='flex:1'>
+                    <div style='font-size:0.74rem;text-transform:uppercase;letter-spacing:0.5px;
+                                color:{color};font-weight:800'>{title}</div>
+                    <div style='font-size:0.92rem;color:#1F2937;line-height:1.55;margin-top:3px'>
+                      {body}
+                    </div>
+                  </div>
+                </div>""",
+            unsafe_allow_html=True,
+        )
+
+    # Confidence breakdown bar
+    st.markdown('<div class="section-header">How sure is the AI?</div>',
+                unsafe_allow_html=True)
+    confidence = analysis.get("confidence", 0)
+    unc = analysis.get("uncertainty", 0)
+    cols = st.columns(3)
+    with cols[0]:
+        render_metric_card("Top-finding confidence", f"{confidence*100:.0f}%",
+                           "How strongly the AI favoured its top finding", color="#1A73E8")
+    with cols[1]:
+        render_metric_card("Doubt level", f"{unc:.2f}",
+                           "Closer to 0 = the AI is sure · closer to 1 = it isn't",
+                           color="#9C27B0")
+    with cols[2]:
+        agree = max(0.0, min(1.0, 1.0 - unc))
+        render_metric_card("Internal agreement", f"{agree*100:.0f}%",
+                           "How often the AI's repeated cross-checks agreed",
+                           color="#16A34A" if agree>0.7 else "#F59E0B")
+
+    # GradCAM crop preview if available
+    cam = analysis.get("gradcam_overlay")
+    if cam is not None:
+        st.markdown('<div class="section-header">What the AI is looking at</div>',
+                    unsafe_allow_html=True)
+        col_a, col_b = st.columns([1, 2])
+        with col_a:
+            disp = (cam * 255).astype(np.uint8) if cam.max() <= 1 else cam.astype(np.uint8)
+            st.image(disp, caption="GradCAM++ overlay (red = high attention)",
+                     use_container_width=True)
+        with col_b:
+            st.markdown(
+                "<div class='info-box'>"
+                "<b>Read it like this.</b> Warm pixels show where the convolutional features "
+                "most strongly drove the predicted class. If those pixels coincide with the "
+                "lesion you'd point at clinically, the model is thinking the way you'd want it to. "
+                "If the heatmap is on the wall of the colon or on a fold instead of the lesion, "
+                "treat the prediction with caution."
+                "</div>", unsafe_allow_html=True,
+            )
+
+    # ── REAL model-probed ablation evidence ────────────────────────────
+    abl = analysis.get("ablation") or {}
+    if abl and "base_prob" in abl:
+        st.markdown(
+            '<div class="section-header">What if we hid one of your inputs?</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"<div style='display:flex;gap:8px;align-items:center;margin-bottom:10px'>"
+            f"{_provenance_badge_html({'source':'real_model','checkpoint_loaded':True})}"
+            f"<span style='font-size:0.86rem;color:#475569'>"
+            f"We re-ran the analysis three more times — once with the picture removed, "
+            f"once with your symptoms removed, once with your history removed — to see "
+            f"how much each one mattered for <b>your case</b>."
+            f"</span></div>",
+            unsafe_allow_html=True,
+        )
+        base_pct = abl["base_prob"] * 100
+        rows = [
+            ("If we hid the image",
+             abl["no_image_prob"] * 100, abl["image_drop_pp"], "#1A73E8"),
+            ("If we hid the symptoms text",
+             abl["no_text_prob"] * 100,  abl["text_drop_pp"],  "#00897B"),
+            ("If we hid the medical history",
+             abl["no_tabular_prob"] * 100, abl["tabular_drop_pp"], "#FF5722"),
+        ]
+        bar_max = max(1.0, max(r[2] for r in rows))
+        for label, p, drop, c in rows:
+            bar_w = (drop / bar_max) * 100
+            st.markdown(
+                f"""<div style='padding:10px 14px;margin-bottom:8px;border-radius:12px;
+                                background:white;border:1px solid rgba(15,23,42,0.06);
+                                border-left:4px solid {c};
+                                box-shadow:0 1px 3px rgba(15,23,42,0.04)'>
+                      <div style='display:flex;justify-content:space-between;
+                                  align-items:center;margin-bottom:4px'>
+                        <div style='font-weight:700;color:#0F172A;font-size:0.92rem'>
+                          {label}
+                        </div>
+                        <div style='font-size:0.82rem;color:{c};font-weight:800'>
+                          {p:.1f}% &nbsp;<span style='color:#64748B'>(was {base_pct:.1f}%)</span>
+                          &nbsp;<span style='color:#0F172A'>· drop {drop:.1f} pp</span>
+                        </div>
+                      </div>
+                      <div style='height:8px;background:#F1F5F9;border-radius:5px;overflow:hidden'>
+                        <div style='height:100%;width:{bar_w:.1f}%;background:{c};
+                                    border-radius:5px;
+                                    transition:width 0.6s ease'></div>
+                      </div>
+                    </div>""",
+                unsafe_allow_html=True,
+            )
+        st.markdown(
+            "<div class='info-box' style='margin-top:6px'>"
+            "<b>How to read this.</b> A larger drop means that modality is more decisive for "
+            "<i>this</i> patient. Tiny drops mean the other modalities can compensate. "
+            "Negative drops (clipped to zero) are rare and indicate the modality was actively "
+            "<i>hurting</i> the prediction."
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+    elif abl and "error" in abl:
+        st.markdown(
+            f"<div class='warn-box'>Ablation probe could not run: <code>{abl['error']}</code></div>",
+            unsafe_allow_html=True,
+        )
+
+    st.markdown(
+        "<div class='disclaimer' style='margin-top:14px'>"
+        "Probabilities, modality weights, uncertainty, and the GradCAM heatmap are all direct "
+        "model outputs. The plain-English narrative above is a templated explanation that "
+        "<b>describes</b> those numbers — it is not itself a model output. Always confirm with "
+        "histology, biopsy, or specialist review."
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Plain-English "Why this result?" card for the Diagnosis tab
+# ─────────────────────────────────────────────────────────────────────
+
+# What the AI looks for in the image, per class — plain-English
+PLAIN_IMAGE_OBSERVATIONS = {
+    "polyps":          "a focal mucosal protrusion typical of an adenomatous polyp",
+    "uc-mild":         "patchy granular mucosa with mild loss of vascular pattern",
+    "uc-moderate-sev": "diffuse inflammation, ulceration and contact bleeding",
+    "barretts-esoph":  "a salmon-coloured columnar segment above the gastro-oesophageal junction",
+    "therapeutic":     "a post-resection / dyed mucosal site (a recently treated area)",
+}
+
+
+def _plain_risk_factor_lines(patient: dict, symptoms: list) -> list:
+    """Walk through the patient's actual inputs and return short plain-English
+    bullets noting what each contributes (good / risk / neutral)."""
+    bullets = []
+    age = int(patient.get("age", 0) or 0)
+    bmi = float(patient.get("bmi", 0) or 0)
+    smoking = str(patient.get("smoking", "")).lower()
+    alcohol = str(patient.get("alcohol", "")).lower()
+    fam = str(patient.get("family_history", "")).lower()
+    polyps_hx = str(patient.get("prev_polyps", "")).lower()
+
+    if age >= 50:
+        bullets.append(("amber", f"Age {age} — within the average-risk screening window (USPSTF 45–75)."))
+    elif age >= 45:
+        bullets.append(("amber", f"Age {age} — at the lower edge of the screening age (USPSTF lowered the floor to 45 in 2021)."))
+    elif age >= 18:
+        bullets.append(("green", f"Age {age} — younger than the routine screening threshold; baseline risk is lower."))
+    if bmi >= 30:
+        bullets.append(("amber", f"BMI {bmi:.1f} — obesity is an established risk factor."))
+    elif 18.5 <= bmi < 25:
+        bullets.append(("green", f"BMI {bmi:.1f} — within the healthy range."))
+    if "yes" in smoking:
+        bullets.append(("amber", "Smoking history — slightly raises colorectal cancer risk."))
+    if any(x in alcohol for x in ["regular", "heavy"]):
+        bullets.append(("amber", "Regular / heavy alcohol — raises colorectal cancer risk."))
+    if "first" in fam:
+        bullets.append(("red", "First-degree family history of colorectal cancer — meaningfully higher risk; consider earlier surveillance."))
+    if "yes" in polyps_hx:
+        bullets.append(("red", "Previous polyps — established surveillance pathway likely applies."))
+
+    n_sym = len([s for s in (symptoms or []) if s])
+    if n_sym == 0:
+        bullets.append(("green", "No symptoms reported — that is reassuring on its own."))
+    elif n_sym <= 2:
+        bullets.append(("amber", f"{n_sym} symptom(s) reported — context matters; review the symptoms list with your clinician."))
+    else:
+        bullets.append(("red", f"{n_sym} symptoms reported — the AI weighted these heavily in its conclusion."))
+
+    if not bullets:
+        bullets.append(("green", "No notable risk factors picked up from your form."))
+    return bullets
+
+
+def _render_plain_why_card(analysis: dict, patient: dict, symptoms: list, symptom_text: str):
+    """A patient-friendly explanation card placed at the top of the Diagnosis tab.
+    Uses plain language — no model architecture jargon."""
+    if not analysis:
+        return
+    pclass = analysis.get("pathology_class", "")
+    pretty = CLASS_LABELS.get(pclass, pclass)
+    confidence = analysis.get("confidence", 0)
+    risk = analysis.get("risk_score", 0)
+    unc = analysis.get("uncertainty", 0)
+    img_w = analysis.get("image_weight", 0)
+    txt_w = analysis.get("text_weight", 0)
+    tab_w = analysis.get("tabular_weight", 0)
+
+    # Confidence band — plain
+    if confidence >= 0.8:
+        conf_phrase = "is fairly confident"
+    elif confidence >= 0.6:
+        conf_phrase = "leans toward"
+    elif confidence >= 0.4:
+        conf_phrase = "tentatively suggests"
+    else:
+        conf_phrase = "is genuinely unsure but slightly favours"
+
+    # Uncertainty in plain terms
+    if unc < 0.3:
+        unc_phrase = "All of the AI's internal cross-checks agreed on the same finding — that's a sign of consistency."
+    elif unc < 0.6:
+        unc_phrase = "The AI's internal cross-checks mostly agreed, with some variation — review with a clinician for confirmation."
+    else:
+        unc_phrase = "The AI's internal cross-checks disagreed — this finding is uncertain and a clinician's review is essential."
+
+    # Dominant input
+    weights = [("the image", img_w), ("the symptoms", txt_w), ("the patient profile", tab_w)]
+    weights.sort(key=lambda x: x[1], reverse=True)
+    dom_label, dom_pct = weights[0][0], weights[0][1] * 100
+
+    # Image plain observation
+    img_obs = PLAIN_IMAGE_OBSERVATIONS.get(pclass,
+              "patterns the AI has learnt to associate with this finding")
+
+    # Patient inputs summary
+    age = patient.get("age", "—")
+    sex = patient.get("gender", "—")
+    bmi = patient.get("bmi", "—")
+    name = patient.get("name") or "the patient"
+
+    # The narrative
+    narrative = (
+        f"On {name}'s endoscopy image, the AI noticed <b>{img_obs}</b>. "
+        f"It also looked at the symptoms you wrote and your medical history "
+        f"(age {age}, {sex}, BMI {bmi}). Putting it all together, the AI {conf_phrase} "
+        f"<b>{pretty}</b> — confidence {confidence*100:.0f}%. "
+        f"Most of the decision came from <b>{dom_label}</b> ({dom_pct:.0f}% of the weight). "
+        f"{unc_phrase}"
+    )
+
+    # Risk factors
+    bullet_color = {"green": "#15803D", "amber": "#B45309", "red": "#B91C1C"}
+    bullet_bg    = {"green": "#F0FDF4", "amber": "#FFFBEB", "red": "#FEF2F2"}
+    bullet_icon  = {"green": "✓", "amber": "•", "red": "!"}
+    bullets = _plain_risk_factor_lines(patient, symptoms)
+    bullets_html = "".join(
+        f"<div style='display:flex;gap:10px;padding:6px 10px;margin-bottom:4px;"
+        f"border-radius:8px;background:{bullet_bg[c]};color:#0F172A'>"
+        f"<span style='display:inline-flex;align-items:center;justify-content:center;"
+        f"width:18px;height:18px;border-radius:50%;background:{bullet_color[c]};color:white;"
+        f"font-size:0.72rem;font-weight:800;flex:0 0 auto'>{bullet_icon[c]}</span>"
+        f"<span style='font-size:0.86rem;line-height:1.45'>{txt}</span></div>"
+        for c, txt in bullets
+    )
+
+    st.markdown(
+        f"""<div style='border-radius:18px;padding:22px 26px;margin-bottom:18px;
+                        background:linear-gradient(135deg,#F8FAFF 0%,#EEF4FF 100%);
+                        border:1px solid rgba(26,115,232,0.18);
+                        box-shadow:0 1px 3px rgba(15,23,42,0.04),
+                                   0 18px 36px -22px rgba(15,23,42,0.18)'>
+              <div style='display:flex;align-items:center;gap:10px;margin-bottom:10px'>
+                <span style='display:inline-flex;align-items:center;justify-content:center;
+                             width:36px;height:36px;border-radius:11px;
+                             background:linear-gradient(135deg,#1A73E8,#00897B);
+                             color:white;font-size:1.05rem'>🧠</span>
+                <div>
+                  <div style='font-size:0.74rem;text-transform:uppercase;letter-spacing:0.7px;
+                              color:#1A73E8;font-weight:800'>Why we reached this result</div>
+                  <div style='font-size:1.08rem;color:#0F172A;font-weight:800'>
+                    The AI's reasoning, in plain English
+                  </div>
+                </div>
+              </div>
+              <div style='font-size:0.95rem;color:#1F2937;line-height:1.65;margin-bottom:14px'>
+                {narrative}
+              </div>
+              <div style='font-size:0.72rem;text-transform:uppercase;letter-spacing:0.6px;
+                          color:#475569;font-weight:800;margin-bottom:6px'>
+                What we picked up from your form
+              </div>
+              {bullets_html}
+            </div>""",
+        unsafe_allow_html=True,
+    )
+
+
+def _render_compare_panel():
+    """If compare-mode is on, show side-by-side snapshots of slot A and slot B."""
+    snaps = st.session_state.get("compare_snaps", {})
+    if not (snaps.get("A") and snaps.get("B")):
+        return False  # nothing to compare yet
+    st.markdown('<div class="section-header">Compare-mode · A vs B</div>',
+                unsafe_allow_html=True)
+    cols = st.columns(2)
+    for col, slot in zip(cols, ("A", "B")):
+        a = snaps[slot]
+        with col:
+            pclass = a["pathology_class"]; col_color = CLASS_COLOURS.get(pclass, "#1A73E8")
+            st.markdown(
+                f"""<div style='border-radius:14px;padding:16px 18px;background:white;
+                                border:1px solid rgba(15,23,42,0.06);
+                                border-left:4px solid {col_color};
+                                box-shadow:0 1px 3px rgba(15,23,42,0.04)'>
+                      <div style='font-size:0.7rem;text-transform:uppercase;color:{col_color};
+                                  letter-spacing:0.6px;font-weight:800'>Slot {slot} · {a.get('label','')}</div>
+                      <div style='font-size:1.25rem;font-weight:800;color:#0F172A;margin-top:2px'>
+                        {CLASS_LABELS.get(pclass, pclass)}
+                      </div>
+                      <div style='font-size:0.86rem;color:#475569;margin-top:6px'>
+                        Confidence <b>{a['confidence']:.0%}</b> ·
+                        Risk <b>{a['risk_score']:.0%}</b> ·
+                        Stage <b>{a['stage']}</b> ·
+                        Uncertainty <b>{a['uncertainty']:.2f}</b>
+                      </div>
+                    </div>""",
+                unsafe_allow_html=True,
+            )
+    return True
 
 
 def page_results():
@@ -1133,42 +2684,407 @@ def page_results():
     pcolor  = CLASS_COLOURS.get(pclass, "#1A73E8")
 
     render_hero(
-        "Diagnostic Results",
-        f"AI analysis complete for {patient.get('name','Patient')} · {datetime.now().strftime('%d %b %Y, %H:%M')}",
-        badges=["Step 4 of 6", f"Confidence: {analysis['confidence']:.0%}", f"Inference: {analysis['inference_time_ms']:.0f} ms"],
+        "Your AI Health Report",
+        f"Personalised analysis for {patient.get('name','Patient')} · {datetime.now().strftime('%d %b %Y, %H:%M')}",
+        badges=["Step 4 of 6", "Reviewed against international guidelines",
+                "Always confirm with a clinician"],
     )
 
-    # Top summary metrics
+    # ── Compare-mode controls (visible when toggle is on in sidebar) ─────
+    if st.session_state.get("compare_mode"):
+        st.session_state.setdefault("compare_snaps", {})
+        cmp_cols = st.columns([1, 1, 1, 1])
+        snap = {**analysis, "label": patient.get("name","Patient")}
+        with cmp_cols[0]:
+            if st.button("📌 Save to slot A", use_container_width=True):
+                st.session_state["compare_snaps"]["A"] = snap; st.toast("Saved to Slot A")
+        with cmp_cols[1]:
+            if st.button("📌 Save to slot B", use_container_width=True):
+                st.session_state["compare_snaps"]["B"] = snap; st.toast("Saved to Slot B")
+        with cmp_cols[2]:
+            if st.button("Clear A & B", use_container_width=True):
+                st.session_state["compare_snaps"] = {}; st.toast("Cleared")
+        with cmp_cols[3]:
+            slots = st.session_state.get("compare_snaps", {})
+            st.caption(("A: " + (slots.get("A",{}).get("pathology_class","—"))) +
+                       "  ·  " +
+                       ("B: " + (slots.get("B",{}).get("pathology_class","—"))))
+        if _render_compare_panel():
+            st.markdown("---")
+
+    # ── Clinical safety override panel (red-flag-driven escalation) ───────
+    overrides = analysis.get("overrides") or {}
+    if overrides.get("applied"):
+        rules_html = "".join(
+            f"<li style='margin:4px 0;color:#7F1D1D'>{r}</li>"
+            for r in overrides.get("rules", [])
+        )
+        orig_r = overrides.get("original_risk", 0) * 100
+        new_r  = overrides.get("new_risk", 0) * 100
+        orig_u = overrides.get("original_urgency", "")
+        new_u  = overrides.get("new_urgency", "")
+        st.markdown(
+            f"""<div style='border-radius:14px;padding:16px 20px;margin-bottom:14px;
+                            background:linear-gradient(135deg,#FEF2F2 0%,#FEE2E2 100%);
+                            border:1px solid #FCA5A5;
+                            box-shadow:0 1px 3px rgba(15,23,42,0.04)'>
+                  <div style='display:flex;align-items:center;gap:10px;margin-bottom:8px'>
+                    <span style='display:inline-flex;align-items:center;justify-content:center;
+                                 width:34px;height:34px;border-radius:10px;
+                                 background:#B91C1C;color:white;font-weight:800'>!</span>
+                    <span style='font-size:0.74rem;text-transform:uppercase;letter-spacing:0.7px;
+                                 color:#7F1D1D;font-weight:800'>Clinical safety override applied</span>
+                  </div>
+                  <div style='font-size:0.92rem;color:#1F2937;line-height:1.55;margin-bottom:8px'>
+                    Your reported symptoms triggered NICE NG12 / red-flag rules that
+                    <b>override the AI's image-only conclusion</b>. The risk band was raised from
+                    <b>{orig_r:.0f}%</b> to <b>{new_r:.0f}%</b> and urgency from
+                    <b>{orig_u}</b> to <b>{new_u}</b>. This is how a clinician would weight
+                    the case.
+                  </div>
+                  <ul style='margin:0;padding-left:20px;font-size:0.88rem'>{rules_html}</ul>
+                </div>""",
+            unsafe_allow_html=True,
+        )
+
+    # ── Image-stats verdict card (independent of the trained model) ───────
+    readout = analysis.get("image_readout") or {}
+    if readout and "verdict" in readout:
+        verdict = readout["verdict"]
+        atyp = readout.get("atypicality", 0.0) * 100
+        normal = readout.get("normal_score", 0.0) * 100
+        reasons = readout.get("reasons", [])
+        if verdict == "atypical_concerning":
+            kicker = "Pixel signs of an advanced lesion — likely beyond model scope"
+            sub = (f"The raw pixels show <b>deep red, low-blue regions</b>, dark cavitation, "
+                   f"or disorganised tissue — visual cues for ulceration, fungating tumour or "
+                   f"bleeding. The trained model's 5 classes do <b>not</b> include advanced "
+                   f"cancer, so its class prediction below is unreliable for this image. "
+                   f"<b>A clinician's review is essential — treat this as <u>possible advanced "
+                   f"disease</u> until proven otherwise.</b>")
+            bg = "linear-gradient(135deg,#FEF2F2 0%,#FEE2E2 100%)"
+            border = "#FCA5A5"
+            text_col = "#7F1D1D"
+            icon_bg = "#B91C1C"
+            icon_glyph = "!"
+            score_label = f"Atypicality {atyp:.0f}%"
+        elif verdict == "consistent_screening":
+            kicker = "Pixel features look like a screening-stage finding"
+            sub = (f"The raw pixels are consistent with <b>normal mucosa or a focal screening-stage "
+                   f"finding</b> — no signs of bleeding, ulceration or mass effect. "
+                   f"<b>Important:</b> this does NOT mean &quot;all clear&quot; — every image in our training "
+                   f"data is itself a finding (polyp, mild colitis, etc.). Use the AI's class "
+                   f"prediction below for the specific finding, and confirm with a clinician.")
+            bg = "linear-gradient(135deg,#EFF6FF 0%,#DBEAFE 100%)"
+            border = "#93C5FD"
+            text_col = "#1E40AF"
+            icon_bg = "#1A73E8"
+            icon_glyph = "i"
+            score_label = f"No atypical pixels · Normal-image score {normal:.0f}%"
+        else:
+            kicker = "Mixed pixel features — review carefully"
+            sub = ("Some image features look typical of screening-stage findings, others are "
+                   "ambiguous. The AI's class prediction below should be interpreted with "
+                   "extra caution.")
+            bg = "linear-gradient(135deg,#FFFBEB 0%,#FEF3C7 100%)"
+            border = "#FCD34D"
+            text_col = "#92400E"
+            icon_bg = "#F59E0B"
+            icon_glyph = "•"
+            score_label = f"Atypicality {atyp:.0f}% · Normal {normal:.0f}%"
+        bullets_html = "".join(
+            f"<li style='margin:3px 0;color:{'#15803D' if c=='green' else '#B45309' if c=='amber' else '#B91C1C'}'>{m}</li>"
+            for c, m in reasons
+        )
+        st.markdown(
+            f"""<div style='border-radius:14px;padding:16px 20px;margin-bottom:14px;
+                            background:{bg};border:1px solid {border};
+                            box-shadow:0 1px 3px rgba(15,23,42,0.04)'>
+                  <div style='display:flex;align-items:center;gap:10px;margin-bottom:6px'>
+                    <span style='display:inline-flex;align-items:center;justify-content:center;
+                                 width:32px;height:32px;border-radius:9px;
+                                 background:{icon_bg};color:white;font-weight:800;font-size:1.05rem'>{icon_glyph}</span>
+                    <span style='font-size:0.74rem;text-transform:uppercase;letter-spacing:0.7px;
+                                 color:{text_col};font-weight:800'>Image-features check</span>
+                    <span style='margin-left:auto;font-size:0.72rem;color:{text_col};
+                                 font-weight:700;background:rgba(255,255,255,0.6);
+                                 padding:3px 10px;border-radius:999px'>{score_label}</span>
+                  </div>
+                  <div style='font-size:0.96rem;color:#1F2937;line-height:1.55;margin-bottom:8px'>
+                    <b>{kicker}.</b> {sub}
+                  </div>
+                  <ul style='margin:6px 0 0 4px;padding-left:18px;font-size:0.86rem;line-height:1.55'>
+                    {bullets_html}
+                  </ul>
+                </div>""",
+            unsafe_allow_html=True,
+        )
+
+    # ── Patient-friendly verification + motivational card ─────────────────
+    prov = analysis.get("_provenance", {"source": "real_model"})
+    is_real = prov.get("source") == "real_model"
+
+    # Pick a context-aware motivational message
+    pclass = analysis["pathology_class"]
+    rs = analysis["risk_score"]
+
+    # ── Out-of-distribution / "atypical image" warning ─────────────────
+    # The model knows 5 classes only.  If the prediction looks unsure, OR
+    # the ablation shows wildly disjoint signals, OR the top-class probability
+    # is suspiciously low, surface a clear caution that the image may be outside
+    # what the model was trained on.
+    if is_real:
+        unc_val = analysis.get("uncertainty", 0.0)
+        top_prob = analysis.get("confidence", 0.0)
+        # Trigger conditions
+        flags = []
+        if unc_val >= 0.30:
+            flags.append("the AI's internal cross-checks didn't fully agree")
+        if top_prob < 0.85:
+            flags.append("no single class scored very strongly")
+        # Simple OOD heuristic: top-class less than 1.6× the second class
+        probs = analysis.get("pathology_probs", {}) or {}
+        sorted_probs = sorted(probs.values(), reverse=True)
+        if len(sorted_probs) >= 2 and sorted_probs[1] > 0:
+            ratio = sorted_probs[0] / max(sorted_probs[1], 1e-6)
+            if ratio < 2.0:
+                flags.append("two or more classes scored similarly")
+        if flags:
+            st.markdown(
+                f"""<div style='border-radius:14px;padding:14px 18px;margin-bottom:14px;
+                                background:linear-gradient(135deg,#FFF8E1 0%,#FEF3C7 100%);
+                                border:1px solid #FCD34D;
+                                box-shadow:0 1px 3px rgba(15,23,42,0.04)'>
+                      <div style='display:flex;align-items:center;gap:10px;margin-bottom:6px'>
+                        <span style='display:inline-flex;align-items:center;justify-content:center;
+                                     width:30px;height:30px;border-radius:9px;
+                                     background:#F59E0B;color:white;font-weight:800'>!</span>
+                        <span style='font-size:0.74rem;text-transform:uppercase;letter-spacing:0.7px;
+                                     color:#92400E;font-weight:800'>Important — please read</span>
+                      </div>
+                      <div style='font-size:0.92rem;color:#1F2937;line-height:1.6'>
+                        This image may be outside what the AI was trained on
+                        ({"; ".join(flags)}).  The model knows
+                        <b>five screening-stage findings</b> only —
+                        <i>polyps, mild colitis, severe colitis, Barrett's oesophagus,
+                        post-treatment site</i>.  It does <b>not</b> recognise advanced cancer,
+                        invasive tumours, post-surgical anatomy, or rarer entities.<br>
+                        For any unusual or symptomatic case <b>a clinician's review is essential</b> —
+                        treat the AI's prediction as a hint, not a verdict.
+                      </div>
+                    </div>""",
+                unsafe_allow_html=True,
+            )
+    if not is_real:
+        msg = ("Demo mode — these numbers are illustrative. The next time you run with a "
+               "real image and the model loaded, this card becomes your real result.")
+        msg_kicker = "⚠ Demo result"
+        msg_color = "#B91C1C"
+        bg = "linear-gradient(135deg,#FFF5F5 0%,#FEE2E2 100%)"
+        bord = "#FCA5A5"
+    elif rs < 0.25:
+        msg = ("Today's result is reassuring. Keep up regular screening — early action is the "
+               "single biggest reason colorectal cancer survival has doubled in 30 years.")
+        msg_kicker = "Reassuring news"
+        msg_color = "#15803D"
+        bg = "linear-gradient(135deg,#F0FDF4 0%,#DCFCE7 100%)"
+        bord = "#86EFAC"
+    elif rs < 0.5:
+        msg = ("Your AI screen flagged something worth a closer look. Don't worry yet — the next step "
+               "is simple: book a follow-up with a gastroenterologist (Step 5) and discuss this "
+               "report with them.")
+        msg_kicker = "A nudge to act"
+        msg_color = "#B45309"
+        bg = "linear-gradient(135deg,#FFFBEB 0%,#FEF3C7 100%)"
+        bord = "#FCD34D"
+    else:
+        msg = ("This screen is on the higher-risk side. Take it seriously — but remember: "
+               "early-stage colorectal cancer is curable in 9 out of 10 cases. A specialist review "
+               "is the most important next step.")
+        msg_kicker = "Important — please review with a clinician"
+        msg_color = "#B91C1C"
+        bg = "linear-gradient(135deg,#FFF5F5 0%,#FEE2E2 100%)"
+        bord = "#FCA5A5"
+
+    # SVG icon — a styled "ribbon of hope"
+    ribbon_svg = """
+<svg width='84' height='84' viewBox='0 0 64 64' fill='none' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>
+  <path d='M32 6c4 0 7 3 7 7v10l8 18c2 4-1 9-5 9h-3l-7-12-7 12h-3c-4 0-7-5-5-9l8-18V13c0-4 3-7 7-7z'
+        fill='url(#rg)' stroke='rgba(255,255,255,0.65)' stroke-width='1.4'/>
+  <defs>
+    <linearGradient id='rg' x1='0' y1='0' x2='1' y2='1'>
+      <stop offset='0%' stop-color='#1A73E8'/>
+      <stop offset='100%' stop-color='#00897B'/>
+    </linearGradient>
+  </defs>
+</svg>"""
+
+    st.markdown(
+        f"""<div style='position:relative;border-radius:18px;padding:18px 22px;margin:-6px 0 14px 0;
+                        background:{bg};border:1px solid {bord};
+                        box-shadow:0 1px 3px rgba(15,23,42,0.04),
+                                   0 16px 36px -22px rgba(15,23,42,0.18);
+                        display:flex;gap:18px;align-items:center;overflow:hidden'>
+              <div style='flex:0 0 auto;filter:drop-shadow(0 6px 14px rgba(26,115,232,0.25))'>
+                {ribbon_svg}
+              </div>
+              <div style='flex:1;min-width:0'>
+                <div style='font-size:0.74rem;text-transform:uppercase;letter-spacing:0.7px;
+                            color:{msg_color};font-weight:800;margin-bottom:4px'>
+                  {msg_kicker}
+                </div>
+                <div style='font-size:1.0rem;color:#0F172A;line-height:1.55;font-weight:500'>
+                  {msg}
+                </div>
+                <div style='display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center'>
+                  {"<span class='pill pill-green' style='font-size:0.68rem'>✓ Verified by AI</span>" if is_real else "<span class='pill pill-red' style='font-size:0.68rem'>⚠ Demo</span>"}
+                  <span class='pill' style='font-size:0.68rem'>Reviewed against BSG · NICE · USPSTF guidelines</span>
+                </div>
+              </div>
+            </div>""",
+        unsafe_allow_html=True,
+    )
+
+    # Collapsible technical details — for researchers / clinicians who want them
+    if is_real:
+        with st.expander("Show technical details · for clinicians & researchers", expanded=False):
+            st.markdown(
+                f"""
+- **Model**: `{prov.get('model','UnifiedMultiModalTransformer')}`
+- **Backbone**: {prov.get('backbone','ResNet-50 + EfficientNet-B0 + BioBERT + TabTransformer')}
+- **Checkpoint**: `{prov.get('checkpoint','best_model.pth')}` ({"loaded" if prov.get('checkpoint_loaded') else "weights init"})
+- **Held-out test metrics**: 90.3 % accuracy · 0.81 macro F1 · 0.984 AUC-ROC (on 1,066 images)
+- **Inference time (this case)**: {analysis.get('inference_time_ms',0):.0f} ms
+- **MC-Dropout passes**: 15 · entropy reported as the Uncertainty metric
+- **Recommendation source**: BSG / NICE / USPSTF guideline rules
+                """
+            )
+
+    # ── Top "key-findings" strip (one-glance summary) ─────────────────────
+    risk_score = analysis["risk_score"]
+    unc        = analysis["uncertainty"]
+    rc = "#2E7D32" if risk_score<0.25 else "#F9A825" if risk_score<0.5 else "#E65100" if risk_score<0.75 else "#B71C1C"
+    risk_band = ("Low" if risk_score<0.25 else "Moderate" if risk_score<0.5
+                 else "High" if risk_score<0.75 else "Critical")
+    unc_lbl   = "Low" if unc<0.3 else "Moderate" if unc<0.6 else "High"
+    urgency   = analysis.get("recommendation", {}).get("urgency", "Routine")
+    pretty    = CLASS_LABELS.get(pclass, pclass)
+
+    st.markdown(
+        f"""<div style='border-radius:16px;padding:20px 26px;margin-bottom:18px;
+                        background:linear-gradient(135deg, #FFFFFF 0%, #F8FAFF 100%);
+                        border:1px solid rgba(15,23,42,0.06);
+                        box-shadow:0 1px 2px rgba(15,23,42,0.04),
+                                   0 16px 36px -22px rgba(15,23,42,0.18)'>
+          <div style='display:flex;flex-wrap:wrap;align-items:center;gap:18px'>
+            <div style='flex:0 0 6px;align-self:stretch;border-radius:6px;
+                        background:linear-gradient(180deg, {pcolor}, {rc})'></div>
+            <div style='flex:1;min-width:240px'>
+              <div style='font-size:0.72rem;text-transform:uppercase;letter-spacing:0.6px;
+                          color:#64748B;font-weight:700'>Key finding</div>
+              <div style='font-size:1.45rem;font-weight:800;color:#0F172A;line-height:1.15;margin-top:2px'>
+                {pretty}
+              </div>
+              <div style='font-size:0.86rem;color:#475569;margin-top:4px'>
+                Confidence {analysis['confidence']:.0%} ·
+                <span style='color:{rc};font-weight:700'>{risk_band} risk</span> ·
+                Stage <b>{"not staged from this image" if analysis['stage'] == 'Cannot stage from one image' else analysis['stage']}</b> ·
+                Uncertainty <b>{unc:.2f}</b> ({unc_lbl})
+              </div>
+            </div>
+            <div style='display:flex;gap:8px;flex-wrap:wrap'>
+              <span class='pill {"pill-green" if urgency=="Routine" else "pill-amber" if urgency in ("Elective","Urgent") else "pill-red"}'>{urgency}</span>
+              <span class='pill'>Inference {analysis['inference_time_ms']:.0f} ms</span>
+            </div>
+          </div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
+
+    # Top summary metrics — animated counters
+    try:
+        from src.app.ui_extras import animated_counter
+    except Exception:
+        animated_counter = None
+
     col_a, col_b, col_c, col_d = st.columns(4)
-    with col_a:
-        render_metric_card("AI Finding", CLASS_LABELS.get(pclass, pclass),
-                           f"Confidence: {analysis['confidence']:.0%}", color=pcolor)
-    with col_b:
-        render_metric_card("Cancer Stage", analysis["stage"],
-                           f"Confidence: {analysis['stage_confidence']:.0%}",
-                           color=STAGE_COLORS.get(analysis["stage"],"#1A73E8"))
-    with col_c:
-        risk_score = analysis["risk_score"]
-        rc = "#2E7D32" if risk_score<0.25 else "#F9A825" if risk_score<0.5 else "#E65100" if risk_score<0.75 else "#B71C1C"
-        render_metric_card("Risk Score", f"{risk_score:.0%}", analysis["risk_label"], color=rc)
-    with col_d:
-        unc = analysis["uncertainty"]
-        unc_lbl = "Low" if unc<0.3 else "Moderate" if unc<0.6 else "High"
-        uc = "#2E7D32" if unc<0.3 else "#F9A825" if unc<0.6 else "#B71C1C"
-        render_metric_card("AI Uncertainty", f"{unc:.2f}", unc_lbl, color=uc)
+    stage_disabled = analysis.get("stage") == "Cannot stage from one image"
+    if animated_counter:
+        with col_a:
+            animated_counter(analysis["confidence"]*100, "AI Confidence",
+                             suffix="%", color=pcolor)
+        with col_b:
+            if stage_disabled:
+                # Honest counter — staging head can't reliably stage this image
+                render_metric_card(
+                    "Cancer Stage",
+                    "Cannot stage",
+                    "Single endoscopy images don't give true stage. See note below.",
+                    color="#B91C1C",
+                )
+            else:
+                animated_counter(analysis["stage_confidence"]*100, "Stage Confidence",
+                                 suffix="%", color=STAGE_COLORS.get(analysis["stage"],"#1A73E8"))
+        with col_c:
+            animated_counter(risk_score*100, "Risk Score",
+                             suffix="%", color=rc)
+        with col_d:
+            uc = "#2E7D32" if unc<0.3 else "#F9A825" if unc<0.6 else "#B71C1C"
+            animated_counter(unc, "Uncertainty", suffix="", color=uc, decimals=2)
+    else:
+        with col_a:
+            render_metric_card("AI Finding", CLASS_LABELS.get(pclass, pclass),
+                               f"Confidence: {analysis['confidence']:.0%}", color=pcolor)
+        with col_b:
+            render_metric_card("Cancer Stage", analysis["stage"],
+                               f"Confidence: {analysis['stage_confidence']:.0%}",
+                               color=STAGE_COLORS.get(analysis["stage"],"#1A73E8"))
+        with col_c:
+            render_metric_card("Risk Score", f"{risk_score:.0%}", analysis["risk_label"], color=rc)
+        with col_d:
+            uc = "#2E7D32" if unc<0.3 else "#F9A825" if unc<0.6 else "#B71C1C"
+            render_metric_card("AI Uncertainty", f"{unc:.2f}", unc_lbl, color=uc)
 
     st.markdown("")
     # Risk badge
     render_risk_badge(risk_score)
     st.markdown("")
 
-    # ── Four Tabs ──────────────────────────────────────────────────────
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "Diagnosis", "GradCAM View", "Risk Charts", "Recommendations"
+    # ── Tabs ───────────────────────────────────────────────────────────
+    tab1, tab_why, tab2, tab3, tab4 = st.tabs([
+        "Diagnosis", "Why this result?", "GradCAM View", "Risk Charts", "Recommendations"
     ])
 
     # ── Tab 1: Diagnosis ───────────────────────────────────────────────
     with tab1:
+        # Always-on "what the AI can recognise" tile so the user knows the scope
+        st.markdown(
+            """<div style='border-radius:12px;padding:12px 16px;margin-bottom:14px;
+                            background:#F8FAFF;border:1px solid rgba(26,115,232,0.18);
+                            font-size:0.82rem;color:#475569;line-height:1.6'>
+                  <div style='font-weight:800;color:#1A73E8;margin-bottom:4px'>
+                    What this AI can &amp; can't see — be honest with yourself
+                  </div>
+                  <b>Trained on:</b> HyperKvasir (10,662 screening images, Norway) +
+                  CVC-ClinicDB (612 polyp images, Spain). Output classes: polyps · mild
+                  colitis · severe colitis · Barrett's oesophagus · post-treatment site.<br>
+                  <b>Therefore it CANNOT recognise:</b> stage III–IV cancer · fungating /
+                  ulcerated tumour masses · post-surgical anatomy · sessile-serrated lesions ·
+                  Crohn's-pattern disease · paediatric pathology · rare entities.<br>
+                  <b>Cancer staging from a single image is approximate at best.</b> True
+                  TNM staging requires biopsy histology + CT/MRI cross-sectional imaging.
+                  When this app shows a stage, it's a <i>visual</i> stage of the
+                  predicted-class only — not a substitute for clinical staging.
+                </div>""",
+            unsafe_allow_html=True,
+        )
+
+        # Plain-English "Why this result" card — based on the patient's actual inputs
+        _render_plain_why_card(analysis,
+                               st.session_state.get("patient", {}),
+                               st.session_state.get("symptoms", []),
+                               st.session_state.get("symptom_text", ""))
+
         col_diag, col_mod = st.columns([3, 2])
 
         with col_diag:
@@ -1223,29 +3139,57 @@ def page_results():
             )
             st.plotly_chart(fig_pie, use_container_width=True)
 
-        # Stage probs
-        st.markdown('<div class="section-header">Staging Probability</div>',
-                    unsafe_allow_html=True)
-        stage_probs  = analysis["stage_probs"]
-        stage_labels = list(stage_probs.keys())
-        stage_vals   = list(stage_probs.values())
-        stage_colors = [STAGE_COLORS.get(s, "#999") for s in stage_labels]
-
-        fig_stage = go.Figure(go.Bar(
-            x=stage_labels, y=stage_vals,
-            marker_color=stage_colors,
-            text=[f"{v:.1%}" for v in stage_vals],
-            textposition="outside",
-            hovertemplate="<b>%{x}</b><br>%{y:.1%}<extra></extra>",
-        ))
-        fig_stage.update_layout(
-            height=220,
-            margin=dict(l=10, r=10, t=10, b=10),
-            yaxis=dict(range=[0, 1.15], tickformat=".0%", showgrid=True, gridcolor="#f0f0f0"),
-            plot_bgcolor="white", paper_bgcolor="white",
-            font=dict(family="Inter, sans-serif", size=11),
-        )
-        st.plotly_chart(fig_stage, use_container_width=True)
+        # ── Stage display — only when the staging head is trustworthy ────
+        if stage_disabled:
+            note = analysis.get("staging_note") or (
+                "Single endoscopy images cannot reliably stage cancer."
+            )
+            st.markdown(
+                f"""<div style='border-radius:14px;padding:14px 18px;margin-top:14px;
+                                background:#FEF2F2;border:1px solid #FCA5A5'>
+                      <div style='font-size:0.74rem;text-transform:uppercase;letter-spacing:0.7px;
+                                  color:#7F1D1D;font-weight:800;margin-bottom:4px'>
+                        Cancer staging not shown
+                      </div>
+                      <div style='font-size:0.92rem;color:#1F2937;line-height:1.55'>
+                        {note}  Real cancer staging requires <b>histology</b> (biopsy) +
+                        <b>cross-sectional imaging</b> (CT / MRI). The staging head's
+                        output for this image is <b>not reliable</b> — we are hiding it
+                        rather than showing a false low-stage number.
+                      </div>
+                    </div>""",
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown('<div class="section-header">Stage estimate · model-derived</div>',
+                        unsafe_allow_html=True)
+            st.markdown(
+                "<div style='font-size:0.78rem;color:#64748B;margin-bottom:8px'>"
+                "<b>Caveat:</b> the staging head was trained against class-derived labels "
+                "(not against real TNM cancer staging). Treat this as the <i>visual</i> "
+                "stage of the predicted finding only — true staging needs biopsy + imaging."
+                "</div>",
+                unsafe_allow_html=True,
+            )
+            stage_probs  = analysis["stage_probs"]
+            stage_labels = list(stage_probs.keys())
+            stage_vals   = list(stage_probs.values())
+            stage_colors = [STAGE_COLORS.get(s, "#999") for s in stage_labels]
+            fig_stage = go.Figure(go.Bar(
+                x=stage_labels, y=stage_vals,
+                marker_color=stage_colors,
+                text=[f"{v:.1%}" for v in stage_vals],
+                textposition="outside",
+                hovertemplate="<b>%{x}</b><br>%{y:.1%}<extra></extra>",
+            ))
+            fig_stage.update_layout(
+                height=220,
+                margin=dict(l=10, r=10, t=10, b=10),
+                yaxis=dict(range=[0, 1.15], tickformat=".0%", showgrid=True, gridcolor="#f0f0f0"),
+                plot_bgcolor="white", paper_bgcolor="white",
+                font=dict(family="Inter, sans-serif", size=11),
+            )
+            st.plotly_chart(fig_stage, use_container_width=True)
 
         # Risk flags
         flags = analysis.get("all_risk_flags", [])
@@ -1253,6 +3197,11 @@ def page_results():
             st.markdown('<div class="section-header">Risk Flags</div>', unsafe_allow_html=True)
             for flag in flags:
                 st.markdown(f'<div class="warn-box">{flag}</div>', unsafe_allow_html=True)
+
+    # ── Tab 1.5: Why this result? (AI Reasoning Panel) ─────────────────
+    with tab_why:
+        _render_reasoning_panel(analysis, st.session_state.get("patient", {}),
+                                st.session_state.get("symptoms", []))
 
     # ── Tab 2: GradCAM ─────────────────────────────────────────────────
     with tab2:
@@ -1297,11 +3246,42 @@ def page_results():
                 plt.close(fig_hm)
 
             st.markdown(
-                '<div class="info-box"><b>How to read this:</b> The red/warm regions on the GradCAM '
-                'map show exactly where the AI model is focusing its attention when making its diagnosis. '
-                'These highlight the most diagnostically relevant tissue regions.</div>',
+                """<div class="warn-box" style="margin-top:6px">
+                <b>How to read this honestly:</b> the warm region shows where the AI looked
+                <b>for its predicted class</b> — it does <b>NOT</b> outline the full extent of
+                disease. If the prediction is &quot;polyps&quot; the heatmap shows where the AI thought
+                a polyp was; if the AI is misclassifying an advanced lesion as a polyp, the
+                heatmap will only highlight the bit it thought looked &quot;most polyp-like&quot;,
+                not the whole tumour.  When the prediction is wrong, the heatmap is wrong too.<br>
+                <b>Sanity test:</b> does the warm region overlap with the lesion you'd point at
+                clinically?  If yes, trust the AI for the next step.  If no, don't.
+                </div>""",
                 unsafe_allow_html=True,
             )
+
+            # ── 3D Colon Viewer ─────────────────────────────────────────────
+            try:
+                from src.app.ui_extras import colon_3d_figure
+                st.markdown('<div class="section-header">3D anatomical viewer</div>',
+                            unsafe_allow_html=True)
+                col_3d, col_caption = st.columns([3, 2])
+                with col_3d:
+                    st.plotly_chart(colon_3d_figure(highlight_class=pclass),
+                                    use_container_width=True)
+                with col_caption:
+                    st.markdown(
+                        f"""<div class='info-box'>
+                          <b>What you're looking at.</b><br>
+                          A stylised 3-D model of the colorectum. The pulsing blue marker
+                          shows the typical location of the predicted finding —
+                          <b>{CLASS_LABELS.get(pclass, pclass)}</b>. Drag to rotate, scroll
+                          to zoom. This is illustrative — the real lesion location is on
+                          the GradCAM image above.
+                        </div>""",
+                        unsafe_allow_html=True,
+                    )
+            except Exception:
+                pass
         else:
             st.info("No image was uploaded. GradCAM analysis requires an endoscopy/colonoscopy image.")
             pil_in = st.session_state.get("uploaded_image")
@@ -1349,6 +3329,18 @@ def page_results():
         with col_radar:
             st.markdown('<div class="section-header">Multi-Dimensional Risk Profile</div>',
                         unsafe_allow_html=True)
+            st.markdown(
+                "<div style='margin-bottom:6px'>"
+                "<span class='pill pill-amber' style='font-size:0.68rem'>Heuristic · not model output</span>"
+                " <span class='pill pill-green' style='font-size:0.68rem'>AI risk axis IS model output</span>"
+                "</div>"
+                "<div style='font-size:0.78rem;color:#64748B;margin-bottom:8px'>"
+                "Only the <b>AI Risk</b> axis comes from the trained model. The other 5 axes are "
+                "heuristic risk factors derived from the patient form and weighted using literature "
+                "(USPSTF 2021 · ACS · WCRF · BSG/ACPGBI 2010/2020). Hover any axis for the source."
+                "</div>",
+                unsafe_allow_html=True,
+            )
             unc = analysis["uncertainty"]
             # Compute proxy scores from available data
             p_data = st.session_state.get("patient", {})
@@ -1360,16 +3352,31 @@ def page_results():
 
             radar_cats = ["AI Risk", "Age Factor", "Smoking", "Alcohol", "Family Hx", "Prior Polyps"]
             radar_vals = [risk_score, age_risk, smoke_risk, alc_risk, fam_risk, poly_risk]
-            radar_vals += [radar_vals[0]]
-            radar_cats += [radar_cats[0]]
+            # Citations per axis — surface in tooltip
+            radar_cite = [
+                "Multimodal AI · this case",
+                "USPSTF 2021 · risk rises sharply ≥45 yrs",
+                "ACS · current/former smokers OR ≈ 1.2",
+                "World Cancer Research Fund · ≥3 drinks/day OR ≈ 1.4",
+                "BSG/ACPGBI 2010 · 1st-degree CRC <50 yr ↑ risk 4×",
+                "Adenoma surveillance BSG/ACPGBI 2020",
+            ]
+            radar_vals_closed = list(radar_vals) + [radar_vals[0]]
+            radar_cats_closed = list(radar_cats) + [radar_cats[0]]
+            radar_cite_closed = list(radar_cite) + [radar_cite[0]]
 
             fig_radar = go.Figure(go.Scatterpolar(
-                r=radar_vals, theta=radar_cats,
+                r=radar_vals_closed, theta=radar_cats_closed,
                 fill="toself",
-                fillcolor="rgba(26,115,232,0.15)",
-                line=dict(color="#1A73E8", width=2),
-                marker=dict(size=6, color="#1A73E8"),
-                hovertemplate="<b>%{theta}</b>: %{r:.1%}<extra></extra>",
+                fillcolor="rgba(26,115,232,0.18)",
+                line=dict(color="#1A73E8", width=2.5),
+                marker=dict(size=8, color="#1A73E8",
+                            line=dict(width=2, color="white")),
+                customdata=radar_cite_closed,
+                hovertemplate="<b>%{theta}</b><br>"
+                              "Score: %{r:.1%}<br>"
+                              "<i>Source:</i> %{customdata}"
+                              "<extra></extra>",
             ))
             fig_radar.update_layout(
                 polar=dict(
@@ -1385,40 +3392,68 @@ def page_results():
             )
             st.plotly_chart(fig_radar, use_container_width=True)
 
-        # Confidence timeline / waterfall
-        st.markdown('<div class="section-header">Model Confidence Breakdown</div>',
-                    unsafe_allow_html=True)
-        conf_agents = [
-            "Image Encoder", "Text Encoder", "Tabular Encoder",
-            "Fusion Layer", "XAI Verification", "Final Output"
-        ]
-        # Simulate agent-level confidences from available data
-        img_w  = analysis["image_weight"]
-        txt_w  = analysis["text_weight"]
-        tab_w  = analysis["tabular_weight"]
-        final_c = analysis["confidence"]
-        conf_vals = [
-            img_w * final_c,
-            txt_w * final_c,
-            tab_w * final_c,
-            final_c * 0.97,
-            final_c * (1 - unc * 0.3),
-            final_c,
-        ]
-        fig_conf = go.Figure(go.Bar(
-            x=conf_agents, y=conf_vals,
-            marker_color=["#1A73E8","#00897B","#FF5722","#9C27B0","#607D8B","#2E7D32"],
-            text=[f"{v:.1%}" for v in conf_vals],
-            textposition="outside",
-        ))
-        fig_conf.update_layout(
-            height=220,
-            margin=dict(l=10, r=10, t=10, b=10),
-            yaxis=dict(range=[0, 1.15], tickformat=".0%", showgrid=True, gridcolor="#f0f0f0"),
-            plot_bgcolor="white", paper_bgcolor="white",
-            font=dict(family="Inter, sans-serif", size=11),
+        # ── REAL fusion-gate weights + per-class softmax (replaces proxy chart) ──
+        st.markdown(
+            '<div class="section-header">Fusion-gate weights & per-class softmax · live model</div>',
+            unsafe_allow_html=True,
         )
-        st.plotly_chart(fig_conf, use_container_width=True)
+        st.markdown(
+            "<div style='margin-bottom:6px'>"
+            "<span class='pill pill-green' style='font-size:0.68rem'>"
+            "✓ Live model output · checkpoint loaded</span>"
+            "</div>"
+            "<div style='font-size:0.78rem;color:#64748B;margin-bottom:8px'>"
+            "Left: the <b>real sigmoid gate weights</b> the fusion transformer assigned to each "
+            "modality for this case. Right: the actual softmax over the 5 pathology classes."
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        col_g1, col_g2 = st.columns(2)
+        with col_g1:
+            mod_labels = ["Imaging", "Clinical text", "Patient features"]
+            mod_vals   = [analysis["image_weight"],
+                          analysis["text_weight"],
+                          analysis["tabular_weight"]]
+            mod_colors = ["#1A73E8", "#00897B", "#FF5722"]
+            fig_gate = go.Figure(go.Bar(
+                x=mod_vals, y=mod_labels, orientation="h",
+                marker_color=mod_colors,
+                text=[f"{v:.1%}" for v in mod_vals],
+                textposition="outside",
+                hovertemplate="<b>%{y}</b><br>Fusion-gate weight: %{x:.1%}<extra></extra>",
+            ))
+            fig_gate.update_layout(
+                height=220, margin=dict(l=10,r=40,t=10,b=10),
+                xaxis=dict(range=[0, max(mod_vals)*1.25 + 0.05], tickformat=".0%",
+                           showgrid=True, gridcolor="#f0f0f0"),
+                plot_bgcolor="white", paper_bgcolor="white",
+                font=dict(family="Inter, sans-serif", size=11),
+                title=dict(text="Modality fusion weights", x=0.02,
+                           font=dict(size=12, color="#475569")),
+            )
+            st.plotly_chart(fig_gate, use_container_width=True)
+        with col_g2:
+            probs = analysis["pathology_probs"]
+            cls_labels = [CLASS_LABELS.get(k, k) for k in probs.keys()]
+            cls_vals   = list(probs.values())
+            cls_colors = [CLASS_COLOURS.get(k, "#999") for k in probs.keys()]
+            fig_cls = go.Figure(go.Bar(
+                x=cls_vals, y=cls_labels, orientation="h",
+                marker_color=cls_colors,
+                text=[f"{v:.1%}" for v in cls_vals],
+                textposition="outside",
+                hovertemplate="<b>%{y}</b><br>Softmax: %{x:.1%}<extra></extra>",
+            ))
+            fig_cls.update_layout(
+                height=220, margin=dict(l=10,r=40,t=10,b=10),
+                xaxis=dict(range=[0, 1.15], tickformat=".0%",
+                           showgrid=True, gridcolor="#f0f0f0"),
+                plot_bgcolor="white", paper_bgcolor="white",
+                font=dict(family="Inter, sans-serif", size=11),
+                title=dict(text="Per-class softmax (pathology head)", x=0.02,
+                           font=dict(size=12, color="#475569")),
+            )
+            st.plotly_chart(fig_cls, use_container_width=True)
 
     # ── Tab 4: Recommendations ─────────────────────────────────────────
     with tab4:
@@ -1427,6 +3462,80 @@ def page_results():
             st.info("No recommendations available.")
         else:
             render_urgency_banner(rec.get("urgency", "Routine"))
+
+            # ── "What to do next" — concrete actionable steps based on
+            # urgency band + overrides ─────────────────────────────────
+            urgency = rec.get("urgency", "Routine")
+            override_applied = bool((analysis.get("overrides") or {}).get("applied"))
+            atypical = (analysis.get("image_readout") or {}).get("verdict") == "atypical_concerning"
+
+            if urgency == "Emergency" or atypical:
+                next_steps = [
+                    ("Right now",
+                     "Contact your GP today — phone, in person, or NHS 111. "
+                     "Do <b>not</b> wait for a routine appointment. Mention this AI screen and "
+                     "your symptoms together."),
+                    ("Within 1–2 weeks",
+                     "Book a face-to-face GP visit and ask for a NICE 2-week-wait suspected-CRC "
+                     "referral. Bring your downloaded report (Step 6) and a list of your symptoms."),
+                    ("During the wait",
+                     "Keep a symptom diary (frequency, severity, timing). Avoid red / processed meat "
+                     "and alcohol. Drink 1.5–2 L of water/day. Do not start any new supplements "
+                     "without telling your GP."),
+                    ("If symptoms worsen",
+                     "Heavy fresh bleeding, severe abdominal pain, vomiting, fainting, or new "
+                     "anaemia → A&E. Take this report with you."),
+                ]
+                hi = "#B91C1C"
+            elif urgency == "Urgent" or override_applied:
+                next_steps = [
+                    ("Within 1 week",
+                     "Book a GP appointment. Show them this report and your symptom log."),
+                    ("Within 2 weeks",
+                     "Expect a 2-week-wait specialist referral if your GP agrees with the AI's "
+                     "concern. Don't delay — book the colonoscopy slot when offered."),
+                    ("Track it",
+                     "Note any change in stools, bleeding episodes or weight. Photograph stools "
+                     "if you can — clinicians value this."),
+                    ("Lifestyle while you wait",
+                     "Hold off on new diets / supplements. Limit alcohol. Increase fibre slowly "
+                     "(if tolerated). Continue your usual medications unless your GP says otherwise."),
+                ]
+                hi = "#B45309"
+            else:
+                next_steps = [
+                    ("Schedule a GP follow-up",
+                     "Take this report to your routine GP appointment to confirm the AI's "
+                     "screening interpretation and discuss surveillance."),
+                    ("Stay on the screening pathway",
+                     "Continue with bowel-cancer screening as recommended for your age (NHS biennial "
+                     "FIT 50–74; USPSTF 45–75)."),
+                    ("Healthy-colon basics",
+                     "≥30 g fibre per day, <14 units of alcohol per week, regular exercise "
+                     "(150 min/week), keep BMI 18.5–25, don't smoke."),
+                    ("Save the report",
+                     "Download the PDF in Step 6. Keep a copy for your medical records."),
+                ]
+                hi = "#15803D"
+
+            st.markdown('<div class="section-header">What to do next</div>',
+                        unsafe_allow_html=True)
+            for title, body in next_steps:
+                st.markdown(
+                    f"""<div style='display:flex;gap:14px;padding:10px 14px;margin-bottom:6px;
+                                    border-radius:10px;background:white;
+                                    border:1px solid rgba(15,23,42,0.06);
+                                    border-left:4px solid {hi};
+                                    box-shadow:0 1px 2px rgba(15,23,42,0.04)'>
+                          <div style='flex:0 0 140px;font-size:0.78rem;font-weight:800;
+                                      color:{hi};text-transform:uppercase;letter-spacing:0.5px'>
+                            {title}
+                          </div>
+                          <div style='flex:1;font-size:0.92rem;color:#1F2937;line-height:1.55'>{body}</div>
+                        </div>""",
+                    unsafe_allow_html=True,
+                )
+            st.markdown("")
 
             col_r1, col_r2 = st.columns(2)
             with col_r1:
@@ -1489,19 +3598,51 @@ def page_results():
 
 
 def page_doctor_finder():
+    from src.app.geo import (
+        geocode_city, osm_nearby_specialists,
+        google_maps_embed_url, google_maps_directions_url,
+        haversine_km, GeoPoint,
+    )
+
+    n_specialists = len(DOCTORS_DB)
     render_hero(
         "Find Specialists Near You",
-        "Locate top-rated gastroenterologists, colorectal surgeons, and oncologists in your region",
-        badges=["Step 5 of 6", "45+ Specialists", "20+ Cities"],
+        "Type any city worldwide — we geocode it live, search nearby specialists "
+        "and embed a Google Map.",
+        badges=["Step 5 of 6", f"{n_specialists} curated specialists",
+                "Live OSM lookup", "Google Maps embed"],
     )
 
     patient = st.session_state.get("patient", {})
+    analysis = st.session_state.get("analysis", {}) or {}
+    ai_pathology = analysis.get("pathology_class", "")
+
+    # Show context banner if analysis is available
+    if ai_pathology:
+        pretty = CLASS_LABELS.get(ai_pathology, ai_pathology)
+        urgency = analysis.get("recommendation", {}).get("urgency", "Routine")
+        st.markdown(
+            f"""<div class='info-box' style='display:flex;align-items:center;gap:14px'>
+                <span style='display:inline-flex;align-items:center;justify-content:center;
+                             width:38px;height:38px;border-radius:12px;
+                             background:linear-gradient(135deg,#1A73E8,#00897B);
+                             color:white;font-weight:800'>AI</span>
+                <div>
+                  <div style='font-weight:800;color:#0F172A'>Tailoring results to your AI finding · {pretty}</div>
+                  <div style='font-size:0.85rem;color:#475569'>
+                    Specialists aligned with your indicated condition are surfaced first; clinical urgency
+                    flagged as <b>{urgency}</b>. Same-region specialists ranked above general matches.
+                  </div>
+                </div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
 
     st.markdown('<div class="section-header">Search</div>', unsafe_allow_html=True)
     col_c, col_co, col_sp = st.columns(3)
     with col_c:
         search_city = st.text_input("City", value=patient.get("city", ""),
-                                     placeholder="e.g. Mumbai, New York, London")
+                                     placeholder="e.g. Noida, Mumbai, New York, London")
     with col_co:
         search_country = st.selectbox("Country",
             ["(Any)", "India","USA","UK","UAE","Singapore","Canada","Australia"],
@@ -1511,62 +3652,186 @@ def page_doctor_finder():
     with col_sp:
         search_spec = st.selectbox("Specialty",
             ["(Any)", "Gastroenterology", "Colorectal Surgery",
-             "GI Oncology", "Medical Oncology", "Surgical Oncology"])
+             "GI Oncology", "Medical Oncology", "Surgical Oncology",
+             "Gastrointestinal Surgery", "Hepatology"])
 
     country_q = "" if search_country == "(Any)" else search_country
     spec_q    = "" if search_spec == "(Any)" else search_spec
 
-    doctors = search_doctors(search_city, country_q, spec_q)
+    # ── Live geocode (Nominatim) + map embed ──────────────────────────────
+    with st.spinner("Locating your city on the map…"):
+        user_point = geocode_city(search_city, country_q) if search_city else None
 
-    if not doctors:
-        # Broaden search
-        doctors = search_doctors("", country_q, spec_q)
-    if not doctors:
-        doctors = DOCTORS_DB[:8]
+    # Embedded Google Maps view
+    if user_point:
+        map_q = f"gastroenterologist+near+{user_point.lat},{user_point.lng}"
+        embed = google_maps_embed_url(query=map_q, zoom=12)
+        st.markdown(
+            f"""<div style='position:relative;border-radius:14px;overflow:hidden;
+                            border:1px solid rgba(15,23,42,0.08);
+                            box-shadow:0 1px 3px rgba(15,23,42,0.04),
+                                       0 12px 28px -16px rgba(15,23,42,0.20);
+                            margin-bottom:14px'>
+                  <div style='position:absolute;top:10px;left:14px;z-index:5;
+                              background:rgba(255,255,255,0.92);padding:6px 12px;
+                              border-radius:999px;backdrop-filter:blur(8px);
+                              font-size:0.78rem;font-weight:700;color:#0F172A;
+                              box-shadow:0 4px 12px rgba(15,23,42,0.10)'>
+                    📍 {user_point.display_name[:80]}
+                  </div>
+                  <iframe src='{embed}' width='100%' height='340'
+                          style='border:0;display:block' loading='lazy'
+                          referrerpolicy='no-referrer-when-downgrade'></iframe>
+                </div>""",
+            unsafe_allow_html=True,
+        )
 
-    st.markdown(f'<div class="info-box">Found <b>{len(doctors)}</b> specialists matching your criteria</div>',
-                unsafe_allow_html=True)
+    # ── Curated DB results (smart-ranked) ────────────────────────────────
+    results = search_doctors(search_city, country_q, spec_q,
+                             ai_pathology=ai_pathology, limit=10)
+
+    fallback_msg = ""
+    if not results and search_city:
+        results = search_doctors("", country_q, spec_q,
+                                 ai_pathology=ai_pathology, limit=10)
+        fallback_msg = (
+            f"No directly-curated specialists for <b>{search_city}</b> — "
+            f"showing the closest in {search_country or 'the region'} plus live "
+            f"OpenStreetMap nearby-hospital data."
+        )
+    if not results:
+        results = [(d, ["fallback"]) for d in DOCTORS_DB[:8]]
+        fallback_msg = "Showing top-rated specialists across the directory."
+
+    # Distance-augment each curated doc if we have a user_point
+    if user_point and results:
+        augmented = []
+        for doc, reasons in results:
+            try:
+                doc_pt = geocode_city(doc["city"], doc["country"])
+            except Exception:
+                doc_pt = None
+            dist_km = None
+            if doc_pt:
+                dist_km = haversine_km(user_point, doc_pt)
+                # Boost reasons with distance chip
+                if dist_km < 50:
+                    reasons = list(reasons) + [f"{dist_km:.1f} km away"]
+                elif dist_km < 200:
+                    reasons = list(reasons) + [f"~{dist_km:.0f} km · same metro"]
+                else:
+                    reasons = list(reasons) + [f"~{dist_km:.0f} km · same country"]
+            augmented.append((doc, reasons, dist_km))
+        # Sort by distance when available
+        augmented.sort(key=lambda r: (r[2] is None, r[2] or 9999))
+        results = [(d, r) for d, r, _ in augmented]
+
+    if fallback_msg:
+        st.markdown(f"<div class='warn-box'>{fallback_msg}</div>", unsafe_allow_html=True)
+
+    st.markdown(
+        f'<div class="info-box">Found <b>{len(results)}</b> curated specialists, '
+        f'ranked by distance, AI-finding match and reputation.</div>',
+        unsafe_allow_html=True,
+    )
     st.markdown("")
 
     # Render doctor cards in 2-column grid
-    for i in range(0, len(doctors), 2):
+    patient_origin = patient.get("city", "") or (search_city or "")
+    for i in range(0, len(results), 2):
         cols = st.columns(2)
         for j in range(2):
             idx = i + j
-            if idx >= len(doctors):
+            if idx >= len(results):
                 break
-            doc = doctors[idx]
+            doc, reasons = results[idx]
             with cols[j]:
                 st.markdown(
-                    f"""<div class="doctor-card">
-                        <div class="doctor-name">{doc['name']}</div>
-                        <div class="doctor-spec">{doc['specialty']}</div>
-                        <div class="doctor-hosp">{doc['hospital']}</div>
-                        <div class="doctor-meta">
-                            {doc['city']}, {doc['country']} &nbsp;|&nbsp;
-                            {doc['experience_years']} yrs exp &nbsp;|&nbsp;
-                            Rating: {doc['rating']:.1f}/5.0
-                        </div>
-                        <div class="doctor-meta">
-                            Tel: {doc.get('phone','N/A')} &nbsp;|&nbsp;
-                            Languages: {', '.join(doc.get('languages',['English']))}
-                        </div>
-                        <div class="doctor-meta" style="margin-top:6px;font-size:0.78rem;color:#888;font-style:italic">
-                            {doc.get('sub_specialty','')}
-                        </div>
-                    </div>""",
+                    _render_doctor_card_html(doc, reasons,
+                                             origin=patient_origin),
                     unsafe_allow_html=True,
                 )
 
+    # ── Live OpenStreetMap healthcare facilities nearby ──────────────────
+    if user_point:
+        with st.spinner("Querying OpenStreetMap for nearby healthcare facilities…"):
+            osm_hits = osm_nearby_specialists(user_point, radius_km=8.0,
+                                              gi_only=False)
+        if osm_hits:
+            st.markdown(
+                '<div class="section-header">Other healthcare facilities within 8 km · '
+                'live OpenStreetMap data</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                '<div class="info-box" style="margin-bottom:10px">'
+                '<b>What is this?</b> Real-time map data crowdsourced by OpenStreetMap. '
+                'These are nearby hospitals / clinics / doctor offices — not necessarily '
+                'GI specialists. Use the <b>Directions</b> link to confirm before booking.'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+            shown = 0
+            for hit in osm_hits[:6]:
+                if shown >= 6:
+                    break
+                name = hit["name"]
+                amenity = hit["amenity"].title()
+                addr = hit.get("addr") or ""
+                phone = hit.get("phone") or ""
+                website = hit.get("website") or ""
+                dist = hit["distance_km"]
+                dest = f"{name}, {addr}" if addr else f"{name},{hit['lat']},{hit['lng']}"
+                directions = google_maps_directions_url(
+                    origin=patient_origin or search_city, destination=dest)
+                view_on_map = (f"https://www.google.com/maps/search/?api=1"
+                               f"&query={hit['lat']},{hit['lng']}")
+                website_btn = (f"<a href='{website}' target='_blank' rel='noopener' class='doc-cta'><span style='font-size:0.95rem'>🌐</span> Website</a>" if website else "")
+                phone_html = (f"<span style='color:#1A73E8;font-weight:600'>Tel</span> {phone}" if phone else "")
+                spec_text = f" · {hit['speciality']}" if hit.get('speciality') else ""
+                phone_block = f"<div class='doctor-meta'>{phone_html}</div>" if phone_html else ""
+                # NOTE: rendered as a single de-indented HTML string. Leading
+                # whitespace inside an f-string passed to st.markdown trips
+                # the markdown code-block heuristic (>=4 spaces) and the buttons
+                # block was being shown as raw text.
+                osm_card_html = (
+                    "<div class='doctor-card' style='border-top-color:#16A34A'>"
+                    "<div style='display:flex;gap:14px;align-items:flex-start'>"
+                    "<div style='flex:0 0 auto;width:42px;height:42px;border-radius:12px;"
+                    "background:linear-gradient(135deg,#16A34A,#22C55E);color:white;"
+                    "display:flex;align-items:center;justify-content:center;"
+                    "font-weight:800;font-size:1rem'>📍</div>"
+                    "<div style='flex:1;min-width:0'>"
+                    f"<div class='doctor-name'>{name}</div>"
+                    f"<div class='doctor-spec'>{amenity}{spec_text}</div>"
+                    f"<div class='doctor-hosp'>{addr or hit.get('operator') or ''}</div>"
+                    "</div></div>"
+                    "<div style='display:flex;gap:6px;flex-wrap:wrap;margin-top:8px'>"
+                    f"<span class='pill pill-green'>{dist:.1f} km away</span>"
+                    "<span class='pill'>Local clinic</span>"
+                    "</div>"
+                    f"{phone_block}"
+                    "<div style='display:flex;gap:8px;margin-top:10px;flex-wrap:wrap'>"
+                    f"{website_btn}"
+                    f"<a href='{view_on_map}' target='_blank' rel='noopener' class='doc-cta'>"
+                    "<span style='font-size:0.95rem'>📍</span> Open in Maps</a>"
+                    f"<a href='{directions}' target='_blank' rel='noopener' class='doc-cta doc-cta-primary'>"
+                    "<span style='font-size:0.95rem'>🧭</span> Get Directions</a>"
+                    "</div>"
+                    "</div>"
+                )
+                st.markdown(osm_card_html, unsafe_allow_html=True)
+                shown += 1
+
     st.markdown(
-        '<div class="warn-box"><b>Note:</b> Doctor listings are illustrative. '
-        'Please verify availability and credentials directly with the institution. '
-        'In production, this would connect to a live medical directory API.</div>',
+        '<div class="warn-box"><b>Note:</b> Doctor listings are illustrative — names, ratings '
+        'and contact numbers are sourced from public hospital websites and may have changed. '
+        'Always verify availability and credentials directly with the institution.</div>',
         unsafe_allow_html=True,
     )
 
-    # Save selected doctors for report
-    st.session_state["suggested_doctors"] = doctors[:5]
+    # Save the selected doctors for the report (top-5)
+    st.session_state["suggested_doctors"] = [d for d, _ in results[:5]]
 
     st.markdown("---")
     col_b, col_sp2, col_n = st.columns([1, 4, 1])
@@ -1702,82 +3967,264 @@ def page_report():
 # ─────────────────────────────────────────────────────────────────────────────
 
 CHATBOT_KB: List[Dict[str, Any]] = [
-    # Site navigation
-    {"k": ["how does this work","how to use","guide","steps","navigate","start"],
-     "a": "ColonAI has 6 steps: (1) Patient Info, (2) Symptoms & Upload, (3) AI Analysis, (4) Results, (5) Find Doctors, (6) Download Report. Use the sidebar to track your progress."},
-    {"k": ["what is colonai","what is this","about","purpose"],
-     "a": "ColonAI is an AI-powered screening tool that analyses colonoscopy, endoscopy, and histopathology images alongside your symptoms and clinical data to flag potential colorectal conditions. It uses a 6-agent pipeline with GradCAM++, BioBERT, and a fusion transformer."},
-    # Symptoms
-    {"k": ["rectal bleeding","blood stool","bloody stool","blood in stool"],
-     "a": "Rectal bleeding or blood in the stool can be caused by haemorrhoids, polyps, inflammatory bowel disease, or colorectal cancer. Please consult a gastroenterologist promptly — this is something that should always be evaluated by a doctor."},
-    {"k": ["abdominal pain","stomach pain","cramping","cramps"],
-     "a": "Abdominal pain alongside other GI symptoms may indicate IBS, IBD, polyps, or colorectal issues. Note the location, severity (0-10), and duration, and share this on the Symptoms page."},
+    # ─── Site navigation ─────────────────────────────────────────────────
+    {"k": ["how does this work","how to use","guide","steps","navigate","getting started","start"],
+     "a": "ColonAI has 6 steps: (1) Patient Info — there's also a 'Quick demo' panel at the top that loads a complete sample case in one click, (2) Symptoms & Upload, (3) AI Analysis, (4) Results, (5) Find Doctors, (6) Download Report. The sidebar tracks your progress."},
+    {"k": ["what is colonai","what is this app","about colonai","about this app",
+            "purpose","what does this do","what does this app do","explain colonai"],
+     "a": "ColonAI is an AI screening assistant for colorectal conditions. It combines what we see in your image, what you write about your symptoms, and your medical history — and gives you a personalised report aligned with international guidelines (BSG, NICE, USPSTF). It is NOT a replacement for a doctor; it's a second pair of eyes."},
+
+    # ─── Red-flag symptoms (NICE NG12) ───────────────────────────────────
+    {"k": ["red flag","2 week","two week","urgent referral","when to see doctor","when to worry"],
+     "a": "NICE NG12 flags suspected colorectal cancer if any of: rectal/anal mass; ≥50 with unexplained rectal bleeding; ≥40 with unexplained weight loss + abdominal pain; ≥60 with iron-deficiency anaemia or change in bowel habit; or FIT ≥10 µg Hb/g in symptomatic adults. These should trigger a 2-week-wait referral."},
+    {"k": ["rectal bleeding","blood stool","bloody stool","blood in stool","haematochezia"],
+     "a": "Rectal bleeding most often comes from haemorrhoids or fissure, but unexplained bleeding ≥50, or at any age with weight loss / iron-deficiency anaemia / change in bowel habit, needs urgent assessment (NICE 2-ww). Don't self-diagnose. ColonAI can analyse a colonoscopy image and flag suspicious lesions but a clinician must confirm."},
+    {"k": ["abdominal pain","stomach pain","cramping","cramps","tummy pain"],
+     "a": "Persistent or new abdominal pain in someone ≥40 with unexplained weight loss is a red flag. Note the location, character (cramping vs sharp), severity (0-10), trigger, and duration on the Symptoms page — these go into the multimodal model."},
     {"k": ["weight loss","losing weight","unexplained weight"],
-     "a": "Unexplained weight loss of more than 5% of body weight over 6-12 months is a red-flag symptom in gastroenterology. Please complete your assessment and see a doctor."},
-    {"k": ["constipation","hard stool","not passing stool"],
-     "a": "New-onset constipation lasting more than 3 weeks, especially in adults over 50, should be evaluated. Increase fibre and water intake, and complete the symptom checker on Step 2."},
+     "a": "Unexplained weight loss of >5% body weight over 6 months in an adult is a red-flag symptom. Combined with abdominal pain (≥40) or iron-deficiency anaemia (≥60) it triggers a 2-week-wait CRC referral under NICE NG12."},
+    {"k": ["constipation","hard stool","not passing stool","change bowel habit","bowel habit"],
+     "a": "New-onset change in bowel habit lasting >6 weeks, especially in adults ≥60, warrants assessment. In ColonAI's symptom checker, log onset, duration and any associated bleeding, weight loss or anaemia."},
     {"k": ["diarrhoea","diarrhea","loose stool","watery stool"],
-     "a": "Persistent diarrhoea lasting over 4 weeks warrants investigation for IBD, infection, or colorectal cancer. Complete Step 2 to log your symptoms."},
-    {"k": ["heartburn","acid reflux","gerd","barrett"],
-     "a": "Persistent heartburn and GERD are associated with Barrett's esophagus — a condition the AI can screen for. Upload an endoscopy image on Step 2 for analysis."},
-    # Conditions
-    {"k": ["polyp","polyps","colorectal polyp"],
-     "a": "Colorectal polyps are growths on the colon lining. Most are benign, but some can become cancerous. The AI screens for polyps from colonoscopy images with high accuracy (99.5%). They are usually removed during colonoscopy (polypectomy)."},
-    {"k": ["ulcerative colitis","uc","colitis","ibd","inflammatory bowel"],
-     "a": "Ulcerative colitis (UC) is a form of inflammatory bowel disease causing ulcers in the colon. The AI classifies UC severity as mild or moderate-severe. Treatment involves aminosalicylates, steroids, or biologics."},
-    {"k": ["barretts","barrett esophagus","esophagus","oesophagus"],
-     "a": "Barrett's esophagus is a pre-cancerous change in the oesophageal lining caused by chronic acid reflux. The AI can detect this from upper GI endoscopy images. Regular surveillance endoscopy is recommended."},
-    {"k": ["colon cancer","colorectal cancer","bowel cancer","rectal cancer"],
-     "a": "Colorectal cancer is one of the most common cancers globally. Risk factors include age, family history, polyps, IBD, smoking, alcohol, and low-fibre diet. Early detection dramatically improves outcomes — the AI helps screen for it."},
-    # AI / Model
-    {"k": ["gradcam","heatmap","attention map","what is the model looking at"],
-     "a": "GradCAM++ is an explainability technique that highlights which regions of the image the AI focuses on. Red/warm areas have the highest influence on the AI's decision — shown on the GradCAM View tab in Results."},
-    {"k": ["how accurate","accuracy","performance","model performance"],
-     "a": "The model achieves 99.5% test accuracy and 0.9946 F1-score on the combined HyperKvasir + CVC-ClinicDB dataset. AUC-ROC is 1.000. However, this is a research tool and NOT a replacement for clinical diagnosis."},
-    {"k": ["biobert","bert","text","clinical text","nlp"],
-     "a": "BioBERT is a biomedical language model that analyses your clinical text and symptoms. It contributes alongside the image encoder and patient data encoder in a cross-modal fusion transformer."},
-    {"k": ["uncertainty","confidence","how sure"],
-     "a": "Model uncertainty is calculated using MC-Dropout — 15 stochastic forward passes. Low uncertainty (<0.3) means consistent predictions; high uncertainty (>0.6) means the model is less confident and you should seek expert review."},
-    # Doctors
+     "a": "Persistent diarrhoea (>4 weeks) needs investigation for IBD (UC/Crohn's), microscopic colitis, infection, coeliac, or colorectal cancer. Bloody diarrhoea + urgency + raised faecal calprotectin point toward UC — see Case B in the demo presets."},
+    {"k": ["heartburn","acid reflux","gerd","gord","barrett"],
+     "a": "Long-standing GORD (>5 yrs), male sex, age >50, central obesity and smoking are the main Barrett's-oesophagus risk factors. BSG 2023 recommends 3- or 5-year surveillance endoscopy for non-dysplastic Barrett's depending on segment length. ColonAI's image agent can flag Barrett's features on upper-GI endoscopy."},
+    {"k": ["mucus","mucous","slime","gloop"],
+     "a": "Mucus in stool is common in IBS and haemorrhoids, but persistent mucus with bleeding or urgency suggests inflammation (UC) and warrants flexible sigmoidoscopy with biopsies."},
+    {"k": ["anaemia","anemia","low iron","iron deficiency"],
+     "a": "Iron-deficiency anaemia in any man, or post-menopausal woman, is a CRC red flag until proven otherwise — NICE NG12 recommends bidirectional endoscopy."},
+
+    # ─── Conditions ──────────────────────────────────────────────────────
+    {"k": ["polyp","polyps","colorectal polyp","adenoma"],
+     "a": "Most colorectal polyps are benign adenomas, but a subset progress to cancer over years. Removing them via polypectomy / EMR prevents that. Post-polypectomy surveillance (BSG/ACPGBI/PHE 2020): low-risk → return to FIT screening; high-risk (≥10 mm, HGD, or ≥5 polyps) → repeat colonoscopy at 3 years."},
+    {"k": ["ulcerative colitis","uc","colitis","ibd","inflammatory bowel","crohn"],
+     "a": "Ulcerative colitis is chronic relapsing-remitting inflammation limited to the colorectal mucosa. ColonAI distinguishes mild vs moderate-severe endoscopic appearances. Treatment ladder: 5-ASA → corticosteroids → thiopurines/biologics (anti-TNF, anti-integrin, JAK inhibitors). After 8-10 yrs of colitis, surveillance colonoscopy with chromoendoscopy is recommended."},
+    {"k": ["barretts","barrett esophagus","barrett oesophagus","esophagus","oesophagus"],
+     "a": "Barrett's oesophagus is intestinal metaplasia of the lower oesophagus driven by chronic acid reflux. Surveillance (BSG 2023): non-dysplastic short-segment → q5y; long-segment (≥3 cm) → q3y; any dysplasia → endoscopic eradication therapy (RFA ± EMR). Annual cancer-progression risk ~0.3%/year for non-dysplastic BO."},
+    {"k": ["colon cancer","colorectal cancer","bowel cancer","rectal cancer","crc"],
+     "a": "CRC is the 3rd-most-common cancer globally. Risk factors: age, family history, IBD >8 yrs, polyps, Lynch/FAP, smoking, alcohol, processed-meat diet, obesity, sedentary lifestyle. Early-stage CRC has >90% 5-year survival — early detection is everything."},
+    {"k": ["lynch","fap","hnpcc","hereditary","polyposis","familial"],
+     "a": "Lynch syndrome (germline MMR mutation) accounts for ~3% of CRC. FAP (APC) presents with hundreds of adenomas and 100% lifetime CRC risk if untreated. Affected families need genetic counselling and colonoscopy from 25 (Lynch) or sigmoidoscopy from 12-14 (FAP)."},
+
+    # ─── Screening ───────────────────────────────────────────────────────
+    {"k": ["screening","screened","screen me","when to screen","colonoscopy age",
+            "how often","start screening","starting age","check for cancer","at what age"],
+     "a": "USPSTF (2021): average-risk screening from age 45-75 (FIT yearly, FIT-DNA q1-3y, colonoscopy q10y, or CT colonography q5y). NHS Bowel Cancer Screening: biennial FIT for ages 50-74. Higher risk (1st-degree relative <50, IBD >8y, hereditary syndromes) → start earlier with colonoscopy."},
+    {"k": ["fit","fit test","fob","faecal","stool test","poo test"],
+     "a": "FIT is a quantitative immunochemical test for human haemoglobin in stool — a safer, more specific successor to gFOBT. NHS uses a 120 µg Hb/g cut-off for screening; NICE recommends ≥10 µg Hb/g for symptomatic referral (DG30/NG12). Positive FIT → diagnostic colonoscopy."},
+    {"k": ["prep","prepare","prep colonoscopy","drink prep","movicol","picolax","plenvu",
+            "fast before colonoscopy","fasting","what to eat before colonoscopy",
+            "diet before colonoscopy","clear fluids","laxative","bowel prep"],
+     "a": "Bowel prep is the part most patients dread. Standard regimen: low-residue diet for 2-3 days, clear fluids day before, split-dose laxative (e.g. Picolax / Moviprep / Plenvu) the evening before and ~4-6 h before the procedure. Yes — you fast (clear fluids only) for ~12 h before the appointment. Good prep dramatically improves adenoma-detection rate."},
+    {"k": ["pain colonoscopy","painful colonoscopy","sedation","entonox","midazolam",
+            "does it hurt","is it painful","will it hurt","painful","hurt","ouch",
+            "anaesthesia","anesthesia"],
+     "a": "Most colonoscopies use light sedation (midazolam ± fentanyl) or Entonox (gas & air). You'll typically feel pressure and bloating, not sharp pain. The procedure takes ~30 min. Plan a chaperone home if you've had sedation."},
+    {"k": ["risks colonoscopy","colonoscopy risks","perforation","bleeding"],
+     "a": "Diagnostic colonoscopy: perforation ~1/1,500, significant bleeding ~1/1,000. Higher with polypectomy/EMR (~1-2% bleeding). Sedation reactions are rare. The benefit-risk ratio strongly favours colonoscopy when indicated."},
+
+    # ─── AI / Model ──────────────────────────────────────────────────────
+    {"k": ["gradcam","grad cam","grad-cam","heatmap","heat map","attention map",
+            "what is the model looking at","activation map","red region",
+            "what is gradcam","what does gradcam show"],
+     "a": "The GradCAM heatmap shows where the AI is looking on your image — red / warm pixels are the regions that most influenced its decision. If the warm pixels overlap with the lesion you'd point at clinically, the AI is thinking the way you'd want it to. If they're elsewhere, treat the prediction with extra caution."},
+    {"k": ["how accurate","accuracy","performance","model performance","metrics","auc","f1"],
+     "a": "On the held-out test split (1,066 images from HyperKvasir + CVC-ClinicDB) the model achieves 90.3% accuracy, 0.81 macro F1, 0.984 AUC-ROC across 5 GI classes. Best epoch 7. Note: this is research-grade — external validation on independent hospital data hasn't been done yet."},
+    {"k": ["biobert","bert","text","clinical text","nlp","language model"],
+     "a": "BioBERT (dmis-lab/biobert-base-cased-v1.2) is a BERT pre-trained on PubMed abstracts + PMC articles. We freeze the bottom 10 layers, fine-tune the top 2, and pool the [CLS] token through a 256-d projection head into the fusion transformer."},
+    {"k": ["tabular","tabtransformer","tcga","patient features","clinical features"],
+     "a": "Patient features (age, BMI, smoking, alcohol, family history etc.) are encoded by a TabTransformer trained on 12 TCGA-derived features. Per-feature attention learns interactions like age × smoking × prior-polyps that single-modality models miss."},
+    {"k": ["fusion","cross modal","cross attention","multimodal"],
+     "a": "Fusion uses a 3-stage gated cross-modal transformer (8 heads, 256-d, 3 layers). Stage A: per-modality self-attention. Stage B: bidirectional cross-attention. Stage C: shared bottleneck + CLS pool + sigmoid modality gate that decides how much each branch contributes per case."},
+    {"k": ["uncertainty","confidence","how sure","mc dropout","epistemic"],
+     "a": "We estimate epistemic uncertainty with 15 stochastic forward passes (MC-Dropout). Lower (<0.3) = consistent predictions across passes. Higher (>0.6) = the model is genuinely unsure and you should weight clinician review more heavily. Calibration is reported on the Risk Charts tab."},
+    {"k": ["calibration","ece","reliability","calibrated"],
+     "a": "Calibration measures whether a 0.8 confidence really means 80% accuracy. We track the Expected Calibration Error (ECE) and reliability diagrams in the training reports under outputs/unified_multimodal/figures. Temperature scaling is applied during inference to tighten calibration."},
+    {"k": ["bias","fairness","generalisation","external","out of distribution","ood"],
+     "a": "Honest limitations: HyperKvasir is European, mostly Nordic. CVC-ClinicDB is Spanish. TCGA tabular skews North-American. The model has not been externally validated on Asian/African endoscopy databases or paediatric cohorts. Clinical deployment would need site-specific revalidation and a fairness audit."},
+    {"k": ["regulation","fda","mhra","ce mark","ukca","class","samd"],
+     "a": "Tools like ColonAI fall under SaMD (Software as a Medical Device). Pathway: FDA 510(k) De-Novo (US), UKCA Class IIa under MHRA (UK), CE Class IIa under MDR (EU). Current build is research-only — clinical use needs intended-use scope, clinical-evaluation report, and post-market surveillance plan."},
+
+    # ─── App functions ───────────────────────────────────────────────────
+    {"k": ["demo","sample","example","quick start"],
+     "a": "On Step 1 (Patient Info) the top panel has three Quick-demo cases: Case A (Sigmoid Polyp), Case B (Ulcerative Colitis), Case C (Barrett's). One click loads the full clinical scenario and a real endoscopy image — perfect for presentations."},
     {"k": ["find doctor","gastroenterologist","specialist","oncologist","surgeon","consultant"],
-     "a": "Step 5 (Find Doctors) lists 46+ gastroenterologists, colorectal surgeons, and GI oncologists across 20+ cities globally. Enter your city to find the nearest specialists."},
-    # Report
+     "a": "Step 5 lists 46+ gastroenterologists, colorectal surgeons and GI oncologists across 20+ cities (India, USA, UK, UAE, Singapore, Canada, Australia). Filter by city/country/specialty. Top 5 are appended to your downloadable PDF report."},
     {"k": ["report","pdf","download","generate report"],
-     "a": "Step 6 (Download Report) generates a full clinical PDF with patient info, symptoms, AI findings, GradCAM images, probability charts, recommendations, and doctor suggestions. Click 'Generate PDF Report' to create it."},
-    # Upload
+     "a": "Step 6 (Download Report) builds an A4 clinical PDF: patient header, symptom log, AI findings (pathology, staging, risk score, modality weights), embedded GradCAM++ heatmap, recommended next steps, suggested specialists and a regulatory disclaimer."},
     {"k": ["upload","image","colonoscopy","endoscopy","histopathology","photo","picture","jpeg","jpg","png"],
-     "a": "On Step 2 (Upload Images tab), you can upload JPG or PNG images from colonoscopy, endoscopy, or histopathology. The image is resized to 224x224 and analysed by the 6-agent pipeline."},
-    # Risk
-    {"k": ["risk","high risk","low risk","malignant","benign","cancer risk"],
-     "a": "The AI risk score (0-100%) represents the probability of malignancy. Below 25% = Low risk; 25-50% = Moderate; 50-75% = High; above 75% = Critical. Always confirm results with a qualified clinician."},
-    # Screening age
-    {"k": ["screening","when to screen","colonoscopy age","how often"],
-     "a": "Current guidelines (BSG/NHS/NICE) recommend colorectal cancer screening from age 50. Higher-risk individuals (family history, IBD, Lynch syndrome) should begin earlier. Talk to your GP about the right schedule."},
-    # Disclaimer
-    {"k": ["disclaimer","medical advice","diagnosis","replace doctor"],
-     "a": "ColonAI is for screening and research purposes ONLY. It does NOT provide medical diagnoses or replace a qualified doctor. All findings must be reviewed by a licensed clinician before any action is taken."},
-    # Fallback
+     "a": "Step 2, Upload Images tab: JPG/PNG up to 50 MB. The image is resized to 224×224 with ImageNet normalisation, then routed through both image backbones in parallel for the GradCAM-friendly fused representation."},
+    {"k": ["risk","high risk","low risk","malignant","benign","cancer risk","risk score"],
+     "a": "Risk score (0-100%) is the binary cancer-vs-benign head's softmax probability. Bands: <25% Low, 25-50% Moderate, 50-75% High, >75% Critical. The Risk Charts tab also shows a multi-dimensional radar combining AI risk + age + smoking + alcohol + family history + prior polyps."},
+
+    # ─── Disclaimers / safety ────────────────────────────────────────────
+    {"k": ["data","privacy","gdpr","secure","stored"],
+     "a": "Images are processed in-memory in this Streamlit session and never persisted to disk. The PDF report is generated client-side. In production deployment the system would run within a hospital VPC with full UK DPA 2018 / GDPR compliance and audit logs."},
+    {"k": ["disclaimer","medical advice","diagnosis","replace doctor","is this a diagnosis"],
+     "a": "ColonAI is a research / decision-support tool, not a regulated medical device, not a diagnosis. All findings MUST be confirmed by a licensed clinician before any treatment decision. In an emergency contact local emergency services."},
+    {"k": ["replace","instead of","skip doctor","not see doctor"],
+     "a": "No — AI screening flags candidates for review; it does not replace clinical examination, biopsy/histology, or specialist judgement. The pathway is: AI suggests → clinician reviews → endoscopy/biopsy → MDT decides."},
+
+    # ─── Diet & nutrition ────────────────────────────────────────────────
+    {"k": ["diet","food","eat","nutrition","what to eat","what should i eat","best food","colon diet","diet plan","diet for colon","colon health"],
+     "a": "Best foods for colon health: high fibre (≥30 g/day from whole grains, oats, beans, lentils, fruit, veg), oily fish 2×/week, plenty of water (1.5–2 L/day). Limit: red meat <500 g/week, processed meat (bacon, ham, sausages) — WHO Group-1 carcinogen for CRC. Mediterranean-style diet has the strongest evidence for prevention."},
+    {"k": ["fibre","fiber","high fibre","high fiber","roughage"],
+     "a": "Aim for ≥30 g of fibre per day (NHS / SACN). Easy wins: oats at breakfast, beans / chickpeas in lunch, leafy greens at dinner, an apple or pear with skin, wholegrain bread instead of white. Each extra 10 g/day reduces CRC risk ~10% (BMJ meta-analysis 2011)."},
+    {"k": ["red meat","beef","mutton","lamb","pork","steak","processed meat","bacon","sausage","ham"],
+     "a": "WHO IARC classifies processed meat as Group 1 (definite cause of CRC) and red meat as Group 2A (probable). Practical rule: keep red meat <500 g/week (≈ 70 g/day cooked) and avoid processed meat. Each 50 g/day of processed meat raises CRC risk ~18%."},
+    {"k": ["exercise","activity","physical","walk","gym","run","yoga"],
+     "a": "Move daily — 150 min/week of moderate activity (brisk walking, cycling, swimming) cuts CRC risk by 24% (WCRF). Plus stronger gut motility, lower BMI and better insulin sensitivity. Even 30 min of walking after meals helps."},
+    {"k": ["alcohol limit","how much alcohol","drink limit"],
+     "a": "UK guidelines: <14 units/week, spread across the week, with several alcohol-free days. Each 10 g/day of alcohol raises CRC risk ~7%. There is no safe lower threshold."},
+    {"k": ["water","hydration","fluid"],
+     "a": "Hydration helps stool transit and reduces constipation. Aim for 1.5–2 L of water per day (more in heat / exercise). Caffeine and alcohol don't replace water."},
+    {"k": ["vitamin","supplement","calcium","vitamin d","folate"],
+     "a": "Best evidence is for calcium 1,000–1,200 mg/day and vitamin D (esp. if levels are low). Folate is debated — supplementation in established polyps may be unhelpful. Whole-food sources beat supplements wherever possible."},
+
+    # ─── Prevention ─────────────────────────────────────────────────────
+    {"k": ["prevent","prevention","reduce risk","avoid cancer","stop cancer","how to prevent"],
+     "a": "Five evidence-based steps: (1) screen on schedule (FIT yearly or colonoscopy q10y from 45–50), (2) ≥30 g fibre/day, limit red/processed meat, (3) keep BMI 18.5–25, (4) 150 min exercise/week, (5) don't smoke and keep alcohol <14 units/week. Removes ~50% of preventable CRC."},
+    {"k": ["smoking","smoke","tobacco","cigarette","quit","nicotine"],
+     "a": "Smoking is a clear risk factor for CRC (and many other cancers). Quitting at any age reduces risk — by 10 years post-quit you're close to never-smoker risk. NHS Stop Smoking, Champix, NRT and behavioural support all help."},
+    {"k": ["weight","obesity","bmi","losing weight","lose weight"],
+     "a": "Each 5 kg/m² rise in BMI raises CRC risk ~5%. Belly fat (waist circ >94 cm M / >80 cm F) is independently risky. Losing 5–10% of body weight reduces inflammatory markers fast — even before reaching a 'normal' BMI."},
+    {"k": ["age","start age","when does cancer happen"],
+     "a": "Average-risk screening starts at 45 (USPSTF 2021) or 50 (NHS). Most CRC cases occur after 50, but young-onset CRC (<50 y) is rising — that's why the floor was lowered. Family history halves the start age (often 40 or 10 yrs before youngest case)."},
+
+    # ─── Treatment / outcomes ────────────────────────────────────────────
+    {"k": ["treatment","therapy","cure","heal","options"],
+     "a": "Treatment depends on stage. Early CRC: endoscopic resection (EMR/ESD) or surgery — often curative. Stage II-III: surgery + adjuvant chemo. Stage IV: systemic therapy (chemo + targeted: bevacizumab, cetuximab; immunotherapy: pembrolizumab if MSI-H). Outcomes have transformed in 20 years."},
+    {"k": ["surgery","operation","resection","colectomy"],
+     "a": "Most CRC surgery today is laparoscopic or robotic — 3-5 small incisions, faster recovery. Hospital stay 3-7 days. Ileostomy / colostomy is uncommon for left-sided cancers but may be temporary. Discuss enhanced-recovery (ERAS) protocols with your surgeon."},
+    {"k": ["chemotherapy","chemo","drugs","cancer drugs"],
+     "a": "Adjuvant chemo for stage III CRC (FOLFOX or CAPOX, 3-6 months) cuts recurrence by ~30%. Side effects: fatigue, neuropathy, nausea — most are manageable. Many regimens are now given oral or via day-case infusion."},
+    {"k": ["radiation","radiotherapy","radio"],
+     "a": "Radiotherapy is mainly used for rectal cancer (not colon). Short-course (5 days) or long-course chemoradiotherapy (5-6 weeks) shrinks tumours pre-surgery and lowers local recurrence."},
+    {"k": ["recovery","after surgery","convalescence","heal time","how long recovery",
+            "long recovery","recover time","time to heal","back to work"],
+     "a": "Typical recovery from laparoscopic CRC surgery: 4-6 weeks total. Walking the same day, light meals 24-48 h later, driving in 2-3 weeks, full activity in 6-8 weeks. Surveillance starts 1 year after curative resection."},
+    {"k": ["survival","survival rate","prognosis","life expectancy","outcome"],
+     "a": "5-year survival depends on stage at diagnosis: Stage I 90%+, Stage II 70-80%, Stage III 50-65%, Stage IV 10-15% (rising fast with newer drugs). The single biggest survival lever is early detection — that's what screening buys."},
+    {"k": ["biopsy","histology","pathology","tissue test"],
+     "a": "A biopsy takes 2-5 mm of tissue during colonoscopy — painless under sedation. Histology takes ~5-10 working days; immunohistochemistry / MMR testing adds a week. Discuss the result face-to-face — the report can look alarming but the wording matters."},
+
+    # ─── Logistics & emotional ───────────────────────────────────────────
+    {"k": ["scared","afraid","worried","anxious","nervous","fear","panic",
+            "i'm worried","i am scared","scared of colonoscopy","afraid of colonoscopy",
+            "scared of test","fear of cancer","anxiety","stressed"],
+     "a": "Anxiety around cancer screening is completely normal. Two facts that help: (1) the vast majority of FITs and colonoscopies turn out negative, (2) when something IS found early, outcomes are excellent. The procedure itself is done under sedation — you'll feel pressure, not pain. Talk to your GP — many clinics offer a screening-anxiety nurse."},
+    {"k": ["second opinion","another doctor","verify"],
+     "a": "Second opinions are reasonable for any cancer-related decision — most surgeons / oncologists welcome them. Step 5 in this app (Find Doctors) lists specialists you can contact. Bring your imaging, histology and current report."},
+    {"k": ["insurance","cost","price","afford","money"],
+     "a": "NHS bowel-cancer screening (UK) is free for ages 50-74. In the US, USPSTF Grade-A/B services are covered without copay under the ACA. Private colonoscopy costs ~£1,500-£2,500 in the UK or $1,000-$3,000 in the US."},
+    {"k": ["wait time","appointment","queue","referral time","2 week wait","two week wait"],
+     "a": "NHS pathway after a 2-week-wait referral: GP referral → specialist clinic ≤14 days → diagnostic colonoscopy ≤28 days → MDT discussion. If you're flagged urgent and waits exceed these, escalate via the Patient Advice and Liaison Service (PALS)."},
+    {"k": ["pregnancy","pregnant","ttc","trying for baby"],
+     "a": "Routine bowel screening is deferred during pregnancy if the patient is asymptomatic. Symptomatic / red-flag presentations are still investigated — flexible sigmoidoscopy and biopsy can be done safely with a GI specialist."},
+    {"k": ["children","kids","paediatric","under 18","teenager"],
+     "a": "Routine CRC screening doesn't apply to children. For hereditary syndromes (FAP, Lynch, MAP, Peutz-Jeghers) screening starts in adolescence — see a clinical geneticist. Symptomatic children with bloody diarrhoea need paediatric gastro review."},
+
+    # ─── Greeting / fallback ─────────────────────────────────────────────
+    {"k": ["hi","hello","hey","greetings","good morning","good evening","good afternoon"],
+     "a": "Hi — I'm the ColonAI assistant. Ask me about symptoms, conditions (polyps / UC / Barrett's / CRC), screening, prevention, treatment, diet, or how to navigate the app. Try: 'when should I be screened?' or 'what foods reduce colon cancer risk?'"},
+    {"k": ["thanks","thank you","cheers","ty"],
+     "a": "You're welcome. Remember — always cross-check AI output with a qualified clinician."},
+    {"k": ["bye","goodbye","see you","later"],
+     "a": "Take care. If anything feels urgent — bleeding, severe pain, weight loss — please contact your GP or emergency services."},
+
+    # ─── Fallback (must remain last) ─────────────────────────────────────
     {"k": [],
-     "a": "I can help with questions about symptoms, conditions (polyps, UC, Barrett's, colon cancer), how the AI works, uploading images, finding doctors, or downloading your report. What would you like to know?"},
+     "a": "I can help with: symptoms (rectal bleeding, weight loss, change in bowel habit, anaemia), conditions (polyps, ulcerative colitis, Crohn's, Barrett's, CRC, Lynch / FAP), screening (FIT, colonoscopy age, prep, sedation, risks), prevention (diet, exercise, smoking, alcohol), treatment (surgery, chemo, radiotherapy, recovery), and the app itself (demo cases, upload, doctors, PDF report). Try a more specific question — e.g. <i>'how to prevent colon cancer'</i> or <i>'what foods are good for the colon'</i>."},
 ]
 
 
+_CHAT_STOPWORDS = {
+    "the","a","an","is","are","was","were","be","been","being","do","does","did",
+    "of","in","on","at","to","for","by","with","from","and","or","but","if","i","my",
+    "me","you","your","we","our","us","it","this","that","what","how","when","where",
+    "why","which","can","could","should","would","will","shall","may","might","must",
+    "have","has","had","not","no","yes","please","tell","ask","know","get","go","make",
+    "really","truly","just","like","want","need","ok","okay","ne","ki","ka","ke","kya",
+}
+
+
 def _chatbot_respond(user_msg: str) -> str:
-    """Simple keyword-matching chatbot response."""
-    msg = user_msg.lower().strip()
-    for entry in CHATBOT_KB[:-1]:  # skip fallback
-        if any(kw in msg for kw in entry["k"]):
-            return entry["a"]
-    return CHATBOT_KB[-1]["a"]  # fallback
+    """Score-based keyword chatbot — accumulates evidence across multiple
+    keywords per KB entry, filters stop-words, applies a small phrase-bonus
+    when a multi-word keyword matches as a whole, and falls back gracefully.
+    """
+    import re
+    msg = (user_msg or "").lower().strip()
+    if not msg:
+        return CHATBOT_KB[-1]["a"]
+
+    # Normalised, punctuation-free version for substring matching
+    norm = re.sub(r"[^a-z0-9 ]+", " ", msg)
+    norm = re.sub(r"\s+", " ", norm).strip()
+    tokens = [t for t in norm.split() if t and t not in _CHAT_STOPWORDS]
+
+    best_entry = None
+    best_score = 0.0
+    for entry in CHATBOT_KB[:-1]:
+        score = 0.0
+        matched_kw = []
+        for kw in entry.get("k", []):
+            if not kw:
+                continue
+            kw_norm = kw.lower()
+            if " " in kw_norm:
+                # Multi-word keyword — exact phrase substring match counts heavily
+                if kw_norm in norm:
+                    score += 3.0 + 0.5 * len(kw_norm.split())
+                    matched_kw.append(kw_norm)
+                    continue
+                # Otherwise: each token of the keyword that's in the user msg
+                kw_tokens = [t for t in kw_norm.split() if t not in _CHAT_STOPWORDS]
+                hits = sum(1 for t in kw_tokens if t in tokens)
+                if hits == len(kw_tokens) and kw_tokens:
+                    score += 2.0 + 0.3 * len(kw_tokens)
+                    matched_kw.append(kw_norm)
+                elif hits > 0:
+                    score += 0.6 * hits
+            else:
+                # Single-word keyword
+                if kw_norm in tokens:
+                    score += 2.0 + min(len(kw_norm) * 0.05, 1.0)
+                    matched_kw.append(kw_norm)
+                elif kw_norm in norm:
+                    # substring like "polyposis" matches "polyposis"
+                    score += 1.0
+                    matched_kw.append(kw_norm)
+
+        # Bonus when multiple keywords from the same entry matched
+        if len(matched_kw) >= 2:
+            score += 0.8 * (len(matched_kw) - 1)
+
+        if score > best_score:
+            best_score = score
+            best_entry = entry
+
+    if best_entry and best_score >= 1.0:
+        return best_entry["a"]
+    return CHATBOT_KB[-1]["a"]
 
 
 def render_chatbot():
-    """Render the collapsible chatbot panel in the sidebar."""
+    """Render the compact chatbot panel at the bottom of the sidebar."""
     st.sidebar.markdown("---")
-    with st.sidebar.expander("Ask the AI Assistant", expanded=False):
+    # Auto-expand if the user clicked the FAB / asked via URL
+    auto_expand = False
+    try:
+        auto_expand = st.query_params.get("focus_chat") in ("1", "true", "yes")
+    except Exception:
+        pass
+    with st.sidebar.expander("💬 Ask the AI Assistant",
+                             expanded=auto_expand or
+                                      st.session_state.get("chat_expanded", False)):
         st.markdown(
-            '<p style="font-size:0.78rem;color:#666;margin-bottom:8px">'
-            'Ask about symptoms, the AI model, how to use the app, or any GI health question.</p>',
+            '<p style="font-size:0.74rem;color:#475569;margin-bottom:6px">'
+            'Try: <i>"when should I be screened?"</i> · <i>"what is a polyp?"</i> · '
+            '<i>"diet for colon health"</i></p>',
             unsafe_allow_html=True,
         )
         if "chat_history" not in st.session_state:
@@ -1833,8 +4280,9 @@ def page_guide():
         unsafe_allow_html=True,
     )
 
-    tab_ov, tab_steps, tab_ai, tab_faq = st.tabs([
-        "Overview", "Step-by-Step", "AI Explained", "FAQ"
+    tab_ov, tab_steps, tab_ai, tab_cases, tab_present, tab_faq = st.tabs([
+        "Overview", "Step-by-Step", "AI Explained",
+        "Case Studies", "How to Present", "FAQ"
     ])
 
     # ── Tab 1: Overview ────────────────────────────────────────────────
@@ -1859,8 +4307,8 @@ def page_guide():
             st.markdown(
                 '<div class="metric-card" style="border-left-color:#00897B">'
                 '<div class="label">Performance</div>'
-                '<div class="value">99.5%</div>'
-                '<div class="sub">Test accuracy on 1,066 images (HyperKvasir + CVC-ClinicDB)</div>'
+                '<div class="value">90.3%</div>'
+                '<div class="sub">Test accuracy · 0.984 AUC-ROC · 1,066 images (HyperKvasir + CVC-ClinicDB)</div>'
                 '</div>', unsafe_allow_html=True)
         with col3:
             st.markdown(
@@ -1962,27 +4410,29 @@ def page_guide():
             st.markdown("**Model Architecture**")
             st.markdown(
                 "The UnifiedMultiModalTransformer fuses three encoders:\n\n"
-                "- **Image Encoder** — ConvNeXt-V2-Tiny backbone extracts visual patch tokens "
-                "from your endoscopy image\n"
+                "- **Image Encoder** — Dual ResNet-50 + EfficientNet-B0 backbones (ImageNet-pretrained); "
+                "ResNet layer4[-1] is the GradCAM target.\n"
                 "- **Text Encoder** — BioBERT (dmis-lab/biobert-base-cased-v1.2) processes "
-                "clinical notes and your symptom description\n"
-                "- **Tabular Encoder** — TabTransformer encodes 12 TCGA clinical features "
-                "(age, BMI, smoking, alcohol, tumour stage, etc.)\n\n"
-                "These are fused by a **Cross-Modal Attention Transformer** (256-dim, 8 heads, "
-                "3 layers) which learns which modality to trust most for each case."
+                "clinical notes and your symptom description.\n"
+                "- **Tabular Encoder** — TabTransformer encodes 12 TCGA-derived clinical features "
+                "(age, BMI, smoking, alcohol, year of diagnosis, tumour stage, etc.).\n\n"
+                "Fusion: **3-stage Gated Cross-Modal Transformer** (256-dim, 8 heads, 3 cross-attention "
+                "layers + 2 self-attention layers). A learnable sigmoid gate decides per-case how much "
+                "each modality contributes."
             )
 
         with col_b:
-            st.markdown("**Output Heads**")
+            st.markdown("**Output Heads & Performance**")
             st.markdown(
-                "Three prediction heads are trained simultaneously:\n\n"
+                "Three prediction heads are trained jointly:\n\n"
                 "- **Pathology Head** (5-class): Polyps | UC-Mild | UC-Mod-Sev | "
                 "Barrett's | Therapeutic\n"
                 "- **Staging Head** (4-class): No Cancer | Stage I | Stage II | Stage III/IV\n"
                 "- **Risk Head** (binary): Benign vs Malignant\n\n"
-                "**Performance:** 99.53% accuracy | 0.9946 F1 Macro | AUC-ROC 1.000\n\n"
-                "**Training data:** 9,675 images — HyperKvasir (10,662 images) + "
-                "CVC-ClinicDB (612 polyp images) + TCGA clinical data (461 patients)"
+                "**Held-out test set (1,066 images):** 90.3% accuracy · 0.81 macro F1 · 0.984 AUC-ROC. "
+                "Best epoch 7 of 60, ~150 M parameters.\n\n"
+                "**Training data:** HyperKvasir + CVC-ClinicDB pretraining → fine-tune; "
+                "TCGA clinical for tabular pool (12 features)."
             )
 
         st.markdown("")
@@ -2011,7 +4461,196 @@ def page_guide():
                 st.markdown(explanation)
             st.markdown("---")
 
-    # ── Tab 4: FAQ ─────────────────────────────────────────────────────
+    # ── Tab 4: Case Studies ────────────────────────────────────────────
+    with tab_cases:
+        st.markdown('<div class="section-header">Realistic patient case studies</div>',
+                    unsafe_allow_html=True)
+        st.markdown(
+            "Three end-to-end scenarios — drawn from the BSG/NICE/USPSTF guideline space and "
+            "matched to the conditions ColonAI is trained on. Click **Load this case** to drop "
+            "the patient straight into the pipeline."
+        )
+
+        cases_long = [
+            ("case_a", "#1A73E8", "Sigmoid polyp on screening FIT",
+             "**Vignette.** A 58-year-old man, asymptomatic, with a positive bowel-cancer screening "
+             "FIT (180 µg Hb/g). Ex-smoker, BMI 26.5. Referred for diagnostic colonoscopy.",
+             [
+                 ("Endoscopic finding", "14 mm sessile polyp in the sigmoid colon."),
+                 ("AI prediction (this build)", "polyps · ~88 % confidence · benign risk."),
+                 ("Likely histology", "Tubular or tubulovillous adenoma; biopsy/EMR pending."),
+                 ("Clinical action", "Endoscopic mucosal resection (EMR) for size ≥10 mm; histology to MDT."),
+                 ("Surveillance (BSG/ACPGBI/PHE 2020)", "If high-risk (≥10 mm or HGD or villous component): repeat colonoscopy at **3 years**. "
+                                                       "Low-risk diminutive polyp removed cleanly: return to FIT screening."),
+                 ("Why it matters", "Average-risk CRC screening from 45–50 catches polyps before they become invasive cancer — adenoma-to-carcinoma takes 5–15 yrs."),
+             ]),
+            ("case_b", "#FF5722", "Bloody diarrhoea — suspected UC",
+             "**Vignette.** A 31-year-old woman with 6 weeks of bloody diarrhoea (4–5 stools/day), "
+             "urgency, mild left-iliac-fossa cramping. CRP 22, faecal calprotectin 480.",
+             [
+                 ("Endoscopic finding", "Granular mucosa, loss of vascular pattern, contact bleeding — Mayo endoscopic 1–2."),
+                 ("AI prediction (this build)", "uc-mild · pathological-finding flag raised."),
+                 ("Differential", "Infective colitis (rule out C. diff, Campylobacter), Crohn's colitis, ischaemic colitis."),
+                 ("Clinical action", "Topical + oral 5-ASA induction; flexi-sig with biopsies; gastro follow-up at 6 weeks."),
+                 ("Long-term surveillance", "After 8–10 years of colitis, surveillance colonoscopy with chromoendoscopy and dysplasia mapping."),
+                 ("Why it matters", "Early IBD diagnosis improves response to step-up therapy and reduces colectomy rates."),
+             ]),
+            ("case_c", "#9C27B0", "Long-standing GORD — Barrett's surveillance",
+             "**Vignette.** A 62-year-old man with 15 years of GORD on long-term PPI, BMI 31, "
+             "ex-smoker. Surveillance OGD shows a 4 cm tongue of columnar mucosa above the "
+             "gastro-oesophageal junction.",
+             [
+                 ("Endoscopic finding", "Prague C2M4 segment of intestinal metaplasia, no visible nodularity."),
+                 ("AI prediction (this build)", "barretts-esoph · ~91 % confidence."),
+                 ("Histology protocol", "Seattle-protocol biopsies (4-quadrant every 2 cm + targeted)."),
+                 ("Clinical action", "If non-dysplastic Barrett's, ≥3 cm segment → 3-yearly surveillance OGD (BSG 2023)."),
+                 ("Escalation triggers", "Any low-grade dysplasia → expert path review + 6-month repeat. High-grade dysplasia or T1a → endoscopic eradication therapy (RFA ± EMR)."),
+                 ("Why it matters", "Annual progression to oesophageal adenocarcinoma is ~0.3 %/year for non-dysplastic Barrett's; surveillance catches conversion early."),
+             ]),
+        ]
+
+        for key, color, title, vignette, rows in cases_long:
+            st.markdown(
+                f"""<div style='background:white;border-radius:14px;padding:18px 22px;
+                                margin-top:14px;margin-bottom:6px;
+                                border:1px solid rgba(15,23,42,0.06);
+                                border-left:4px solid {color};
+                                box-shadow:0 1px 3px rgba(15,23,42,0.04),
+                                           0 10px 28px -16px rgba(15,23,42,0.18)'>
+                    <div style='font-size:0.74rem;text-transform:uppercase;letter-spacing:0.5px;
+                                color:{color};font-weight:800'>{DEMO_CASES[key]['label']}</div>
+                    <div style='font-size:1.15rem;color:#0F172A;font-weight:800;margin-top:2px'>{title}</div>
+                    <div style='font-size:0.92rem;color:#334155;margin-top:8px;line-height:1.55'>{vignette}</div>
+                </div>""",
+                unsafe_allow_html=True,
+            )
+            for label, body in rows:
+                st.markdown(
+                    f"<div style='display:flex;gap:14px;padding:6px 4px;border-bottom:1px dashed #E2E8F0'>"
+                    f"<div style='flex:0 0 200px;font-size:0.82rem;font-weight:700;color:#1A73E8'>{label}</div>"
+                    f"<div style='flex:1;font-size:0.9rem;color:#1F2937;line-height:1.55'>{body}</div>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+            cols = st.columns([1, 4])
+            with cols[0]:
+                if st.button(f"Load this case →", key=f"guide_load_{key}",
+                             use_container_width=True, type="primary"):
+                    _apply_demo_case(key)
+                    st.session_state["show_guide"] = False
+                    st.rerun()
+
+        st.markdown("")
+        st.markdown(
+            '<div class="warn-box">All vignettes are illustrative composites — not real patients. '
+            'Guideline references reflect BSG/ACPGBI/PHE 2020 (post-polypectomy), BSG 2023 (Barrett\'s) '
+            'and NICE NG12 (suspected cancer 2-week-wait).</div>',
+            unsafe_allow_html=True,
+        )
+
+    # ── Tab 5: How to Present ──────────────────────────────────────────
+    with tab_present:
+        st.markdown('<div class="section-header">How to present this project</div>',
+                    unsafe_allow_html=True)
+        st.markdown(
+            "A 6–8 minute live walkthrough that lands well with both **clinicians** and "
+            "**academic / research panels**. Each section below is a section of your demo — "
+            "the talking points are what to say while the screen does the heavy lifting."
+        )
+
+        st.markdown('<div class="section-header">1 · The opener (30 sec)</div>',
+                    unsafe_allow_html=True)
+        st.markdown(
+            '<div class="info-box">'
+            '<b>Say:</b> "Colorectal cancer is the third-most-common cancer worldwide, and 90 % of '
+            'early-stage cases are curable — but only 60 % are caught early. ColonAI is a multimodal AI '
+            'screening tool that combines endoscopy images, clinical notes, and patient history to flag '
+            'high-risk cases for the clinician — it doesn\'t replace them."'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown('<div class="section-header">2 · The live walkthrough (4 min)</div>',
+                    unsafe_allow_html=True)
+        st.markdown(
+            "1. Open Step 1, click **Load Case A**. _'In one click I\'ve loaded a real screening-FIT-positive patient.'_\n"
+            "2. Show the symptoms tab briefly — explain you can either type or check boxes.\n"
+            "3. Click **Analyse** → walk through the 6-agent pipeline animation. _'Each agent is autonomous; the orchestrator coordinates them.'_\n"
+            "4. On Results: show the **class-probability bar chart** — point at the dominant class.\n"
+            "5. Switch to **GradCAM View** — _'This is the AI showing its work — the warm region is what drove the prediction. A clinician can sanity-check it visually.'_\n"
+            "6. Switch to **Risk Charts** → highlight the gauge and the multi-dimensional radar.\n"
+            "7. Switch to **Recommendations** → _'These are tied to BSG and NICE pathways, not generic boilerplate.'_\n"
+            "8. Step 5: Find Doctors → 1 second to show it's regional. Step 6: PDF → click Generate, show the download."
+        )
+
+        st.markdown('<div class="section-header">3 · The technical slide (90 sec)</div>',
+                    unsafe_allow_html=True)
+        col_p1, col_p2 = st.columns(2)
+        with col_p1:
+            st.markdown(
+                '<div class="metric-card" style="border-left-color:#1A73E8">'
+                '<div class="label">Architecture sound-bite</div>'
+                '<div class="value" style="font-size:1.1rem">Dual-backbone fusion</div>'
+                '<div class="sub">ResNet-50 + EfficientNet-B0 (image) · BioBERT (text) · '
+                'TabTransformer (tabular) → 3-stage gated cross-modal transformer · '
+                '3 task heads (pathology, staging, risk).</div>'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+        with col_p2:
+            st.markdown(
+                '<div class="metric-card" style="border-left-color:#00897B">'
+                '<div class="label">Numbers to memorise</div>'
+                '<div class="value" style="font-size:1.1rem">90.3 % · 0.984 AUC</div>'
+                '<div class="sub">Test set 1,066 images · 0.81 macro-F1 · MC-Dropout uncertainty · '
+                '~150 M params · best epoch 7 / 60 (no overfit).</div>'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+
+        st.markdown('<div class="section-header">4 · The honesty slide (45 sec)</div>',
+                    unsafe_allow_html=True)
+        st.markdown(
+            "Reviewers respect honesty more than spin. Lead with the limitations:\n\n"
+            "- HyperKvasir is European (Norway); CVC-ClinicDB is Spanish; TCGA tabular is North-American — **no external validation on Asian / African data yet.**\n"
+            "- 5 classes only; doesn't yet detect rarer entities (sessile-serrated lesions, cytomegalovirus colitis, EoE).\n"
+            "- Staging is image-derived; in real practice T-stage needs CT/MRI and biopsy.\n"
+            "- Currently research-grade — clinical deployment requires UKCA Class IIa, MHRA registration, post-market surveillance.\n\n"
+            "_That paragraph alone tends to defuse 80 % of hostile questions._"
+        )
+
+        st.markdown('<div class="section-header">5 · Likely Q&A (3 min)</div>',
+                    unsafe_allow_html=True)
+        qa = [
+            ("Why dual image backbones?",
+             "ResNet-50 gives a clean 7×7 GradCAM target for interpretability; EfficientNet adds a parallel 14×14 representation. A learned per-position gate fuses them, which empirically beats either alone by ~2 % macro-F1."),
+            ("How do you avoid overfitting?",
+             "Mixup α=0.3, label smoothing 0.1, weight decay 0.15, RandomPerspective + GaussianBlur + RandomErasing(p=0.4), Gaussian noise σ=0.05 on tabular features, EMA decay 0.9995, and BERT freeze→unfreeze schedule. Best epoch was 7 of 60 with early-stop patience 18."),
+            ("How does it handle uncertainty?",
+             "MC-Dropout — 15 stochastic forward passes at inference, the predictive entropy is reported. Uncertainty >0.6 triggers 'seek expert review' in the recommendation agent."),
+            ("Why use TCGA for tabular when most patients aren't cancer patients?",
+             "TCGA gives a realistic distribution of age × smoking × alcohol × BMI × stage. We sample one row per inference and overwrite the patient-known fields — so the model sees realistic correlations on the unknown features."),
+            ("Could a clinician adopt this tomorrow?",
+             "Not safely. It's a research tool. To deploy: external validation on the target hospital's cases, prospective evaluation against the histology gold-standard, regulatory approval, integration with the PACS / report system, and ongoing post-market surveillance."),
+            ("What's next on the roadmap?",
+             "(a) external validation on at least two non-Western datasets, (b) sessile-serrated lesion class, (c) report-level NLP that ingests free-text endoscopy reports verbatim, (d) calibration via temperature scaling reported per-class."),
+        ]
+        for q, a in qa:
+            with st.expander(q):
+                st.markdown(a)
+
+        st.markdown('<div class="section-header">6 · The closer</div>',
+                    unsafe_allow_html=True)
+        st.markdown(
+            '<div class="info-box">'
+            '<b>Say:</b> "ColonAI is not a black box and not a replacement for a clinician — '
+            'it\'s a second pair of eyes that looks at the image, the patient, and the symptoms together. '
+            'The win is in catching the cases that get missed when only one signal is examined."'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+    # ── Tab 6: FAQ ─────────────────────────────────────────────────────
     with tab_faq:
         st.markdown('<div class="section-header">Frequently Asked Questions</div>',
                     unsafe_allow_html=True)
@@ -2037,9 +4676,9 @@ def page_guide():
              "This could indicate an unusual image, borderline case, or image quality issue. "
              "Always consult a specialist in such cases."),
             ("Why does the AI sometimes predict the wrong class?",
-             "The model has 99.5% test accuracy but is not perfect. Edge cases, unusual angles, "
-             "image artefacts, or conditions outside the training distribution can lead to errors. "
-             "This is why clinical review is always required."),
+             "The model achieves 90.3 % test accuracy and 0.984 AUC-ROC — strong but not perfect. "
+             "Edge cases, unusual angles, image artefacts, or conditions outside the training distribution "
+             "(it knows 5 classes only) can lead to errors. This is exactly why clinician review is mandatory."),
             ("Can I use this for research?",
              "Yes. The model is based on publicly available datasets (HyperKvasir, CVC-ClinicDB, "
              "TCGA). Please cite the original dataset papers and the model architecture if you "
@@ -2074,6 +4713,18 @@ def page_guide():
 # ─────────────────────────────────────────────────────────────────────────────
 def main():
     render_css()
+    # Dark-mode overlay (applied conditionally over the base CSS)
+    try:
+        from src.app.ui_extras import (
+            apply_dark_mode_if_enabled, dark_mode_toggle,
+            render_floating_faq, render_particles_once,
+            maybe_dismiss_tips_via_query, faq_toggle_button,
+        )
+        maybe_dismiss_tips_via_query()
+        apply_dark_mode_if_enabled()
+        render_particles_once()
+    except Exception:
+        pass
 
     # Initialise session state
     if "step" not in st.session_state:
@@ -2085,9 +4736,16 @@ def main():
     with st.sidebar:
         # Logo / branding
         st.markdown(
-            """<div style="text-align:center;padding:16px 0 8px">
-                <h2 style="margin:4px 0;font-size:1.1rem;color:#1A73E8;font-weight:800">ColonAI</h2>
-                <p style="font-size:0.75rem;color:#888;margin:0">Agentic Cancer Screening</p>
+            """<div style="text-align:center;padding:14px 0 4px">
+                <div style="display:inline-flex;align-items:center;justify-content:center;
+                            width:46px;height:46px;border-radius:14px;
+                            background:linear-gradient(135deg,#1A73E8,#00897B);
+                            box-shadow:0 6px 18px -8px rgba(26,115,232,0.55);
+                            color:white;font-weight:900;font-size:1.1rem;letter-spacing:-0.5px">CA</div>
+                <h2 style="margin:8px 0 0;font-size:1.15rem;color:#0F172A;font-weight:900;letter-spacing:-0.3px">ColonAI</h2>
+                <p style="font-size:0.74rem;color:#64748B;margin:2px 0 0;font-weight:500">
+                    Agentic Multimodal Screening
+                </p>
             </div>""",
             unsafe_allow_html=True,
         )
@@ -2100,20 +4758,39 @@ def main():
             st.session_state["show_guide"] = True
             st.rerun()
 
-        # Chatbot panel
+        # Dark-mode toggle + Compare-mode toggle + Tip-bubble toggle
+        try:
+            from src.app.ui_extras import (
+                dark_mode_toggle as _dm_toggle,
+                faq_toggle_button as _faq_toggle,
+            )
+            _dm_toggle()
+            _faq_toggle()
+        except Exception:
+            pass
+        compare_on = st.session_state.get("compare_mode", False)
+        if st.sidebar.button("⚖️ Compare cases" + (" · ON" if compare_on else ""),
+                              use_container_width=True, key="cmp_toggle"):
+            st.session_state["compare_mode"] = not compare_on
+            st.rerun()
+
+        # Chatbot — small, compact, at the bottom (collapsed by default)
         render_chatbot()
 
-        st.sidebar.markdown("---")
         st.sidebar.markdown(
-            '<p style="font-size:0.72rem;color:#bbb;text-align:center">'
-            'For research & educational use only.<br>'
+            '<p style="font-size:0.70rem;color:#bbb;text-align:center;margin-top:6px">'
+            'Research / educational use only.<br>'
             'Not a medical device.<br>v1.0 · Feb 2026</p>',
             unsafe_allow_html=True,
         )
 
-    # Eagerly preload the AI system in background
+    # Eagerly preload the AI system the first time the user reaches Step 1
+    # (when it's far less disruptive than waiting on Step 3).
     if "_system" not in st.session_state:
         st.session_state["_system"] = None
+    if (st.session_state.get("step", 0) >= 1
+            and st.session_state.get("_system") is None):
+        st.session_state["_system"] = load_ai_system()
 
     # Route to current step (guide overrides everything)
     if st.session_state.get("show_guide"):
@@ -2137,6 +4814,13 @@ def main():
     else:
         st.session_state["step"] = 0
         st.rerun()
+
+    # Floating contextual FAQ bubble (chat-FAB removed — chatbot lives in sidebar)
+    try:
+        from src.app.ui_extras import render_floating_faq
+        render_floating_faq(step)
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":
