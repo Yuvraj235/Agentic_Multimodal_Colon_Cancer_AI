@@ -7,7 +7,7 @@ sdk: docker
 app_port: 7860
 pinned: true
 license: mit
-short_description: A second pair of eyes for colon-cancer screening — patient-friendly multimodal AI with three independent safety layers. Research only; not a medical device.
+short_description: A second pair of eyes for colon-cancer screening.
 ---
 
 # ColonAI 🩺
