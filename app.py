@@ -66,27 +66,70 @@ _CHECKPOINT_V1 = ROOT / "outputs/unified_multimodal/checkpoints/best_model.pth"
 # missing — useful for local development without the large weights file.
 _HF_REPO     = os.environ.get("COLONAI_CHECKPOINT_HF_REPO", "")
 _HF_FILENAME = os.environ.get("COLONAI_CHECKPOINT_HF_FILE", "best_model.pth")
+_HF_TOKEN    = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN")
+
 
 def _maybe_download_checkpoint():
-    """If neither checkpoint exists locally, try fetching from HF Hub."""
-    if _CHECKPOINT_V2.exists() or _CHECKPOINT_V1.exists():
-        return  # already have it
+    """If neither checkpoint exists locally, try fetching from HF Hub.
+
+    Logs LOUDLY to stderr so HF Spaces' Logs panel shows exactly what
+    happened. Without this every failure was silent and the app fell
+    back to demo mode with no explanation.
+    """
+    import sys, traceback
+    def _say(msg): print(f"[CHECKPOINT] {msg}", file=sys.stderr, flush=True)
+
+    if _CHECKPOINT_V2.exists():
+        _say(f"✓ v2 checkpoint already present at {_CHECKPOINT_V2}")
+        return
+    if _CHECKPOINT_V1.exists():
+        _say(f"✓ v1 checkpoint already present at {_CHECKPOINT_V1}")
+        return
     if not _HF_REPO:
-        return  # no HF repo configured
+        _say("✗ neither checkpoint found locally AND "
+             "COLONAI_CHECKPOINT_HF_REPO is unset → demo mode")
+        return
+
+    _say(f"⇣ downloading {_HF_FILENAME} from HF Hub repo '{_HF_REPO}' …")
     try:
         from huggingface_hub import hf_hub_download
         _CHECKPOINT_V2.parent.mkdir(parents=True, exist_ok=True)
-        local = hf_hub_download(repo_id=_HF_REPO, filename=_HF_FILENAME,
-                                local_dir=str(_CHECKPOINT_V2.parent),
-                                local_dir_use_symlinks=False)
-        # Move/rename to expected location if needed
-        import shutil
-        if Path(local) != _CHECKPOINT_V2:
+        # Newer huggingface_hub (>=0.23) dropped local_dir_use_symlinks.
+        # Pass it only if supported; otherwise call without it.
+        try:
+            local = hf_hub_download(
+                repo_id=_HF_REPO, filename=_HF_FILENAME,
+                local_dir=str(_CHECKPOINT_V2.parent),
+                token=_HF_TOKEN or None,
+                local_dir_use_symlinks=False)
+        except TypeError:
+            # Newer API — no symlink kwarg
+            local = hf_hub_download(
+                repo_id=_HF_REPO, filename=_HF_FILENAME,
+                local_dir=str(_CHECKPOINT_V2.parent),
+                token=_HF_TOKEN or None)
+        _say(f"  saved to {local}")
+        # Make sure the file is at the v2 expected path
+        from pathlib import Path as _Pth
+        if _Pth(local).resolve() != _CHECKPOINT_V2.resolve():
+            import shutil
             shutil.copy(local, _CHECKPOINT_V2)
-    except Exception as _e:
-        import logging
-        logging.getLogger("colonai.app").warning(
-            "HF Hub checkpoint download failed: %s", _e)
+            _say(f"  copied to {_CHECKPOINT_V2}")
+        _say(f"✓ downloaded — size {_CHECKPOINT_V2.stat().st_size / 1e6:.1f} MB")
+        # Optional temperature.json — best-effort
+        try:
+            tmp_local = hf_hub_download(
+                repo_id=_HF_REPO, filename="temperature.json",
+                local_dir=str(_CHECKPOINT_V2.parent),
+                token=_HF_TOKEN or None)
+            _say(f"✓ temperature.json downloaded to {tmp_local}")
+        except Exception as _te:
+            _say(f"  (no temperature.json: {_te})")
+    except Exception as exc:
+        _say(f"✗ HF Hub download failed — {type(exc).__name__}: {exc}")
+        _say("  full traceback follows:")
+        traceback.print_exc(file=sys.stderr)
+
 
 _maybe_download_checkpoint()
 CHECKPOINT = _CHECKPOINT_V2 if _CHECKPOINT_V2.exists() else _CHECKPOINT_V1
