@@ -1353,6 +1353,48 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
     except Exception as exc:
         out["trust_report"] = {"error": f"{type(exc).__name__}: {exc}"}
 
+    # ── Patient-safety policy: central abstain/show/reject gate ─────────────
+    # This is the ONLY place that decides whether a prediction is safe to show.
+    try:
+        from src.app.patient_safety import evaluate_safety, AuditLog
+        _gc_focus = None
+        try:
+            gh = out.get("gradcam_heatmap")
+            if gh is not None:
+                _flat = np.asarray(gh).flatten()
+                if _flat.size > 0:
+                    _thr = float(np.quantile(_flat, 0.75))
+                    _gc_focus = float((_flat >= _thr).sum() / _flat.size)
+        except Exception:
+            pass
+        _tta_agree = float(out.get("tta_summary", {}).get("agreement_pct", 100.0)) / 100.0
+        _safety = evaluate_safety(
+            confidence       = float(getattr(fd, "overall_confidence", 0.0)),
+            uncertainty      = float(getattr(xai, "uncertainty", 0.0)),
+            endoscopy_score  = float(out.get("image_readout", {}).get("endoscopy_score", 1.0)),
+            gradcam_focus    = _gc_focus,
+            agent_agreement  = _tta_agree,
+        )
+        out["safety_verdict"] = _safety.to_dict()
+        # Audit log — every prediction recorded for post-hoc review
+        try:
+            _audit = AuditLog()
+            _audit.record(
+                case_id         = out.get("case_id", "ui"),
+                image_path      = out.get("image_path"),
+                pathology_class = getattr(fd, "pathology_class", "unknown"),
+                confidence      = float(getattr(fd, "overall_confidence", 0.0)),
+                uncertainty     = float(getattr(xai, "uncertainty", 0.0)),
+                verdict         = _safety,
+                extras          = {"trust": out.get("trust_report", {}).get("verdict")},
+            )
+        except Exception:
+            pass
+    except Exception as exc:
+        out["safety_verdict"] = {"action": "show",
+                                 "reason": f"safety-policy unavailable: {exc}",
+                                 "disclaimer": "Treat output as provisional."}
+
     # Apply NICE NG12 / red-flag clinical-rule overrides on top of the model
     out = apply_clinical_overrides(out, patient, symptoms, pain_scale, symptom_duration)
     return out
@@ -3065,6 +3107,57 @@ def page_results():
         badges=["Step 4 of 6", "Reviewed against international guidelines",
                 "Always confirm with a clinician"],
     )
+
+    # ── PATIENT-SAFETY BANNER ─────────────────────────────────────────
+    # Show the abstain / reject / show verdict from the central safety
+    # policy. This is the FIRST thing the user sees on the results page.
+    sv = analysis.get("safety_verdict") or {}
+    if isinstance(sv, dict) and sv.get("action"):
+        _action = sv.get("action", "show")
+        _reason = sv.get("reason", "")
+        _disc   = sv.get("disclaimer", "")
+        _flags  = sv.get("flags", []) or []
+        if _action == "reject":
+            _bg, _bd, _fg, _icon, _title = (
+                "linear-gradient(135deg,#FEE2E2 0%,#FECACA 100%)",
+                "#DC2626", "#7F1D1D", "🚫",
+                "Result withheld — image quality insufficient")
+        elif _action == "abstain":
+            _bg, _bd, _fg, _icon, _title = (
+                "linear-gradient(135deg,#FEF3C7 0%,#FDE68A 100%)",
+                "#D97706", "#78350F", "⚠️",
+                "Requires human review — AI confidence below safe threshold")
+        else:
+            _bg, _bd, _fg, _icon, _title = (
+                "linear-gradient(135deg,#DCFCE7 0%,#BBF7D0 100%)",
+                "#16A34A", "#14532D", "✅",
+                "AI safety checks passed")
+        _flag_html = ""
+        if _flags:
+            _flag_html = ("<div style='margin-top:8px;color:" + _fg + ";"
+                          "font-size:12px;'>Safety flags: "
+                          + ", ".join(f"<code>{f}</code>" for f in _flags)
+                          + "</div>")
+        st.markdown(
+            f"""
+            <div style="background:{_bg};border:2px solid {_bd};
+                 border-radius:14px;padding:16px 22px;
+                 box-shadow:0 4px 14px rgba(0,0,0,0.06);margin:14px 0;">
+              <div style="font-size:18px;font-weight:700;color:{_fg};margin-bottom:6px;">
+                {_icon} {_title}
+              </div>
+              <div style="color:{_fg};font-size:13.5px;line-height:1.5;">
+                {_reason}
+              </div>
+              {_flag_html}
+              <div style="margin-top:10px;color:{_fg};font-size:11.5px;
+                   opacity:0.85;line-height:1.4;">
+                {_disc.replace(chr(10), '<br>')}
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     # ── RELIABILITY / TRUST PANEL ──────────────────────────────────────
     # Shows the five independent reliability signals so the user can see

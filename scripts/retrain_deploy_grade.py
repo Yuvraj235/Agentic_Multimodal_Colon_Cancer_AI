@@ -454,6 +454,16 @@ def main():
               f"train_acc={ep_log['train_acc']:.4f}  val_acc={val_acc:.4f}  "
               f"({ep_log['elapsed_min']:.1f} min)")
 
+        # Versioned save: always keep this epoch's checkpoint so we never lose a
+        # good model again. The "best_model.pth" path stays as the "latest best"
+        # for compatibility with downstream code.
+        versioned = (Path(args.ckpt_out).parent /
+                     f"epoch{ep+1:02d}_valacc{val_acc:.4f}.pth")
+        torch.save({"model_state": student.state_dict(),
+                    "val_acc":     val_acc, "epoch": ep+1,
+                    "classes":     CLASS_NAMES_5, "config": vars(args)},
+                   versioned)
+        print(f"  ↳ Saved epoch checkpoint → {versioned.name}")
         if val_acc > best_val:
             best_val = val_acc
             torch.save({"model_state": student.state_dict(),

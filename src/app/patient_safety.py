@@ -36,11 +36,45 @@ SAFETY_CONFIG = {
     "min_endoscopy_score":     0.55,   # below this → reject
     "min_gradcam_focus":       0.15,   # GradCAM concentration in top-25%
                                         # of pixels — below this → abstain
-    "min_agent_agreement":     0.66,   # 2-of-3 agents must agree
+    "min_agent_agreement":     0.66,   # 2-of-3 agents must agree (normal)
+    "strict_agent_agreement":  1.00,   # ALL must agree (second-opinion mode)
     "live_debounce_frames":    3,      # bbox must persist N frames
     "live_iou_threshold":      0.30,   # bbox-IoU threshold to call it
                                         # "the same polyp" frame-to-frame
 }
+
+
+def second_opinion(probs_list, top_class: Optional[int] = None) -> Dict:
+    """Strict TTA-based second-opinion check.
+
+    Given a list of probability arrays (one per augmentation / model
+    sample), this returns:
+        unanimous        — every sample picked the same top class
+        majority_class   — the class chosen by the most samples
+        agreement_pct    — fraction that agree with majority
+        confidence_mean  — mean confidence on the majority class
+
+    Use it from caller code:
+        so = second_opinion([p1, p2, p3])
+        if not so["unanimous"]:
+            # downgrade to abstain
+    """
+    import numpy as _np
+    if not probs_list:
+        return {"unanimous": False, "majority_class": -1,
+                "agreement_pct": 0.0, "confidence_mean": 0.0}
+    classes = [int(_np.argmax(p)) for p in probs_list]
+    from collections import Counter
+    cnt = Counter(classes); mc, mc_count = cnt.most_common(1)[0]
+    agree = mc_count / len(classes)
+    confs = [float(p[mc]) for p in probs_list if int(_np.argmax(p)) == mc]
+    return {
+        "unanimous":       bool(agree == 1.0),
+        "majority_class":  int(mc),
+        "agreement_pct":   float(agree),
+        "confidence_mean": float(sum(confs) / max(1, len(confs))),
+        "n_samples":       int(len(probs_list)),
+    }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -76,6 +110,7 @@ def evaluate_safety(
     gradcam_focus:     Optional[float] = None,
     agent_agreement:   Optional[float] = None,
     pipeline_error:    Optional[str]   = None,
+    strict_mode:       bool = False,
 ) -> SafetyVerdict:
     """Decide whether to show, abstain, or reject the prediction.
 
@@ -110,9 +145,13 @@ def evaluate_safety(
     if gradcam_focus is not None and gradcam_focus < SAFETY_CONFIG["min_gradcam_focus"]:
         flags.append("gradcam_diffuse")
 
-    # 4. Agent agreement (if available) — 2-of-3 must agree
-    if agent_agreement is not None and agent_agreement < SAFETY_CONFIG["min_agent_agreement"]:
-        flags.append("agents_disagree")
+    # 4. Agent agreement (if available)
+    #    Normal mode: 2-of-3 must agree.
+    #    strict_mode (second-opinion): ALL must agree.
+    _min_agree = (SAFETY_CONFIG["strict_agent_agreement"] if strict_mode
+                  else SAFETY_CONFIG["min_agent_agreement"])
+    if agent_agreement is not None and agent_agreement < _min_agree:
+        flags.append("second_opinion_failed" if strict_mode else "agents_disagree")
 
     # 5. Confidence + uncertainty thresholds
     if confidence < SAFETY_CONFIG["min_confidence"]:
