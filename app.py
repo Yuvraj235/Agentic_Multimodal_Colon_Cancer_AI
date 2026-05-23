@@ -68,34 +68,53 @@ _HF_REPO     = os.environ.get("COLONAI_CHECKPOINT_HF_REPO", "")
 _HF_FILENAME = os.environ.get("COLONAI_CHECKPOINT_HF_FILE", "best_model.pth")
 _HF_TOKEN    = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN")
 
+# Module-level status captured by _maybe_download_checkpoint(). The sidebar
+# reads this and surfaces the real reason if the download fails.
+CHECKPOINT_STATUS = {
+    "stage":   "unknown",     # "preexisting" | "downloaded" | "no_env_var" | "failed" | "unknown"
+    "detail":  "",
+    "path":    None,
+    "size_mb": None,
+    "hf_repo": _HF_REPO,
+    "hf_file": _HF_FILENAME,
+    "had_token": bool(_HF_TOKEN),
+    "log":     [],            # list[str] — visible to the UI
+}
+
 
 def _maybe_download_checkpoint():
-    """If neither checkpoint exists locally, try fetching from HF Hub.
-
-    Logs LOUDLY to stderr so HF Spaces' Logs panel shows exactly what
-    happened. Without this every failure was silent and the app fell
-    back to demo mode with no explanation.
-    """
+    """If neither checkpoint exists locally, try fetching from HF Hub."""
     import sys, traceback
-    def _say(msg): print(f"[CHECKPOINT] {msg}", file=sys.stderr, flush=True)
+    def _say(msg):
+        line = f"[CHECKPOINT] {msg}"
+        print(line, file=sys.stderr, flush=True)
+        CHECKPOINT_STATUS["log"].append(line)
 
     if _CHECKPOINT_V2.exists():
+        CHECKPOINT_STATUS["stage"] = "preexisting"
+        CHECKPOINT_STATUS["path"]  = str(_CHECKPOINT_V2)
+        try: CHECKPOINT_STATUS["size_mb"] = round(_CHECKPOINT_V2.stat().st_size / 1e6, 1)
+        except Exception: pass
         _say(f"✓ v2 checkpoint already present at {_CHECKPOINT_V2}")
         return
     if _CHECKPOINT_V1.exists():
+        CHECKPOINT_STATUS["stage"] = "preexisting"
+        CHECKPOINT_STATUS["path"]  = str(_CHECKPOINT_V1)
         _say(f"✓ v1 checkpoint already present at {_CHECKPOINT_V1}")
         return
     if not _HF_REPO:
+        CHECKPOINT_STATUS["stage"]  = "no_env_var"
+        CHECKPOINT_STATUS["detail"] = ("COLONAI_CHECKPOINT_HF_REPO is unset — "
+                                      "the app cannot download the model.")
         _say("✗ neither checkpoint found locally AND "
              "COLONAI_CHECKPOINT_HF_REPO is unset → demo mode")
         return
 
     _say(f"⇣ downloading {_HF_FILENAME} from HF Hub repo '{_HF_REPO}' …")
+    _say(f"  (auth: {'token' if _HF_TOKEN else 'anonymous'})")
     try:
         from huggingface_hub import hf_hub_download
         _CHECKPOINT_V2.parent.mkdir(parents=True, exist_ok=True)
-        # Newer huggingface_hub (>=0.23) dropped local_dir_use_symlinks.
-        # Pass it only if supported; otherwise call without it.
         try:
             local = hf_hub_download(
                 repo_id=_HF_REPO, filename=_HF_FILENAME,
@@ -103,20 +122,21 @@ def _maybe_download_checkpoint():
                 token=_HF_TOKEN or None,
                 local_dir_use_symlinks=False)
         except TypeError:
-            # Newer API — no symlink kwarg
             local = hf_hub_download(
                 repo_id=_HF_REPO, filename=_HF_FILENAME,
                 local_dir=str(_CHECKPOINT_V2.parent),
                 token=_HF_TOKEN or None)
         _say(f"  saved to {local}")
-        # Make sure the file is at the v2 expected path
         from pathlib import Path as _Pth
         if _Pth(local).resolve() != _CHECKPOINT_V2.resolve():
             import shutil
             shutil.copy(local, _CHECKPOINT_V2)
             _say(f"  copied to {_CHECKPOINT_V2}")
-        _say(f"✓ downloaded — size {_CHECKPOINT_V2.stat().st_size / 1e6:.1f} MB")
-        # Optional temperature.json — best-effort
+        size_mb = round(_CHECKPOINT_V2.stat().st_size / 1e6, 1)
+        CHECKPOINT_STATUS["stage"]   = "downloaded"
+        CHECKPOINT_STATUS["path"]    = str(_CHECKPOINT_V2)
+        CHECKPOINT_STATUS["size_mb"] = size_mb
+        _say(f"✓ downloaded — size {size_mb} MB")
         try:
             tmp_local = hf_hub_download(
                 repo_id=_HF_REPO, filename="temperature.json",
@@ -126,6 +146,8 @@ def _maybe_download_checkpoint():
         except Exception as _te:
             _say(f"  (no temperature.json: {_te})")
     except Exception as exc:
+        CHECKPOINT_STATUS["stage"]  = "failed"
+        CHECKPOINT_STATUS["detail"] = f"{type(exc).__name__}: {exc}"
         _say(f"✗ HF Hub download failed — {type(exc).__name__}: {exc}")
         _say("  full traceback follows:")
         traceback.print_exc(file=sys.stderr)
@@ -1886,6 +1908,29 @@ def render_sidebar_progress():
             '<span class="status-dot status-dot-err"></span>Model load failed — demo mode</div>',
             unsafe_allow_html=True,
         )
+        # Surface the actual reason from the checkpoint downloader so the user
+        # (and we) can see WHY it failed without having to fish through logs.
+        try:
+            _cs = CHECKPOINT_STATUS
+            _stage  = _cs.get("stage", "unknown")
+            _detail = _cs.get("detail", "")
+            _log    = _cs.get("log", [])
+            _color  = {"preexisting":"#15803D","downloaded":"#15803D",
+                       "no_env_var":"#B45309","failed":"#B91C1C"}.get(_stage, "#475569")
+            with st.sidebar.expander("ℹ︎ Why? (checkpoint status)"):
+                st.markdown(
+                    f"<div style='font-size:0.78rem;line-height:1.4'>"
+                    f"<b style='color:{_color}'>stage:</b> {_stage}<br>"
+                    f"<b>HF repo:</b> <code>{_cs.get('hf_repo') or 'not set'}</code><br>"
+                    f"<b>file:</b> <code>{_cs.get('hf_file')}</code><br>"
+                    f"<b>token:</b> {'set' if _cs.get('had_token') else 'anonymous'}<br>"
+                    f"{'<b>detail:</b> ' + _detail + '<br>' if _detail else ''}"
+                    f"</div>",
+                    unsafe_allow_html=True)
+                if _log:
+                    st.code("\n".join(_log[-15:]), language="text")
+        except Exception:
+            pass
     else:
         ckpt_ok = system.get("checkpoint_loaded", True)
         if ckpt_ok:
