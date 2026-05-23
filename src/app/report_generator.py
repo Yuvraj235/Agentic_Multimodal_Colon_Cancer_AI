@@ -346,6 +346,55 @@ def _generate_reportlab(
         story.append(Paragraph("No image was uploaded. AI analysis not performed.", normal))
         story.append(Spacer(1, 0.4 * cm))
 
+    # ── Image-features verdict + clinical override (NEW) ─────────────
+    if analysis:
+        readout = analysis.get("image_readout") or {}
+        if readout.get("verdict"):
+            story.append(Spacer(1, 0.3 * cm))
+            verdict = readout["verdict"]
+            atyp_pct = readout.get("atypicality", 0.0) * 100
+            norm_pct = readout.get("normal_score", 0.0) * 100
+            if verdict == "atypical_concerning":
+                story.append(Paragraph(
+                    f"<b><font color='#B91C1C'>⚠ Image-features verdict — pixel signs of "
+                    f"advanced lesion, likely beyond model scope (atypicality {atyp_pct:.0f}%)."
+                    f"</font></b>", normal))
+                story.append(Paragraph(
+                    "Deep red, low-blue regions, dark cavitation or disorganised tissue "
+                    "were detected — suggestive of ulceration, fungating tumour or bleeding. "
+                    "The trained model does not include an &quot;advanced cancer&quot; class — "
+                    "treat this image as <b>possible advanced disease until proven otherwise</b>.",
+                    normal))
+            elif verdict == "consistent_screening":
+                story.append(Paragraph(
+                    f"<b>Image-features verdict — pixel features look like a screening-stage "
+                    f"finding</b> (no atypical pixels, normal-image score {norm_pct:.0f}%).",
+                    normal))
+                story.append(Paragraph(
+                    "Important: this does <b>NOT</b> mean &quot;all clear&quot; — every image "
+                    "in our training data is itself a finding (polyp, mild colitis, etc.).",
+                    normal))
+            else:
+                story.append(Paragraph(
+                    f"<b>Image-features verdict — mixed pixel features</b> "
+                    f"(atypicality {atyp_pct:.0f}%, normal {norm_pct:.0f}%).", normal))
+            story.append(Spacer(1, 0.3 * cm))
+
+        overrides = analysis.get("overrides") or {}
+        if overrides.get("applied"):
+            story.append(Paragraph(
+                "<b><font color='#B91C1C'>Clinical Safety Override Applied</font></b>",
+                h3))
+            story.append(Paragraph(
+                f"NICE NG12 / red-flag rules raised the risk band from "
+                f"<b>{overrides.get('original_risk', 0)*100:.0f}%</b> to "
+                f"<b>{overrides.get('new_risk', 0)*100:.0f}%</b> and urgency from "
+                f"<b>{overrides.get('original_urgency', '')}</b> to "
+                f"<b>{overrides.get('new_urgency', '')}</b>.", normal))
+            for r in overrides.get("rules", []):
+                story.append(Paragraph(f"• {r}", normal))
+            story.append(Spacer(1, 0.3 * cm))
+
     # ── Clinical Recommendation ───────────────────────────────────────
     story.append(PageBreak())
     story.append(Paragraph("4. Clinical Recommendations", h2))
