@@ -1,3 +1,16 @@
+---
+title: ColonAI
+emoji: 🩺
+colorFrom: blue
+colorTo: indigo
+sdk: streamlit
+sdk_version: "1.40.0"
+app_file: app.py
+pinned: true
+license: mit
+short_description: A second pair of eyes for colon-cancer screening — patient-friendly multimodal AI with three independent safety layers. Research only; not a medical device.
+---
+
 # ColonAI 🩺
 
 **A second pair of eyes for colon-cancer screening.**
@@ -142,25 +155,44 @@ These limitations are *why* the safety net exists.
 
 ## ☁️ Deploy your own copy
 
-ColonAI runs as a self-contained Streamlit app. You can host it for free.
+ColonAI runs as a self-contained Streamlit app. You can host it for free on Hugging Face Spaces or Streamlit Community Cloud.
+
+The trained model is ~600 MB and is **not** kept in this Git repo (it would inflate every clone). For a working live demo you'll publish it once to a Hugging Face model repo and the app will download it on startup.
 
 ### Option 1 — Hugging Face Spaces (recommended, free)
 
-A Spaces config is included (see [`huggingface.yml`](./huggingface.yml)). From the GitHub repo:
+**Step 1 — Upload the checkpoint to a model repo (one time):**
 
-1. Create a new Space at https://huggingface.co/new-space, pick **Streamlit** as the SDK.
-2. Connect it to this GitHub repo.
-3. Hugging Face will deploy automatically. The free CPU tier is fine for the demo.
+1. Go to https://huggingface.co/new and create a **Model** repo, e.g. `Yuvraj2319/colonai-v2`. Set it to **public** (or keep it private and use a token).
+2. Drag-and-drop `outputs/unified_multimodal_v2/checkpoints/best_model.pth` into the repo's **Files** tab. It uploads via the browser; the 600 MB will take a few minutes.
 
-When the Space is live, edit this README to replace the placeholder under **🚀 Try it now** with the Space URL.
+**Step 2 — Create the Space:**
+
+1. Go to https://huggingface.co/new-space, name it e.g. `colonai`, pick **Streamlit** as the SDK, choose the **free CPU basic** hardware.
+2. Under "Configure your Space", click **"Import from GitHub repo"** and point it at this repo: `Yuvraj235/Agentic_Multimodal_Colon_Cancer_AI`.
+3. Open the new Space → **Settings → Variables and secrets** → add:
+   - `COLONAI_CHECKPOINT_HF_REPO` = `Yuvraj2319/colonai-v2` (or whatever you named it in step 1)
+   - `COLONAI_CHECKPOINT_HF_FILE` = `best_model.pth`
+4. The Space will rebuild automatically. First start takes ~3–4 minutes (downloading the checkpoint); after that it's instant.
+
+**Step 3 — Update the demo link:**
+
+Once your Space is live at `https://huggingface.co/spaces/Yuvraj2319/colonai`, edit the **"🚀 Try it now"** section at the top of this README and replace the placeholder line with that URL.
+
+> **Why a separate model repo?** Hugging Face Spaces have a 50 GB hard limit and the free CPU tier reboots from a fresh container on every push. Storing the 600 MB checkpoint in a Model repo (which `huggingface_hub` caches on disk and fetches once) is the standard pattern and keeps the Space repo small.
 
 ### Option 2 — Streamlit Community Cloud (also free)
 
 1. Go to https://share.streamlit.io, sign in with GitHub.
 2. Pick this repo, set the entrypoint to `app.py`.
-3. Add the same dependencies — Community Cloud reads `requirements.txt` automatically.
+3. Add `COLONAI_CHECKPOINT_HF_REPO` and `COLONAI_CHECKPOINT_HF_FILE` as app secrets (same values as above).
+4. Community Cloud reads `requirements.txt` automatically.
 
-### Option 3 — Self-host
+### Option 3 — Demo mode only (no checkpoint)
+
+If you just want to show the UI without real predictions, skip the checkpoint setup entirely. The app boots into demo mode — the safety policy still works, the layout is identical, but the "Analyse" button shows a placeholder result.
+
+### Option 4 — Self-host
 
 ```bash
 streamlit run app.py --server.address 0.0.0.0 --server.port 8501

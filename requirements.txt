@@ -41,3 +41,12 @@ plotly>=5.18.0
 reportlab>=4.1.0
 streamlit-extras>=0.4.0
 streamlit-lottie>=0.0.5
+
+# Required for the optional auto-download of the model checkpoint from HF Hub
+# (set env var COLONAI_CHECKPOINT_HF_REPO on the Space to enable it).
+huggingface_hub>=0.20.0
+
+# REST API service (scripts/serve_api.py)
+fastapi>=0.110.0
+uvicorn>=0.27.0
+python-multipart>=0.0.9

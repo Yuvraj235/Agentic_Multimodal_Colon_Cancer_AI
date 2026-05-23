@@ -57,7 +57,39 @@ st.set_page_config(
 # exists; fall back to the v1 checkpoint otherwise.
 _CHECKPOINT_V2 = ROOT / "outputs/unified_multimodal_v2/checkpoints/best_model.pth"
 _CHECKPOINT_V1 = ROOT / "outputs/unified_multimodal/checkpoints/best_model.pth"
-CHECKPOINT  = _CHECKPOINT_V2 if _CHECKPOINT_V2.exists() else _CHECKPOINT_V1
+
+# Hugging Face Spaces / Streamlit Cloud deployment path
+# ─────────────────────────────────────────────────────
+# Set the env var COLONAI_CHECKPOINT_HF_REPO to e.g. "Yuvraj2319/colonai-v2"
+# and the model file will be downloaded from that HF Hub model repo on first
+# run. Without it, the app falls back to demo mode when the checkpoint is
+# missing — useful for local development without the large weights file.
+_HF_REPO     = os.environ.get("COLONAI_CHECKPOINT_HF_REPO", "")
+_HF_FILENAME = os.environ.get("COLONAI_CHECKPOINT_HF_FILE", "best_model.pth")
+
+def _maybe_download_checkpoint():
+    """If neither checkpoint exists locally, try fetching from HF Hub."""
+    if _CHECKPOINT_V2.exists() or _CHECKPOINT_V1.exists():
+        return  # already have it
+    if not _HF_REPO:
+        return  # no HF repo configured
+    try:
+        from huggingface_hub import hf_hub_download
+        _CHECKPOINT_V2.parent.mkdir(parents=True, exist_ok=True)
+        local = hf_hub_download(repo_id=_HF_REPO, filename=_HF_FILENAME,
+                                local_dir=str(_CHECKPOINT_V2.parent),
+                                local_dir_use_symlinks=False)
+        # Move/rename to expected location if needed
+        import shutil
+        if Path(local) != _CHECKPOINT_V2:
+            shutil.copy(local, _CHECKPOINT_V2)
+    except Exception as _e:
+        import logging
+        logging.getLogger("colonai.app").warning(
+            "HF Hub checkpoint download failed: %s", _e)
+
+_maybe_download_checkpoint()
+CHECKPOINT = _CHECKPOINT_V2 if _CHECKPOINT_V2.exists() else _CHECKPOINT_V1
 
 # Optional post-train temperature for confidence calibration (1.0 = no scaling)
 import json as _json
