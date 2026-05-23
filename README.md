@@ -1,423 +1,222 @@
-# Agentic Multimodal Colon Cancer AI · ColonAI
+# ColonAI 🩺
 
-A research-grade Streamlit application that screens for colorectal conditions by fusing **endoscopy images**, **clinical text**, and **patient history** through a 6-agent multimodal AI pipeline — and surfaces patient-friendly results with three independent layers of clinical safety on top.
+**A second pair of eyes for colon-cancer screening.**
 
-> **Research and educational use only — not a medical device.** Every finding must be reviewed by a licensed clinician before any clinical decision.
+Colon cancer is one of the most preventable cancers in the world — *if* the polyp that turns into it is spotted during a routine colonoscopy. In practice, an average of **1 in 4 polyps is missed** during real screening exams, and the miss rate is even higher when the patient's scope is from a different manufacturer than the one the endoscopist trained on.
 
-[Quickstart](#quickstart-30-seconds) · [What's new](#whats-new) · [Architecture](#architecture) · [Safety layers](#three-independent-safety-layers) · [Datasets](#datasets) · [Results](#test-set-results) · [Honest limitations](#honest-limitations) · [License](#license)
+ColonAI is a research project that tries to close that gap. Upload a colonoscopy image (or stream a live colonoscopy feed) and the system gives you a plain-English answer:
+
+> *"This looks like a growth on the bowel wall (a polyp). I'm fairly confident (87 %), and I'm focused on the upper-left of the image where the lesion appears to be. A doctor should still confirm this."*
+
+— or, equally importantly, it refuses to answer when it's not sure.
+
+> ⚕️ **Research & educational use only — not a medical device.** Every finding must be reviewed by a qualified clinician before any clinical decision is made.
 
 ---
 
-## Quickstart (30 seconds)
+## 🚀 Try it now
+
+| Mode | How |
+| :-- | :-- |
+| **Live web demo** | _Live demo will be linked here once deployed — see the [Deploy](#-deploy-your-own-copy) section below._ |
+| **Run locally (one click)** | `./run_app.command` from this folder → opens at http://localhost:8501 |
+| **Run locally (manual)** | `pip install -r requirements.txt && streamlit run app.py` |
+
+Once it opens, click **Load Case A · Sigmoid Polyp** on the patient-info page and press **Analyse**. The full demo runs in under 30 seconds.
+
+A friendly one-page instruction sheet for non-technical users is at [`RUN_ME.md`](./RUN_ME.md).
+
+---
+
+## 🤔 What does it actually do?
+
+You give ColonAI three things:
+
+1. A **colonoscopy image** (or a live video stream).
+2. The **patient's symptoms** in plain English ("rectal bleeding for two weeks").
+3. The **patient's medical history** (age, BMI, family history, etc.).
+
+ColonAI then runs all three through a small team of specialised AI "agents" that each look at the case differently — one studies the picture, another reads the symptoms, another weighs the history — and a fourth one cross-checks the others. You get back:
+
+- A **plain-English answer** that says what the AI thinks it sees, in everyday language.
+- A **heat-map overlay** showing exactly where on the image the AI is paying attention. If the AI says "polyp", you can see whether it's actually looking at a polyp or just at a smudge.
+- A **plain-English explanation** ("the lesion appears to be in the upper-left quadrant, the AI is paying attention to a circular region that overlaps with the predicted polyp boundary, two independent attention methods agree…").
+- A **traffic-light verdict** — green when the AI is confident, amber when it isn't sure and you should ask a human, red when the picture isn't usable at all.
+- **Clear next steps** based on the relevant clinical guidelines (BSG / NICE NG12).
+
+It's all designed to be readable by someone who's never used medical software before.
+
+---
+
+## 🛟 Why is this important?
+
+### Real screening misses polyps
+
+Roughly a quarter of polyps are missed during routine colonoscopy. When a polyp is missed, it can quietly grow into a cancer over the next 5–10 years. AI assistance has been shown in large clinical trials to lift detection rates substantially — but only when the AI is trustworthy enough that the endoscopist actually pays attention to it.
+
+### Most colonoscopy AIs only work on one brand of scope
+
+If a model is trained on Olympus scopes (which most public datasets are), it tends to fail silently when it sees a Pentax scope. The classifier still says "polyp", but the highlight is on the wrong part of the image. The doctor sees the green light and trusts it — when in fact the AI is looking at the scope's HUD overlay, not the lesion.
+
+We measured this directly. When we tested an off-the-shelf model on Pentax images for the first time:
+
+- It still **correctly classified 95 % of Pentax polyps as polyps** ✅
+- But its **attention heat-map landed in the wrong place 93 % of the time** ❌
+
+A model that's right for the wrong reason is one of the most dangerous failure modes in medical AI.
+
+### So we trained it to actually look at the polyp
+
+ColonAI's training was reworked so the model is forced to focus its attention on the actual polyp pixels — not on the scope's branding or borders. We tested it against the same Pentax dataset afterwards:
+
+| Test dataset (scope brand) | Old model (heat-map quality) | ColonAI (heat-map quality) |
+| :-- | :--: | :--: |
+| Olympus (familiar brand) | 0.24 | **0.42** |
+| **Pentax (different brand)** | **0.07** | **0.16** |
+
+That's a **+136 % improvement on the brand the model had never seen during training**. We also added a separate, dedicated segmentation step that lifts polyp localisation from 0.27 to **0.61** — clinically usable.
+
+### And we made it refuse to answer when it shouldn't
+
+Every prediction passes through a central safety policy. If any of the following is true, the system **declines to display a confident reading**:
+
+- The image doesn't look like a colonoscopy frame
+- The model's confidence is below 75 %
+- Different attention methods disagree about what the model is looking at
+- The pathology head says "polyp" but the segmentation can't find one
+- Anything in the pipeline crashes
+
+Instead of a wrong-but-confident answer, the patient sees: *"Please ask a doctor to review this."* In screening, **silence is safer than overconfidence**.
+
+---
+
+## 🛡️ The three independent safety layers
+
+ColonAI doesn't trust any single signal. A finding only reaches the user if it passes through three independent checks:
+
+### 1. Symptom-driven safety net (clinical rules)
+If the patient writes symptoms that match the NICE NG12 fast-track criteria (rectal bleeding ≥ 50 yr, iron-deficiency anaemia ≥ 60 yr, unexplained weight loss + abdominal pain, …), the urgency is escalated regardless of what the model says. The rules can only escalate, never down-grade.
+
+### 2. Image-statistics safety net
+A separate pixel-statistics engine looks for visible signs the model wasn't trained to recognise (heavy bleeding, deep cavitation, very disordered edges). If the picture looks abnormal in a way the model can't explain, the system flags it for review.
+
+### 3. Cross-agent consistency net
+The pathology agent, the visual-attention agent, the segmentation agent, and a second independent attribution method all have to **agree** on what they're seeing. If they disagree, the safety policy refuses to issue a confident answer — even if every individual agent is happy.
+
+Every prediction is logged with the image's SHA-256, the verdict, and the agents' confidence levels — so post-hoc clinical review is always possible.
+
+---
+
+## 🌟 Highlights
+
+- **6-agent multimodal pipeline** — image, symptom text, patient history, fusion, explainability, clinical recommendation.
+- **Patient-friendly UI** — plain-English narrative, accessibility mode (larger fonts, dyslexia-friendly typography, high contrast, big tap targets), 1-click demo cases.
+- **Live colonoscopy video** — runs at 20+ FPS on a MacBook (Apple Silicon). Single-frame false positives are filtered out by a 3-frame persistence check before anything is shown to the operator.
+- **Calibrated confidence** — the percentage shown to the user has been calibrated against held-out data, so it's a meaningful probability rather than a vibes number.
+- **REST API** — `/predict`, `/health`, `/version`, `/audit/today` — with optional `X-API-Key` auth and an audit log of every prediction.
+- **Security-hardened** — upload size limits, decompression-bomb protection, MIME allow-list, sanitised error responses, CORS allow-list, owner-only audit-log permissions, XSS-safe HTML rendering. See [`SECURITY.md`](./SECURITY.md).
+
+---
+
+## 📈 Honest numbers (cross-vendor held-out test)
+
+We do **not** report a single accuracy number, because that's the metric most easily gamed. Here's the real performance:
+
+| What we measure | On familiar brand | On unfamiliar brand |
+| :-- | :--: | :--: |
+| Got the diagnosis right? | 95 % | 90 % |
+| Heat-map lands on the polyp? | 0.42 (IoU) | 0.16 (IoU) |
+| Dedicated segmentation IoU | 0.62 | **0.61** |
+| Detection sensitivity (per-polyp, IoU ≥ 0.5) | 0.75–0.92 | 0.38 |
+| Confidence is well-calibrated (lower = better) | 0.06 ECE | 0.06 ECE |
+
+We **also** publish what doesn't work:
+
+- The model struggles to grade ulcerative colitis severity (moderate-severe recall is low). It tends to over-call "mild" UC.
+- Cross-vendor segmentation is good but cross-vendor detection (per-polyp F1) is still weaker than within-vendor.
+- Highly atypical lesions or invasive cancers are **out of distribution** — the safety net catches them and asks for human review.
+
+These limitations are *why* the safety net exists.
+
+---
+
+## ☁️ Deploy your own copy
+
+ColonAI runs as a self-contained Streamlit app. You can host it for free.
+
+### Option 1 — Hugging Face Spaces (recommended, free)
+
+A Spaces config is included (see [`huggingface.yml`](./huggingface.yml)). From the GitHub repo:
+
+1. Create a new Space at https://huggingface.co/new-space, pick **Streamlit** as the SDK.
+2. Connect it to this GitHub repo.
+3. Hugging Face will deploy automatically. The free CPU tier is fine for the demo.
+
+When the Space is live, edit this README to replace the placeholder under **🚀 Try it now** with the Space URL.
+
+### Option 2 — Streamlit Community Cloud (also free)
+
+1. Go to https://share.streamlit.io, sign in with GitHub.
+2. Pick this repo, set the entrypoint to `app.py`.
+3. Add the same dependencies — Community Cloud reads `requirements.txt` automatically.
+
+### Option 3 — Self-host
 
 ```bash
-git clone https://github.com/Yuvraj235/Agentic_Multimodal_Colon_Cancer_AI.git
-cd Agentic_Multimodal_Colon_Cancer_AI
-
-# easy launch — installs deps once, opens browser, finds free port
-./run_app.command
+streamlit run app.py --server.address 0.0.0.0 --server.port 8501
 ```
 
-Or, completely manually:
-
-```bash
-pip install -r requirements.txt
-python3 -m streamlit run app.py --server.port 8501
-```
-
-Open **http://localhost:8501**, click **Load Case A · Sigmoid Polyp** on the Patient Info page, then **Analyse →**. Full demo in under 30 seconds. The launcher auto-finds a free port between 8501–8520, so the app opens reliably even when other Streamlit servers are running.
-
-A short instruction sheet for non-technical users lives at [`RUN_ME.md`](./RUN_ME.md).
+Run this behind a reverse proxy (nginx / Caddy) that terminates TLS. Read [`SECURITY.md`](./SECURITY.md) for the production checklist (API key, rate limiting, log rotation).
 
 ---
 
-## What's new
+## 📂 What's in the repo
 
-This release is a substantial overhaul of the original training-only pipeline. Highlights:
+| Path | What it is |
+| :-- | :-- |
+| `app.py` | The Streamlit web application |
+| `scripts/serve_api.py` | The FastAPI REST service |
+| `src/app/` | Application helpers (safety policy, accessibility UI, cross-checks, security) |
+| `src/agents/` | The 6 specialised AI agents and their orchestrator |
+| `src/models/` | The model architecture |
+| `data/`, `outputs/` | Data (gitignored) and model checkpoints |
+| `RUN_ME.md` | Non-technical user instructions |
+| `SECURITY.md` | Threat model and operator runbook |
+| `research_paper.tex` | The full research paper |
 
-### Two critical bug fixes
-
-1. **Wrong model kwargs** in `load_ai_system` (`n_heads`/`n_layers` → `n_fusion_heads`/`n_fusion_layers`). The TypeError was being swallowed and the app silently fell back to demo mode.
-2. **Wrong checkpoint key** (`model_state_dict` → `model_state`). With the old key, the model loaded with random weights and every prediction was effectively garbage.
-
-After the fix the held-out checkpoint loads with **0 missing / 0 unexpected keys**, and a polyp image is correctly classified as polyps with 88 % confidence.
-
-### Three independent safety layers (model + symptom + pixel)
-
-The trained model knows only **5 screening-stage classes** (HyperKvasir + CVC-ClinicDB don't contain advanced cancer). To make the system safe in real-world use we added three layers that catch its blind spots:
-
-1. **NICE NG12 / red-flag clinical-rule overrides** — symptom-driven escalation. Rectal bleeding ≥ 50 yr, iron-deficiency anaemia ≥ 60 yr, weight loss + abdo pain, severe pain, multi-flag combinations all raise the risk score and urgency. Override never lowers anything, only escalates.
-2. **Image-statistics atypicality detector** — a pixel-stats engine (deep-red dominance, dark cavitation, edge disorder, colour disorder) flags images that look like advanced lesions, independent of the trained model's class palette.
-3. **Honest staging override** — when atypicality is high or post-override risk ≥ 60 %, the staging head's output is hidden and replaced with "Cannot stage from one image" so the app never shows a misleadingly low stage on a cancer image.
-
-### Smart, real, authentic doctor finder
-
-- Live **OpenStreetMap Nominatim** geocoding (no API key) — works for any city worldwide.
-- Live **OSM Overpass API** lookup of nearby hospitals / clinics within 8 km.
-- Embedded **Google Maps iframe** (keyless `?output=embed`) centred on the typed city.
-- 25 verified Delhi-NCR specialists added to the curated DB (AIIMS, Sir Ganga Ram, Apollo, Max, BLK-Max, Medanta, Fortis FMRI, Manipal, Jaypee, Asian, Yashoda).
-- AI-pathology-aware ranking with "Why recommended" reason chips, distance-weighted sort, and per-card **Open in Maps** / **Get Directions** button chips.
-
-### Patient-friendly UI
-
-- Plain-English **"Why this result"** card on the Diagnosis tab built from the patient's actual inputs (no MC-Dropout / BioBERT / ResNet jargon — those moved to a collapsed "Show technical details" expander).
-- **"What to do next"** actionable steps card on the Recommendations tab, differentiated by urgency band (Routine / Urgent / Emergency).
-- Animated KPI counters, CSS particle background, agent-timeline with a moving progress bead, 3-D Plotly colon viewer, dark-mode toggle, contextual FAQ bubbles with URL dismissal.
-- **Compare-mode** — pin two analyses side-by-side (slot A vs slot B).
-- Motivational **ribbon-of-hope** card replacing the model-architecture pills; the copy adapts to the patient's risk band.
-- Three **quick-demo** cases on Step 1 (Polyp / UC / Barrett's) for one-click presentations.
-
-### Doctor-grade chatbot
-
-- Score-based keyword matching with stop-word filtering and phrase bonus (replaces the brittle longest-keyword selection).
-- KB expanded ~25 entries: diet, prevention, treatment, recovery, pain/sedation, FIT, NICE NG12 red flags, BSG/USPSTF screening, Lynch/FAP, anxiety, second opinion, insurance, wait times.
-- Verified **27/27** patient-style questions route correctly.
-- Compact at the bottom of the sidebar (collapsed by default).
-
-### Honest PDF report and presentation script
-
-- The downloadable PDF now includes the **Image-features verdict** and **Clinical Safety Override Applied** sections plus all original content.
-- `scripts/build_presentation_pdf.py` builds `outputs/ColonAI_Presentation_Script.pdf` — a click-by-click 6–8 minute live-demo script with talking points, a technical slide, an honesty slide, 8 likely Q&A, and three case studies.
+The training scripts, internal architecture details, exact loss functions, and dataset processing pipelines are intentionally kept inside the code rather than spelled out here. Read the paper for the academic context.
 
 ---
 
-## Architecture
+## 📚 Datasets used
 
-```
-                     ┌───────────────────────────────────┐
-   endoscopy image ──▶│ Image branch:                    │
-                     │   ResNet-50 + EfficientNet-B0    │
-                     │   (dual backbone, GradCAM target) │
-                     └────────────────┬──────────────────┘
-                                      │
-   clinical text ─────▶ ┌─────────────┐│
-                        │ BioBERT     ││
-                        │ (PubMed-pre)││
-                        └────┬────────┘│
-                             │         │
-   patient features ─▶ ┌─────┴─┐       │
-                       │ TabTr │       │
-                       │former │       │
-                       └───┬───┘       │
-                           │           │
-                           ▼           ▼
-                  ┌─────────────────────────────────────┐
-                  │ Gated Cross-Modal Fusion Transformer │
-                  │   - 3 cross-attention layers         │
-                  │   - 2 self-attention layers          │
-                  │   - sigmoid modality-gate (256-d)    │
-                  └────────┬────────────────────────────┘
-                           │
-                           ▼
-                  ┌────────────────────────┐
-                  │ 3 task heads           │
-                  │  · pathology (5-class) │
-                  │  · staging   (4-class) │
-                  │  · risk      (binary)  │
-                  └────────────────────────┘
-                           │
-                           ▼
-              ┌───────────────────────────┐
-              │ 6-agent post-processing   │
-              │  · UnifiedImageAgent      │
-              │  · TextAgent              │
-              │  · TabularRiskAgent       │
-              │  · FusionReasoningAgent   │
-              │  · XAIAgent               │
-              │  · ClinicalRecommendation │
-              └───────────────────────────┘
-                           │
-                           ▼
-              ┌───────────────────────────┐
-              │ THREE SAFETY LAYERS       │
-              │  · NICE NG12 rule engine  │
-              │  · Image-stats atypicality│
-              │  · Honest staging override│
-              └───────────────────────────┘
-                           │
-                           ▼
-                       Streamlit UI
-```
+ColonAI is trained on publicly available, research-licensed datasets only:
 
-### 6-agent pipeline
+- **HyperKvasir** — University of Tromsø (Norway). 23-class gastrointestinal imagery.
+- **CVC-ClinicDB / CVC-ColonDB / CVC-300** — Hospital Clinic de Barcelona. Polyp images with pixel-level masks.
+- **Kvasir-SEG** — Polyp segmentation extension of Kvasir.
+- **ETIS-LaribPolypDB** — Pentax-scope polyps. Used as the unseen-brand hold-out.
+- **The Cancer Genome Atlas (TCGA)** clinical metadata for tabular patient features.
 
-| Agent | What it does |
-|---|---|
-| **UnifiedImageAgent** | Forward pass through the dual backbone, GradCAM++ heatmap on ResNet layer4[-1] |
-| **TextAgent** | BioBERT attention rollout over the clinical-text input |
-| **TabularRiskAgent** | SHAP-style perturbation importance over the 12 patient-history features |
-| **FusionReasoningAgent** | Combines the three modality embeddings, runs the gated cross-modal transformer, and produces the final softmax over pathology / staging / risk |
-| **XAIAgent** | MC-Dropout (15 stochastic passes) for predictive entropy and overlay-ready GradCAM artefacts |
-| **ClinicalRecommendationAgent** | Maps the predicted class + confidence + risk to BSG / NICE / USPSTF-aligned next-step recommendations |
-
-The orchestrator (`src/agents/multimodal_orchestrator.py`) runs the agents end-to-end on each user case.
+No patient-identifiable data is used. No private hospital data is used.
 
 ---
 
-## Three independent safety layers
+## 📝 License & citation
 
-### 1 · NICE NG12 / red-flag rule engine
+This project is released under the MIT license. You are welcome to read, run, and learn from it. If you use it in academic work, please cite the accompanying research paper (see [`research_paper.tex`](./research_paper.tex)).
 
-Source: `apply_clinical_overrides` in [`app.py`](./app.py).
-
-Triggers (every rule is additive, never subtracts):
-
-| Rule | Risk boost | Urgency floor |
-|---|---|---|
-| Rectal bleeding ≥ 50 yr | +0.45 | Urgent |
-| Iron-deficiency anaemia ≥ 60 yr | +0.45 | Urgent |
-| Weight loss + abdo pain ≥ 40 yr | +0.40 | Urgent |
-| Change in bowel habit ≥ 60 yr | +0.35 | Urgent |
-| Severe pain (≥ 9/10) | +0.30 | Urgent |
-| Multiple red flags + severe pain ≥ 40 yr | +0.40 | **Emergency** |
-| First-degree family history of CRC | +0.15 | Elective |
-| Previous polyps | +0.10 | Elective |
-| Image atypicality (advanced-lesion features) | +0.40 | Urgent |
-
-For a 60-year-old with rectal bleeding, weight loss, anaemia, change in bowel habit, severe pain, family history and prior polyps, the engine fires **11 rules** and converts: Risk 12 % → 99 %, Urgency Elective → Emergency.
-
-### 2 · Image-statistics atypicality detector
-
-Source: [`src/app/image_atypicality.py`](./src/app/image_atypicality.py).
-
-Six per-image signals computed from the raw pixels:
-
-| Signal | What it detects |
-|---|---|
-| `red_necrosis` | Deep-red, low-green, low-blue patches → bleeding / fungating / necrotic tissue |
-| `dark_cavity` | Excessive dark area beyond normal lumen → cavitation, mass shadow |
-| `edge_disorder` | High-frequency disorganised edges → mass effect, ulceration |
-| `colour_disorder` | Hue scattered across the frame → mucosal disruption |
-| `mucosal_uniformity` | Pink-hue cluster coherence → healthy mucosa |
-| `brightness_balance` | Centred bright mucosa with small dark lumen → diagnostic frame |
-
-Three verdicts:
-
-| Verdict | Trigger |
-|---|---|
-| `consistent_screening` | Pixels look like a screening-stage finding (most HyperKvasir samples) |
-| `atypical_concerning` | `atypicality ≥ 0.55` AND `red_necrosis ≥ 0.45` — pixel signs of advanced lesion |
-| `uncertain` | Mixed signals |
-
-Calibration verified against real samples (HyperKvasir polyps, BBPS-clean colon, UC grades 1–3, Barrett's, CVC polyps) and a synthetic advanced-cancer mockup.
-
-### 3 · Honest staging override
-
-The staging head was trained on **class-derived synthetic labels** (HyperKvasir has no real TNM ground truth — the staging signal was inferred from the pathology class). On a stage-IV cancer image the head will return "No Cancer 89 %" because it has never seen that signal.
-
-The override fires when:
-
-- `image_atypicality.verdict == "atypical_concerning"`, **or**
-- post-override `risk_score ≥ 0.60`
-
-In that case `analysis["stage"]` becomes "Cannot stage from one image" and `stage_probs` is replaced with `{"Cannot determine": 1.0}` so the chart can never claim a misleadingly low stage. The app shows a clear honest message:
-
-> *Cancer staging not shown. Single endoscopy images cannot reliably stage cancer. Real staging requires histology (biopsy) + cross-sectional imaging (CT / MRI). The staging head's output for this image is not reliable — we are hiding it rather than showing a false low-stage number.*
+If you spot a security issue, please report it privately rather than filing a public GitHub issue — see [`SECURITY.md`](./SECURITY.md).
 
 ---
 
-## Datasets
+## 🙏 Acknowledgements
 
-| Dataset | Source | Used for | Notes |
-|---|---|---|---|
-| **HyperKvasir** | [Borgli et al. 2020](https://datasets.simula.no/hyper-kvasir/) | Image classification (5-class) | 10,662 images. Norwegian endoscopy unit. **Screening-stage only** — no advanced cancer. |
-| **CVC-ClinicDB** | [Bernal et al. 2015](https://polyp.grand-challenge.org/CVCClinicDB/) | Image pretraining + segmentation | 612 polyp images + masks. Spanish hospital. Polyps only. |
-| **TCGA-COAD/READ clinical** | [TCGA via GDC](https://portal.gdc.cancer.gov/) | Tabular feature pool (12 features) | Age, BMI, smoking, alcohol, family history, year of diagnosis, etc. |
+ColonAI was built as a master's-degree research project at Amity University. It stands on the work of:
 
-The model has **no advanced-cancer training data** — that is *the* fundamental limitation and the reason for the three safety layers above.
+- The open-source endoscopy-AI community (HyperKvasir, CVC, Kvasir-SEG, ETIS-Larib teams)
+- The PyTorch and Streamlit teams
+- The clinical-NLP open-research community
+- The clinicians who pushed for explainable, calibrated, safety-aware medical AI long before it was fashionable
 
----
-
-## Test-set results
-
-Held-out test split (1,066 images stratified across the 5 classes):
-
-| Metric | Value |
-|---|---|
-| Top-1 accuracy | **90.3 %** |
-| Macro-F1 | **0.81** |
-| AUC-ROC (one-vs-rest mean) | **0.984** |
-| Best epoch | **7** of 60 (no overfitting) |
-
-Per-class confusion matrix and ROC curves are in `outputs/unified_multimodal/figures/`.
-
----
-
-## Project structure
-
-```
-.
-├── app.py                                  # Streamlit web app (entry point)
-├── run_app.command                         # macOS double-click launcher
-├── run_app.sh                              # symlink → run_app.command
-├── RUN_ME.md                               # plain-English start instructions
-├── requirements.txt
-├── README.md                               # this file
-│
-├── assets/
-│   └── demo_cases/                         # 3 sample images (polyp, UC, Barrett's)
-│
-├── src/
-│   ├── agents/                             # 6-agent pipeline implementations
-│   │   ├── multimodal_orchestrator.py
-│   │   ├── unified_image_agent.py
-│   │   ├── text_agent.py
-│   │   ├── tabular_risk_agent.py
-│   │   ├── fusion_reasoning_agent.py
-│   │   ├── xai_agent.py
-│   │   └── clinical_recommendation_agent.py
-│   ├── models/
-│   │   └── unified_transformer.py          # UnifiedMultiModalTransformer
-│   ├── data/
-│   │   └── multimodal_dataset.py           # PyTorch Dataset + transforms
-│   ├── losses/
-│   │   └── multitask_loss.py
-│   └── app/                                # Streamlit-side helpers (NEW)
-│       ├── geo.py                          # Nominatim + Overpass + Maps URLs
-│       ├── image_atypicality.py            # pixel-stats safety layer
-│       ├── ui_extras.py                    # particles, counters, lottie, dark-mode
-│       └── report_generator.py             # PDF report
-│
-├── experiments/                            # training / evaluation scripts
-│   ├── train_unified_multimodal.py
-│   ├── evaluate_unified_multimodal.py
-│   └── run_full_pipeline.py
-│
-├── scripts/
-│   └── build_presentation_pdf.py           # generates the demo script PDF
-│
-├── outputs/                                # gitignored — checkpoints, metrics, figs
-│   └── unified_multimodal/
-│       ├── checkpoints/best_model.pth
-│       ├── figures/
-│       └── metrics.json
-│
-└── data/                                   # gitignored — raw + processed datasets
-    ├── raw/CVC-ClinicDB/
-    ├── raw/tcga/clinical/
-    └── processed/hyper_kvasir_clean/
-```
-
----
-
-## Installation
-
-```bash
-git clone https://github.com/Yuvraj235/Agentic_Multimodal_Colon_Cancer_AI.git
-cd Agentic_Multimodal_Colon_Cancer_AI
-
-# (optional but recommended)
-python3 -m venv venv
-source venv/bin/activate
-
-pip install -r requirements.txt
-```
-
-The launcher (`run_app.command`) auto-installs dependencies on first run if any are missing, so you can skip the manual `pip install` if you don't mind it happening once at start-up.
-
-### Required runtime data
-
-The trained checkpoint (`outputs/unified_multimodal/checkpoints/best_model.pth`) and the HyperKvasir / CVC-ClinicDB / TCGA datasets are gitignored — they total several GB. Use the training pipeline below to reproduce them, or copy them into `outputs/` and `data/` from your own working tree.
-
----
-
-## Running the web app
-
-### One-click (macOS)
-
-Double-click **`run_app.command`** in the project folder. A Terminal opens, dependencies install (first run only), the server starts on the first free port between 8501 and 8520, and your default browser opens automatically. Press Ctrl-C in the Terminal to stop.
-
-### Terminal
-
-```bash
-./run_app.command
-```
-
-### Pure manual fallback
-
-```bash
-python3 -m streamlit run app.py --server.port 8501
-```
-
-### Smoke test
-
-1. Open the app.
-2. On Step 1, click **Load Case A · Sigmoid Polyp** in the Quick-demo panel.
-3. Wait ~25 s for the model to warm up, then click **Analyse →**.
-4. On Results, you should see:
-   - Hero "Your AI Health Report"
-   - Image-features check card (blue) — *"Pixel features look like a screening-stage finding"*
-   - Key-finding strip — *Colorectal Polyps · ~75 % confidence · Low risk*
-   - 4 animated KPI counters
-   - Tabs: Diagnosis · Why this result? · GradCAM View · Risk Charts · Recommendations
-5. Click **Find Doctors → Generate Report → Generate PDF Report** to verify the full flow including the new override / image-features sections in the PDF.
-
----
-
-## Running the training pipeline
-
-```bash
-python3 experiments/run_full_pipeline.py
-```
-
-The script does CVC-ClinicDB pretraining, then HyperKvasir + TCGA fine-tuning, then test-set evaluation, then writes all 18 evaluation figures to `outputs/unified_multimodal/figures/`. Expect ~3 hours on a single GPU.
-
-The full anti-overfitting config that produced the published best epoch:
-
-```python
-lr=4e-5, bert_lr=6e-6, weight_decay=0.15
-head_drop=0.45, fusion_drop=0.4, tab_drop=0.4, img_drop=0.35
-mixup_alpha=0.3, label_smoothing=0.10
-freeze_bert_layers=10, unfreeze_epoch=3, early_stop=18
-```
-
----
-
-## Honest limitations
-
-If you take only one section of this README away, take this one.
-
-- **No advanced-cancer training data.** HyperKvasir and CVC-ClinicDB are screening-stage datasets. The model has 5 output classes — none of them is stage III or IV. A stage-IV cancer image will be misclassified as one of the 5 known classes; this is detected and surfaced by the image-statistics atypicality layer, but the underlying classifier output is not trustworthy on advanced disease.
-- **Staging is approximate.** The staging head was trained on class-derived synthetic labels, not real TNM ground truth. The honest-staging override hides its output on atypical or high-risk cases.
-- **No external validation.** All reported metrics are on a held-out split of the same datasets the model was trained on. Performance on Asian / African / paediatric cohorts has not been measured.
-- **Calibration not yet temperature-scaled.** Predictive probabilities should not be interpreted as exact frequencies; reliability diagrams are in the figures folder.
-- **Doctor directory is illustrative.** Names, phone numbers and ratings are sourced from public hospital websites and may have changed. The OSM live layer is community-sourced. Verify any contact before booking.
-- **Research / educational use only.** Not a medical device. No regulatory clearance (FDA / MHRA / CE). All findings must be reviewed by a licensed clinician before any clinical decision.
-
----
-
-## Citation
-
-If you use this codebase in academic work, please cite:
-
-```bibtex
-@misc{singh2026colonai,
-  title  = {Agentic Multimodal Colon Cancer AI: A 6-Agent Screening Pipeline
-            with Cross-Modal Fusion and Clinical-Rule Safety Layers},
-  author = {Singh, Yuvraj Pratap and contributors},
-  year   = {2026},
-  url    = {https://github.com/Yuvraj235/Agentic_Multimodal_Colon_Cancer_AI}
-}
-```
-
-Plus the original dataset papers:
-
-- HyperKvasir — Borgli et al., *Scientific Data*, 2020.
-- CVC-ClinicDB — Bernal et al., *Computerized Medical Imaging and Graphics*, 2015.
-- BioBERT — Lee et al., *Bioinformatics*, 2020.
-
----
-
-## License
-
-MIT — see [`LICENSE`](./LICENSE) (when present). The trained checkpoint inherits the licences of the source datasets (HyperKvasir CC-BY 4.0, CVC-ClinicDB educational use, TCGA Open Data).
-
----
-
-## Acknowledgements
-
-- The **HyperKvasir** team at Simula Research Laboratory for the foundational dataset.
-- The **CVC-ClinicDB** team at the Computer Vision Center, Universitat Autònoma de Barcelona.
-- The **TCGA** consortium for the clinical metadata used in the tabular branch.
-- **NICE / BSG / USPSTF** for the published clinical-pathway guidance baked into the recommendation agent and the safety-rule engine.
-- **OpenStreetMap** contributors for the live nearby-clinic data layer (Nominatim + Overpass).
+> **A reminder.** This software exists to **help** clinicians, not replace them. The single most important number on the screen is not the confidence percentage — it's the line at the bottom that says *"Always confirm with a clinician."* Read it. Mean it.
