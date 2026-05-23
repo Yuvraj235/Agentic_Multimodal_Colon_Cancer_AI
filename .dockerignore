@@ -1,0 +1,47 @@
+# Keep the Docker context small so HF Spaces builds quickly.
+# The model checkpoint is downloaded from HF Hub at runtime; we don't
+# need it in the image.
+
+# Repository housekeeping
+.git
+.gitignore
+.gitattributes
+.claude
+.streamlit/config.toml.local
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv
+.venv
+env
+
+# Large data / outputs / experiments
+data
+outputs
+experiments
+paper_figures
+notebooks
+
+# Local model artefacts (the live demo downloads them from HF Hub)
+*.pth
+*.pt
+*.bin
+*.safetensors
+
+# Editor / OS
+.DS_Store
+.idea
+.vscode
+*.swp
+
+# Docs that don't belong in the runtime image
+*.tex
+*.pdf
+*.docx
+RUN_ME.md
+SECURITY.md
+research_paper.tex

@@ -3,9 +3,8 @@ title: ColonAI
 emoji: 🩺
 colorFrom: blue
 colorTo: indigo
-sdk: streamlit
-sdk_version: "1.40.0"
-app_file: app.py
+sdk: docker
+app_port: 7860
 pinned: true
 license: mit
 short_description: A second pair of eyes for colon-cancer screening — patient-friendly multimodal AI with three independent safety layers. Research only; not a medical device.
