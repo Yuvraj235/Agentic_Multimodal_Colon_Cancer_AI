@@ -17,6 +17,29 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional, Dict, List, Any
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Deploy-time diagnostic: print to stdout the moment app.py is imported,
+# BEFORE anything else can fail. The first few lines of the HF Space log
+# (or `streamlit run app.py` stdout) will show:
+#   • which env vars Python actually sees
+#   • the current working directory and where best_model.pth is expected
+# This is the single most useful piece of info when "Model load failed —
+# demo mode" appears on a remote deploy.
+# ─────────────────────────────────────────────────────────────────────────────
+print("=" * 70, flush=True)
+print("[STARTUP] ColonAI app.py imported  pid=" + str(os.getpid()), flush=True)
+print(f"[STARTUP] cwd = {os.getcwd()}", flush=True)
+print(f"[STARTUP] __file__ = {__file__}", flush=True)
+print(f"[STARTUP] COLONAI_CHECKPOINT_HF_REPO = "
+      f"{os.environ.get('COLONAI_CHECKPOINT_HF_REPO', '(unset)')!r}", flush=True)
+print(f"[STARTUP] COLONAI_CHECKPOINT_HF_FILE = "
+      f"{os.environ.get('COLONAI_CHECKPOINT_HF_FILE', '(unset)')!r}", flush=True)
+print(f"[STARTUP] HF_TOKEN present = "
+      f"{bool(os.environ.get('HF_TOKEN') or os.environ.get('HUGGINGFACE_TOKEN'))}",
+      flush=True)
+print(f"[STARTUP] HF_HOME = {os.environ.get('HF_HOME', '(unset)')!r}", flush=True)
+print("=" * 70, flush=True)
+
 warnings.filterwarnings("ignore")
 
 # ── project root on path ──────────────────────────────────────────────────
