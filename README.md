@@ -30,7 +30,7 @@ ColonAI is a research project that tries to close that gap. Upload a colonoscopy
 
 | Mode | How |
 | :-- | :-- |
-| **Live web demo** | _Live demo will be linked here once deployed — see the [Deploy](#-deploy-your-own-copy) section below._ |
+| **Live web demo** | 👉 **[huggingface.co/spaces/Yuvraj2319/colonai](https://huggingface.co/spaces/Yuvraj2319/colonai)** — click through, no install, no signup. |
 | **Run locally (one click)** | `./run_app.command` from this folder → opens at http://localhost:8501 |
 | **Run locally (manual)** | `pip install -r requirements.txt && streamlit run app.py` |
 
