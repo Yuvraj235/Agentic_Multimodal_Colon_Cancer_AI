@@ -21,13 +21,23 @@ env
 
 # Large data / outputs / experiments
 data
-outputs
 experiments
 paper_figures
 notebooks
 
-# Local model artefacts (the live demo downloads them from HF Hub)
-*.pth
+# Most of outputs/ is logs / figures / manifests we don't need in the
+# image. But we DO need the v2 checkpoint + temperature so the app finds
+# them at the expected path on first boot without runtime download.
+outputs/*
+!outputs/unified_multimodal_v2
+outputs/unified_multimodal_v2/*
+!outputs/unified_multimodal_v2/checkpoints
+!outputs/unified_multimodal_v2/temperature.json
+outputs/unified_multimodal_v2/checkpoints/*
+!outputs/unified_multimodal_v2/checkpoints/best_model.pth
+
+# Local-only model artefacts (already covered by the rules above, but
+# kept as belt-and-braces for any other big binaries that might land).
 *.pt
 *.bin
 *.safetensors
