@@ -7,9 +7,22 @@ textColor = "#212121"
 font = "sans serif"
 
 [server]
+# Bind to loopback by default — set --server.address 0.0.0.0 only on a
+# trusted, authenticated network.
+address = "127.0.0.1"
 headless = true
 port = 8501
-maxUploadSize = 50
+# Hard upload size cap (MB). The app's security policy enforces 10 MB at
+# the validator level; this Streamlit-side cap is a belt-and-braces guard.
+maxUploadSize = 10
+# Reject very large messages — protects against memory-pressure attacks
+# via repeated chunked uploads.
+maxMessageSize = 50
+# XSRF protection on form submits (default true, made explicit).
+enableXsrfProtection = true
+# CORS lockdown — Streamlit handles its own origin checks; disabling CORS
+# wildcard ensures a hostile page can't iframe-and-submit the app.
+enableCORS = false
 
 [browser]
 gatherUsageStats = false

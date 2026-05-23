@@ -28,6 +28,11 @@ import pandas as pd
 from PIL import Image
 import cv2
 import torch
+
+# ── Security policy: import early so PIL.MAX_IMAGE_PIXELS gets capped at
+#    100 MP, ImageFile.LOAD_TRUNCATED_IMAGES=False, etc., before any
+#    untrusted Image.open() can happen elsewhere in the app.
+from src.app import security as _colonai_security   # noqa: F401
 import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
@@ -739,7 +744,14 @@ def load_ai_system():
         )
         ckpt_loaded = False
         if CHECKPOINT.exists():
-            ckpt = torch.load(str(CHECKPOINT), map_location=device, weights_only=False)
+            # Use the project's safe-loader. Our own checkpoints carry a
+            # "model_state" dict + meta (val_acc, epoch, classes) which is
+            # not loadable under weights_only=True, so we pass allow_unsafe=True.
+            # This is acceptable because CHECKPOINT comes from the repo,
+            # not user upload. SECURITY.md documents the policy.
+            from src.app.security import safe_torch_load
+            ckpt = safe_torch_load(str(CHECKPOINT), map_location=device,
+                                   allow_unsafe=True)
             # Checkpoints may use "model_state" (training script) or "model_state_dict"
             if isinstance(ckpt, dict):
                 state = ckpt.get("model_state",
@@ -771,9 +783,13 @@ def load_ai_system():
             "checkpoint_loaded": ckpt_loaded,
         }
     except Exception as e:
-        import traceback
-        return {"ready": False, "error": f"{type(e).__name__}: {e}",
-                "traceback": traceback.format_exc()}
+        # Don't leak tracebacks into the response — they may reveal absolute
+        # paths or internal module names that help an attacker. The full
+        # trace is sent to the server log instead via Streamlit's logger.
+        import logging, traceback
+        logging.getLogger("colonai.app").exception("model load failed")
+        return {"ready": False, "error_type": type(e).__name__,
+                "error": "Model failed to load — see server log."}
 
 
 @st.cache_resource(show_spinner=False)
@@ -1368,12 +1384,30 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
         except Exception:
             pass
         _tta_agree = float(out.get("tta_summary", {}).get("agreement_pct", 100.0)) / 100.0
+
+        # ── Inference-time cross-check — pathology ↔ GradCAM ↔ seg ↔ IG ─────
+        # This is the "no fake results" safety net. If the four signals
+        # don't agree, coherence is low → safety policy abstains.
+        from src.app.cross_check import cross_check
+        _cross = cross_check(
+            pathology_class   = getattr(fd, "pathology_class", "unknown"),
+            pathology_conf    = float(getattr(fd, "overall_confidence", 0.0)),
+            gradcam_map       = out.get("gradcam_heatmap"),
+            segmentation_mask = out.get("seg_mask"),
+            ig_map            = out.get("ig_heatmap"),
+        )
+        out["cross_check"] = _cross.to_dict()
+        # Use the worse of (TTA agreement, cross-check coherence) as the
+        # agent_agreement input. Both must be high for the safety policy
+        # to pass.
+        _agent_agree = min(_tta_agree, _cross.coherence)
+
         _safety = evaluate_safety(
             confidence       = float(getattr(fd, "overall_confidence", 0.0)),
             uncertainty      = float(getattr(xai, "uncertainty", 0.0)),
             endoscopy_score  = float(out.get("image_readout", {}).get("endoscopy_score", 1.0)),
             gradcam_focus    = _gc_focus,
-            agent_agreement  = _tta_agree,
+            agent_agreement  = _agent_agree,
         )
         out["safety_verdict"] = _safety.to_dict()
         # Audit log — every prediction recorded for post-hoc review
@@ -1741,6 +1775,20 @@ def render_sidebar_progress():
                               help=f"Jump to: {label}"):
             st.session_state["step"] = i
             st.rerun()
+
+    st.sidebar.markdown("---")
+    # Accessibility toggle — larger fonts, higher contrast, dyslexia-friendly
+    # font, bigger tap targets. Saved in session so it persists across pages.
+    acc_default = st.session_state.get("accessibility_mode", False)
+    acc_now = st.sidebar.toggle(
+        "🅰 Accessibility mode",
+        value=acc_default,
+        help="Larger fonts · higher contrast · dyslexia-friendly typography · "
+             "bigger buttons. Recommended if you find the default text small.",
+        key="accessibility_mode")
+    if acc_now:
+        from src.app.patient_ui import accessibility_css
+        st.markdown(accessibility_css(), unsafe_allow_html=True)
 
     st.sidebar.markdown("---")
     # Overall progress bar
@@ -2207,7 +2255,19 @@ def page_symptoms_upload():
         )
 
         if uploaded is not None:
-            pil_img = Image.open(uploaded).convert("RGB")
+            # Validate the upload through the central security policy:
+            # size cap, MIME allow-list, decompression-bomb guard. Refuse
+            # the bytes rather than try to recover from a malformed payload.
+            from src.app.security import validate_upload_bytes, UploadError
+            try:
+                raw_bytes = uploaded.getvalue()
+                pil_img, _upload_meta = validate_upload_bytes(
+                    raw_bytes,
+                    declared_mime=getattr(uploaded, "type", None),
+                    filename=uploaded.name)
+            except UploadError as _e:
+                st.error(f"Upload rejected: {_e}")
+                st.stop()
             st.session_state["uploaded_image"]      = pil_img
             st.session_state["uploaded_filename"]   = uploaded.name
 
@@ -2941,11 +3001,13 @@ def _render_plain_why_card(analysis: dict, patient: dict, symptoms: list, sympto
     img_obs = PLAIN_IMAGE_OBSERVATIONS.get(pclass,
               "patterns the AI has learnt to associate with this finding")
 
-    # Patient inputs summary
-    age = patient.get("age", "—")
-    sex = patient.get("gender", "—")
-    bmi = patient.get("bmi", "—")
-    name = patient.get("name") or "the patient"
+    # Patient inputs summary — ESCAPE all user-provided fields before
+    # interpolating into HTML (unsafe_allow_html block follows).
+    from src.app.security import escape_html as _esc
+    age  = _esc(patient.get("age", "—"))
+    sex  = _esc(patient.get("gender", "—"))
+    bmi  = _esc(patient.get("bmi", "—"))
+    name = _esc(patient.get("name")) or "the patient"
 
     # The narrative
     narrative = (
@@ -3101,63 +3163,45 @@ def page_results():
                 st.rerun()
         return
 
+    from src.app.security import escape_html as _esc
     render_hero(
         "Your AI Health Report",
-        f"Personalised analysis for {patient.get('name','Patient')} · {datetime.now().strftime('%d %b %Y, %H:%M')}",
+        f"Personalised analysis for {_esc(patient.get('name','Patient'))} · "
+        f"{datetime.now().strftime('%d %b %Y, %H:%M')}",
         badges=["Step 4 of 6", "Reviewed against international guidelines",
                 "Always confirm with a clinician"],
     )
 
-    # ── PATIENT-SAFETY BANNER ─────────────────────────────────────────
-    # Show the abstain / reject / show verdict from the central safety
-    # policy. This is the FIRST thing the user sees on the results page.
+    # ── PATIENT-SAFETY BANNER + cross-check rationale ──────────────────
+    # The verdict card is the first thing the user sees. It explains the
+    # AI's decision (or refusal) in plain language. The rationale card
+    # below it lists the concrete observations the model made — never
+    # generic "we are confident" filler.
+    from src.app.patient_ui import (verdict_card_html, rationale_card_html,
+                                    plain_english_diagnosis)
     sv = analysis.get("safety_verdict") or {}
     if isinstance(sv, dict) and sv.get("action"):
-        _action = sv.get("action", "show")
-        _reason = sv.get("reason", "")
-        _disc   = sv.get("disclaimer", "")
-        _flags  = sv.get("flags", []) or []
-        if _action == "reject":
-            _bg, _bd, _fg, _icon, _title = (
-                "linear-gradient(135deg,#FEE2E2 0%,#FECACA 100%)",
-                "#DC2626", "#7F1D1D", "🚫",
-                "Result withheld — image quality insufficient")
-        elif _action == "abstain":
-            _bg, _bd, _fg, _icon, _title = (
-                "linear-gradient(135deg,#FEF3C7 0%,#FDE68A 100%)",
-                "#D97706", "#78350F", "⚠️",
-                "Requires human review — AI confidence below safe threshold")
-        else:
-            _bg, _bd, _fg, _icon, _title = (
-                "linear-gradient(135deg,#DCFCE7 0%,#BBF7D0 100%)",
-                "#16A34A", "#14532D", "✅",
-                "AI safety checks passed")
-        _flag_html = ""
-        if _flags:
-            _flag_html = ("<div style='margin-top:8px;color:" + _fg + ";"
-                          "font-size:12px;'>Safety flags: "
-                          + ", ".join(f"<code>{f}</code>" for f in _flags)
-                          + "</div>")
+        # Plain-English diagnosis only relevant when the AI is showing a result
+        _plain = None
+        if sv.get("action") == "show":
+            try:
+                _plain = plain_english_diagnosis(
+                    getattr(analysis.get("fusion_diagnosis", object()),
+                            "pathology_class",
+                            analysis.get("predicted_class", "unknown")),
+                    float(getattr(analysis.get("fusion_diagnosis", object()),
+                                  "overall_confidence",
+                                  analysis.get("confidence", 0.0)) or 0.0))
+            except Exception:
+                _plain = None
+        st.markdown(verdict_card_html(sv, _plain), unsafe_allow_html=True)
+
+    # Cross-check rationale — concrete observations from cross_check.py
+    cc = analysis.get("cross_check") or {}
+    if isinstance(cc, dict) and (cc.get("rationale") or cc.get("flags")):
         st.markdown(
-            f"""
-            <div style="background:{_bg};border:2px solid {_bd};
-                 border-radius:14px;padding:16px 22px;
-                 box-shadow:0 4px 14px rgba(0,0,0,0.06);margin:14px 0;">
-              <div style="font-size:18px;font-weight:700;color:{_fg};margin-bottom:6px;">
-                {_icon} {_title}
-              </div>
-              <div style="color:{_fg};font-size:13.5px;line-height:1.5;">
-                {_reason}
-              </div>
-              {_flag_html}
-              <div style="margin-top:10px;color:{_fg};font-size:11.5px;
-                   opacity:0.85;line-height:1.4;">
-                {_disc.replace(chr(10), '<br>')}
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            rationale_card_html(cc.get("rationale", []), cc.get("flags", [])),
+            unsafe_allow_html=True)
 
     # ── RELIABILITY / TRUST PANEL ──────────────────────────────────────
     # Shows the five independent reliability signals so the user can see

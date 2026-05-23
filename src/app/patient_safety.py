@@ -184,7 +184,15 @@ class AuditLog:
     def __init__(self, log_dir: str = "outputs/audit"):
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
+        # Owner-only directory perms (0o700). Best-effort; ignored on POSIX-unfriendly FSs.
+        try: os.chmod(self.log_dir, 0o700)
+        except Exception: pass
         self.path = self.log_dir / f"audit_{time.strftime('%Y%m%d')}.jsonl"
+        # Touch + secure perms on the file itself
+        if not self.path.exists():
+            self.path.touch()
+        try: os.chmod(self.path, 0o600)
+        except Exception: pass
 
     def record(self, *, case_id: str, image_path: Optional[str] = None,
                pathology_class: str, confidence: float,
@@ -206,6 +214,9 @@ class AuditLog:
         }
         with self.path.open("a") as f:
             f.write(json.dumps(entry) + "\n")
+        # Re-assert owner-only after append (umask might widen it on some OSes)
+        try: os.chmod(self.path, 0o600)
+        except Exception: pass
 
     @staticmethod
     def _sha(path: Optional[str]) -> Optional[str]:
