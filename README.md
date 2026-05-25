@@ -124,9 +124,28 @@ Every prediction is logged with the image's SHA-256, the verdict, and the agents
 - **6-agent multimodal pipeline** — image, symptom text, patient history, fusion, explainability, clinical recommendation.
 - **Patient-friendly UI** — plain-English narrative, accessibility mode (larger fonts, dyslexia-friendly typography, high contrast, big tap targets), 1-click demo cases.
 - **Live colonoscopy video** — runs at 20+ FPS on a MacBook (Apple Silicon). Single-frame false positives are filtered out by a 3-frame persistence check before anything is shown to the operator.
+- **Latest Research feed** (Step 8) — auto-updated daily list of cancer-research news (ScienceDaily, MedicalXpress, Cancer Research UK). Pulled by a GitHub Action via public RSS — no API keys, no auth.
 - **Calibrated confidence** — the percentage shown to the user has been calibrated against held-out data, so it's a meaningful probability rather than a vibes number.
 - **REST API** — `/predict`, `/health`, `/version`, `/audit/today` — with optional `X-API-Key` auth and an audit log of every prediction.
 - **Security-hardened** — upload size limits, decompression-bomb protection, MIME allow-list, sanitised error responses, CORS allow-list, owner-only audit-log permissions, XSS-safe HTML rendering. See [`SECURITY.md`](./SECURITY.md).
+
+---
+
+## 🤖 Daily automation (runs without you)
+
+| When (UTC) | Workflow | What it does |
+|:---:|:--|:--|
+| **04:00** | [`auto-bug-check.yml`](.github/workflows/auto-bug-check.yml) | Pyflakes static analysis, JSON validity, stale-file cleanup, **live HF Space probe** via headless Chromium (Playwright). Opens a GitHub issue with a screenshot if the live demo silently drops to demo mode. |
+| **06:00** | [`scrape-news.yml`](.github/workflows/scrape-news.yml) | Refreshes the cancer-news feed from 6 public RSS sources, commits the new JSON. The Space auto-syncs on its next rebuild. |
+
+You can also run the same checks locally:
+
+```bash
+python3 scripts/auto_bug_check.py        # static analysis + cleanup + HTTP probe
+python3 scripts/check_live_status.py     # Playwright probe — renders the live URL,
+                                         # reads the sidebar, reports READY / DEMO_MODE
+python3 scripts/scrape_cancer_news.py    # one-shot news refresh
+```
 
 ---
 
@@ -206,13 +225,24 @@ Run this behind a reverse proxy (nginx / Caddy) that terminates TLS. Read [`SECU
 | Path | What it is |
 | :-- | :-- |
 | `app.py` | The Streamlit web application |
+| `Dockerfile` | Docker image for HF Spaces / self-host |
 | `scripts/serve_api.py` | The FastAPI REST service |
-| `src/app/` | Application helpers (safety policy, accessibility UI, cross-checks, security) |
+| `scripts/scrape_cancer_news.py` | Daily cancer-news scraper (6 public RSS feeds) |
+| `scripts/auto_bug_check.py` | Static analysis + auto-cleanup + HTTP probe |
+| `scripts/check_live_status.py` | Playwright probe — verifies the live URL has the real model loaded (not demo mode) |
+| `src/app/` | Application helpers (safety policy, accessibility UI, cross-checks, security, segmentation, patient-ui, cancer-news rendering) |
 | `src/agents/` | The 6 specialised AI agents and their orchestrator |
 | `src/models/` | The model architecture |
-| `data/`, `outputs/` | Data (gitignored) and model checkpoints |
+| `src/data/` | Dataset loaders + tabular preprocessing |
+| `.github/workflows/` | Daily auto-bug-check + cancer-news scraper (GitHub Actions) |
+| `outputs/cancer_news.json` | Latest scraped news (refreshed daily by the cron) |
+| `outputs/auto_bug_report.json` | Most recent bug-check status |
+| `outputs/live_status.json` | Most recent Playwright probe of the live Space |
+| `data/`, `outputs/` (most) | Gitignored — datasets and model artefacts |
 | `RUN_ME.md` | Non-technical user instructions |
 | `SECURITY.md` | Threat model and operator runbook |
+| `ColonAI_Pitch.pdf` | Buyer-ready 7-page pitch deck |
+| `ColonAI_Handover.pdf` | Full technical handover for future maintainers |
 | `research_paper.tex` | The full research paper |
 
 The training scripts, internal architecture details, exact loss functions, and dataset processing pipelines are intentionally kept inside the code rather than spelled out here. Read the paper for the academic context.
