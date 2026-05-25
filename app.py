@@ -1536,6 +1536,26 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
             ig_map            = out.get("ig_heatmap"),
         )
         out["cross_check"] = _cross.to_dict()
+
+        # ── Smart per-image rationale (real measurements, not templates) ──
+        # Computes lesion size %, location octant, attention focus
+        # tightness, lesion-vs-background contrast, edge regularity,
+        # and dominant colour — all from the actual image + masks. Each
+        # bullet that lands in the UI is a measurement, not a phrase.
+        try:
+            from src.app.smart_rationale import smart_rationale as _sr
+            _sr_out = _sr(
+                image_rgb       = img_np,
+                pathology_class = getattr(fd, "pathology_class", "unknown"),
+                confidence      = float(getattr(fd, "overall_confidence", 0.0)),
+                gradcam         = out.get("gradcam_heatmap"),
+                seg_mask        = out.get("seg_mask"),
+                uncertainty     = float(getattr(xai, "uncertainty", 0.0)),
+            )
+            out["smart_rationale"] = _sr_out
+        except Exception as _sr_exc:
+            out["smart_rationale_error"] = f"{type(_sr_exc).__name__}: {_sr_exc}"
+
         # Use the worse of (TTA agreement, cross-check coherence) as the
         # agent_agreement input. Both must be high for the safety policy
         # to pass.
@@ -3412,6 +3432,49 @@ def page_results():
     if isinstance(cc, dict) and (cc.get("rationale") or cc.get("flags")):
         st.markdown(
             rationale_card_html(cc.get("rationale", []), cc.get("flags", [])),
+            unsafe_allow_html=True)
+
+    # ── Smart per-image evidence card ─────────────────────────────────
+    # Lesion size %, location octant, attention focus, contrast, shape,
+    # dominant colour — all measured from this specific image.
+    sr = analysis.get("smart_rationale") or {}
+    if isinstance(sr, dict) and sr.get("bullets"):
+        from src.app.security import escape_html as _esc
+        # Render as a richer card with the one-line summary in big text
+        _summary = sr.get("summary", "")
+        _bullets = sr.get("bullets", [])
+        # Convert **bold** markdown to <b> for inline rendering
+        import re as _re
+        def _md_bold(s):
+            return _re.sub(r"\*\*(.+?)\*\*",
+                           lambda m: "<b>" + _esc(m.group(1)) + "</b>",
+                           _esc(s))
+        bullets_html = "".join(
+            f"<li style='margin:6px 0;line-height:1.55;'>{_md_bold(b)}</li>"
+            for b in _bullets)
+        st.markdown(
+            f"""
+            <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:14px;
+                        padding:18px 22px;margin:14px 0;
+                        box-shadow:0 2px 8px rgba(15,23,42,0.04);">
+              <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.7px;
+                          color:#0B5FFF;font-weight:800;margin-bottom:6px;">
+                What the AI is actually seeing  ·  measured from this image
+              </div>
+              <div style="font-size:0.98rem;color:#0F172A;line-height:1.5;
+                          margin-bottom:12px;font-weight:600;">
+                {_md_bold(_summary)}
+              </div>
+              <ul style="font-size:0.93rem;color:#1F2937;margin:0 0 0 18px;padding:0;">
+                {bullets_html}
+              </ul>
+              <div style="font-size:0.7rem;color:#94A3B8;margin-top:10px;
+                          font-style:italic;">
+                These observations are computed directly from the uploaded image
+                and the AI's attention maps — not templated phrases.
+              </div>
+            </div>
+            """,
             unsafe_allow_html=True)
 
     # ── Privacy-safe doctor feedback widget ────────────────────────────

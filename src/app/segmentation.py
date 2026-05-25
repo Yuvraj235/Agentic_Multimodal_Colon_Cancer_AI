@@ -82,6 +82,13 @@ def predict_seg_mask(model, image_tensor, device) -> Optional[np.ndarray]:
 
     Returns a 224x224 numpy float array in [0, 1] (sigmoid output), or
     None if the decoder isn't available.
+
+    Post-processing: morphological closing on the thresholded mask to
+    fill sub-polyp gaps. Without this, a single polyp with a faint
+    middle stripe gets split into two connected-components and the
+    downstream bbox extraction undercounts. Cheap fix — measurable
+    detection-F1 lift on Pentax data (see Stage-3 P-2(b) in the
+    handover PDF).
     """
     dec = _load_decoder(device)
     if dec is None:
@@ -92,7 +99,26 @@ def predict_seg_mask(model, image_tensor, device) -> Optional[np.ndarray]:
             feats = model.image_encoder.resnet_backbone(image_tensor.to(device))
             logits = dec(feats)                            # (1, 1, 224, 224)
             prob   = torch.sigmoid(logits)[0, 0].cpu().numpy()
-        return prob
+        # ── Morphological cleanup ────────────────────────────────────
+        try:
+            import cv2 as _cv
+            binmask = (prob > 0.5).astype(np.uint8)
+            # 5×5 ellipse closes ~10-px gaps between sub-blobs of the same lesion
+            kernel = _cv.getStructuringElement(_cv.MORPH_ELLIPSE, (5, 5))
+            cleaned = _cv.morphologyEx(binmask, _cv.MORPH_CLOSE, kernel)
+            # Drop micro-blobs (< 0.1 % of image area)
+            n, labels, stats, _ = _cv.connectedComponentsWithStats(cleaned, 8)
+            keep = np.zeros_like(cleaned)
+            min_area = max(8, int(0.001 * binmask.size))
+            for i in range(1, n):
+                if stats[i, _cv.CC_STAT_AREA] >= min_area:
+                    keep[labels == i] = 1
+            # Blend the cleaned binary mask back in to preserve a probability
+            # gradient where prob > 0.5 AND the cleaned mask kept it.
+            prob = np.where(keep > 0, np.maximum(prob, 0.5), prob * 0.2)
+        except Exception:
+            pass    # fall through with the raw prob map
+        return prob.astype(np.float32)
     except Exception as e:
         import logging
         logging.getLogger("colonai.seg").warning("seg inference failed: %s", e)
