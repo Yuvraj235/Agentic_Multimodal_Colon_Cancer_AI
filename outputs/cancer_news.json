@@ -1,0 +1,398 @@
+{
+  "generated_at": "2026-05-25T00:21:20.145513+00:00",
+  "n_items": 40,
+  "feed_status": [
+    {
+      "name": "ScienceDaily \u2014 colorectal cancer",
+      "ok": true,
+      "n": 29
+    },
+    {
+      "name": "Medical Xpress \u2014 gastroenterology",
+      "ok": true,
+      "n": 30
+    },
+    {
+      "name": "ScienceDaily \u2014 cancer",
+      "ok": true,
+      "n": 30
+    },
+    {
+      "name": "Cancer Research UK news",
+      "ok": true,
+      "n": 12
+    },
+    {
+      "name": "ScienceDaily \u2014 immune system",
+      "ok": true,
+      "n": 30
+    },
+    {
+      "name": "ScienceDaily \u2014 pharmacology",
+      "ok": true,
+      "n": 30
+    }
+  ],
+  "items": [
+    {
+      "title": "Study finds two types of colon polyps can raise bowel cancer risk fivefold",
+      "link": "https://www.sciencedaily.com/releases/2026/03/260313002938.htm",
+      "summary": "Researchers studying over 8,400 colonoscopies discovered that having both adenomas and serrated polyps in the bowel can raise the risk of serious precancerous changes by up to five times. These two polyp types may represent separate cancer pathways that can occur at the same\u2026",
+      "date": "Fri, 13 Mar 2026 06:14:14 EDT",
+      "source": "ScienceDaily \u2014 colorectal cancer",
+      "score": 11.0,
+      "category": "colorectal"
+    },
+    {
+      "title": "New study shows at-home colon cancer screening test reduces risk of colorectal cancer death, as effective as screening colonoscopy",
+      "link": "https://www.sciencedaily.com/releases/2024/07/240725154658.htm",
+      "summary": "A noninvasive colorectal cancer screening test that can be done at home could reduce the risk of colorectal cancer death by 33%, according to a new study.",
+      "date": "Thu, 25 Jul 2024 15:46:58 EDT",
+      "source": "ScienceDaily \u2014 colorectal cancer",
+      "score": 9.5,
+      "category": "colorectal"
+    },
+    {
+      "title": "Decoding inflammatory bowel disease\u2014on a chip",
+      "link": "https://medicalxpress.com/news/2026-05-decoding-inflammatory-bowel-disease-chip.html",
+      "summary": "Inflammatory bowel disease (IBD), which comprises the inflammatory conditions Crohn's disease and ulcerative colitis, affects about 1.6 million Americans, many of whom cannot be effectively treated. This is mostly due to a lack of understanding of what exactly causes the\u2026",
+      "date": "Thu, 21 May 2026 14:20:07 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 8.95,
+      "category": "colorectal"
+    },
+    {
+      "title": "Researchers identify molecule linked to treatment-resistant inflammatory bowel disease",
+      "link": "https://medicalxpress.com/news/2026-05-molecule-linked-treatment-resistant-inflammatory.html",
+      "summary": "Mayo Clinic researchers have identified an immune-regulating molecule that may help explain why some patients with inflammatory bowel disease (IBD), including Crohn's disease and ulcerative colitis, do not respond to commonly used therapies. The findings, published in Cell\u2026",
+      "date": "Wed, 13 May 2026 16:40:06 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 8.95,
+      "category": "colorectal"
+    },
+    {
+      "title": "Why chronic gut inflammation can turn into colon cancer",
+      "link": "https://www.sciencedaily.com/releases/2026/01/260125083401.htm",
+      "summary": "A newly uncovered immune chain reaction in the gut may explain why people with inflammatory bowel disease face a much higher risk of colorectal cancer. Researchers found that a powerful inflammatory signal flips on specialized gut immune cells, which then call in waves of white\u2026",
+      "date": "Sun, 25 Jan 2026 10:15:11 EST",
+      "source": "ScienceDaily \u2014 immune system",
+      "score": 8.55,
+      "category": "colorectal"
+    },
+    {
+      "title": "Colon cancer breakthrough keeps patients cancer-free for nearly 3 years",
+      "link": "https://www.sciencedaily.com/releases/2026/05/260505234618.htm",
+      "summary": "A short burst of immunotherapy before surgery is delivering surprisingly powerful results for a specific type of colorectal cancer. Patients in a UK-led trial who received just nine weeks of pembrolizumab prior to surgery have remained cancer-free nearly three years later\u2014an\u2026",
+      "date": "Wed, 06 May 2026 02:20:17 EDT",
+      "source": "ScienceDaily \u2014 cancer",
+      "score": 7.7,
+      "category": "colorectal"
+    },
+    {
+      "title": "Targeting inflammation may help overcome drug resistance in colon cancer",
+      "link": "https://medicalxpress.com/news/2026-05-inflammation-drug-resistance-colon-cancer.html",
+      "summary": "Chemotherapy drugs that target a common mutation in colorectal cancer rapidly lose efficacy in patients, leading to relapse. According to a new preclinical study by Weill Cornell Medicine and MD Anderson Cancer Center investigators, colorectal tumors often find multiple ways to\u2026",
+      "date": "Thu, 21 May 2026 11:00:15 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 6.95,
+      "category": "colorectal"
+    },
+    {
+      "title": "Lower-volume bowel prep effective for inpatient colonoscopy",
+      "link": "https://medicalxpress.com/news/2026-05-volume-bowel-prep-effective-inpatient.html",
+      "summary": "Lower-volume preparation with 1 L polyethylene glycol (PEG)-ascorbate may be an effective and acceptable option for inpatient colonoscopy, according to a study published online May 5 in the Annals of Internal Medicine.",
+      "date": "Wed, 13 May 2026 17:00:02 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 6.95,
+      "category": "colorectal"
+    },
+    {
+      "title": "Colon cancer is rising in young adults and doctors don\u2019t fully know why",
+      "link": "https://www.sciencedaily.com/releases/2026/05/260513221805.htm",
+      "summary": "Colorectal cancer is increasingly showing up in younger adults, with cases now appearing in people as young as their thirties \u2014 often with no family history or warning signs. A major Swiss study analyzing nearly 100,000 cases over four decades found that diagnoses in people\u2026",
+      "date": "Thu, 14 May 2026 20:50:57 EDT",
+      "source": "ScienceDaily \u2014 cancer",
+      "score": 6.7,
+      "category": "colorectal"
+    },
+    {
+      "title": "Hidden virus in your gut may be linked to colon cancer",
+      "link": "https://www.sciencedaily.com/releases/2026/04/260422044630.htm",
+      "summary": "A newly discovered virus hiding inside a common gut bacterium could help explain one of medicine\u2019s long-standing mysteries: why a microbe found in both healthy people and cancer patients is linked to colorectal cancer. The research suggests that the interaction between bacteria\u2026",
+      "date": "Wed, 22 Apr 2026 09:02:43 EDT",
+      "source": "ScienceDaily \u2014 cancer",
+      "score": 6.7,
+      "category": "colorectal"
+    },
+    {
+      "title": "Black licorice compound shows promise against inflammatory bowel disease",
+      "link": "https://www.sciencedaily.com/releases/2026/05/260508003127.htm",
+      "summary": "Researchers have developed a stem cell-based model of the human intestine that may transform how new IBD treatments are discovered. After testing thousands of compounds, they identified glycyrrhizin \u2014 a natural substance found in black licorice \u2014 as a promising anti-inflammatory\u2026",
+      "date": "Sat, 09 May 2026 20:58:55 EDT",
+      "source": "ScienceDaily \u2014 pharmacology",
+      "score": 6.55,
+      "category": "colorectal"
+    },
+    {
+      "title": "Why colorectal cancer breaks the immune system\u2019s rules",
+      "link": "https://www.sciencedaily.com/releases/2026/02/260206012229.htm",
+      "summary": "Colorectal cancer has long baffled scientists because, unlike most tumors, patients often do better when their cancers are packed with immune-suppressing regulatory T cells. New research finally explains why. Scientists discovered that these T cells aren\u2019t all the same: one\u2026",
+      "date": "Fri, 06 Feb 2026 11:03:34 EST",
+      "source": "ScienceDaily \u2014 colorectal cancer",
+      "score": 5.0,
+      "category": "colorectal"
+    },
+    {
+      "title": "Childhood exposure to bacterial toxin may be triggering colorectal cancer epidemic among the young",
+      "link": "https://www.sciencedaily.com/releases/2025/04/250423120654.htm",
+      "summary": "An international team has identified a potential microbial culprit behind the alarming rise in early-onset colorectal cancer: a bacterial toxin called colibactin. Scientists report that exposure to colibactin in early childhood imprints a distinct genetic signature on the DNA of\u2026",
+      "date": "Wed, 23 Apr 2025 12:06:54 EDT",
+      "source": "ScienceDaily \u2014 colorectal cancer",
+      "score": 5.0,
+      "category": "colorectal"
+    },
+    {
+      "title": "How a low-carb diet can drive colorectal cancer development",
+      "link": "https://www.sciencedaily.com/releases/2025/03/250303141308.htm",
+      "summary": "Researchers have shown how a low carbohydrate diet can worsen the DNA-damaging effects of some gut microbes to cause colorectal cancer. The study compared the effects of three different diets in combination with specific gut bacteria on colorectal cancer development in mice.",
+      "date": "Mon, 03 Mar 2025 14:13:08 EST",
+      "source": "ScienceDaily \u2014 colorectal cancer",
+      "score": 5.0,
+      "category": "colorectal"
+    },
+    {
+      "title": "Spatial transcriptomics guides inflammatory bowel disease research",
+      "link": "https://medicalxpress.com/news/2026-05-spatial-transcriptomics-inflammatory-bowel-disease.html",
+      "summary": "A novel spatial transcriptomics atlas developed by Northwestern Medicine scientists may improve the understanding of niche cellular interactions in the gastrointestinal tract that promote the development of inflammatory bowel diseases, as detailed in a recent study published in\u2026",
+      "date": "Wed, 20 May 2026 13:41:12 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 4.95,
+      "category": "colorectal"
+    },
+    {
+      "title": "This 5-day diet helped Crohn\u2019s patients feel better fast",
+      "link": "https://www.sciencedaily.com/releases/2026/04/260402042751.htm",
+      "summary": "A new clinical trial suggests that what people eat could finally offer real relief for Crohn\u2019s disease, a condition that has long lacked clear dietary guidance. Researchers found that a \u201cfasting-mimicking diet\u201d \u2014 involving just five days a month of very low-calorie, plant-based\u2026",
+      "date": "Fri, 03 Apr 2026 04:55:54 EDT",
+      "source": "ScienceDaily \u2014 immune system",
+      "score": 3.05,
+      "category": "ibd"
+    },
+    {
+      "title": "This gut hormone could explain 40% of IBS-D cases\u2014and lead to a cure",
+      "link": "https://www.sciencedaily.com/releases/2025/07/250729001208.htm",
+      "summary": "A mysterious gut hormone may be behind many cases of chronic diarrhea, especially in people with undiagnosed bile acid malabsorption, a condition often mistaken for irritable bowel syndrome. Researchers from the University of Cambridge identified that the hormone INSL5 spikes\u2026",
+      "date": "Tue, 29 Jul 2025 01:33:52 EDT",
+      "source": "ScienceDaily \u2014 colorectal cancer",
+      "score": 3.0,
+      "category": "colorectal"
+    },
+    {
+      "title": "The dietary bug in a cancer therapy",
+      "link": "https://www.sciencedaily.com/releases/2025/05/250521131630.htm",
+      "summary": "A study has uncovered a surprising link between diet, intestinal microbes and the efficacy of cancer therapy.",
+      "date": "Wed, 21 May 2025 13:16:30 EDT",
+      "source": "ScienceDaily \u2014 colorectal cancer",
+      "score": 3.0,
+      "category": "colorectal"
+    },
+    {
+      "title": "Asthma and antibiotic use may predict nasal polyp recurrence after endoscopic sinus surgery",
+      "link": "https://www.sciencedaily.com/releases/2025/02/250204132533.htm",
+      "summary": "The probability of revision sinus surgery including the removal of nasal polyps is higher if the patient has asthma or is on antibiotics at the time of their initial surgery. However, higher age was not a predictor of revision surgery, according to a new study.",
+      "date": "Tue, 04 Feb 2025 13:25:33 EST",
+      "source": "ScienceDaily \u2014 colorectal cancer",
+      "score": 3.0,
+      "category": "colorectal"
+    },
+    {
+      "title": "Study establishes link between early side effects from prostate cancer radiation and long-term side effects",
+      "link": "https://www.sciencedaily.com/releases/2025/01/250131194543.htm",
+      "summary": "Men undergoing radiation therapy for prostate cancer who experience side effects early in treatment may face a higher risk of developing more serious long-term urinary and bowel health issues, according to a new study.",
+      "date": "Fri, 31 Jan 2025 19:45:43 EST",
+      "source": "ScienceDaily \u2014 colorectal cancer",
+      "score": 3.0,
+      "category": "colorectal"
+    },
+    {
+      "title": "Promising treatment for rectal cancer confirmed in major study",
+      "link": "https://www.sciencedaily.com/releases/2024/08/240822125931.htm",
+      "summary": "A new treatment for locally advanced rectal cancer shows favourable results in that surgery can sometimes be avoided completely. It also reduces the risk of recurrence. The method has been confirmed as effective in a comprehensive study.",
+      "date": "Thu, 22 Aug 2024 12:59:31 EDT",
+      "source": "ScienceDaily \u2014 colorectal cancer",
+      "score": 3.0,
+      "category": "colorectal"
+    },
+    {
+      "title": "Scientists probe molecular cause of COVID-19 related diarrhea, revealing potential treatments",
+      "link": "https://www.sciencedaily.com/releases/2024/08/240806131336.htm",
+      "summary": "Working with human stem cells that form a kind of 'mini intestine-in-a-dish,' scientists say they have found several molecular mechanisms for COVID-19-related diarrhea, suggesting potential ways to control it.",
+      "date": "Tue, 06 Aug 2024 13:13:36 EDT",
+      "source": "ScienceDaily \u2014 colorectal cancer",
+      "score": 3.0,
+      "category": "colorectal"
+    },
+    {
+      "title": "Gut-lung microbe shifts may explain clozapine's severe bowel and lung side effects",
+      "link": "https://medicalxpress.com/news/2026-05-gut-lung-microbe-shifts-clozapine.html",
+      "summary": "Schizophrenia is a severe mental health disorder characterized by hallucinations, false and rigid beliefs (i.e., delusions), impaired mental functions, disorganized speech and, in some cases, repetitive body movements. This debilitating disorder is typically treated with\u2026",
+      "date": "Fri, 22 May 2026 08:50:01 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 2.95,
+      "category": "colorectal"
+    },
+    {
+      "title": "Study finds substandard bowel cancer care for people with learning disability",
+      "link": "https://medicalxpress.com/news/2026-05-substandard-bowel-cancer-people-disability.html",
+      "summary": "People with a learning disability are at higher risk of developing bowel cancer, yet face significant barriers at nearly every stage of the care pathway, University of Manchester and Christie NHS Foundation Trust have found. The population-based study of more than 2 million\u2026",
+      "date": "Wed, 20 May 2026 20:00:03 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 2.95,
+      "category": "colorectal"
+    },
+    {
+      "title": "New study traces network of nerves that disrupt digestion, pointing to potential IBS treatment",
+      "link": "https://medicalxpress.com/news/2026-05-network-nerves-disrupt-digestion-potential.html",
+      "summary": "When stress affects the gut, the stomach tightens, digestion slows. For some, these symptoms resolve quickly. For others\u2014particularly people with constipation-predominant irritable bowel syndrome (IBS-C) and related conditions\u2014they don't. In a new study, investigators at Beth\u2026",
+      "date": "Wed, 20 May 2026 14:20:04 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 2.95,
+      "category": "colorectal"
+    },
+    {
+      "title": "Links discovered between mitochondrial lipid deficiency and inflammation of the gut",
+      "link": "https://medicalxpress.com/news/2026-05-links-mitochondrial-lipid-deficiency-inflammation.html",
+      "summary": "Inflammatory bowel diseases occur when the delicate balance between the gut, the immune system, and the microbiota is disrupted. Until now, however, it was unclear whether harmful microbes or defects in the body's own immune cells were the primary cause of these diseases.",
+      "date": "Mon, 18 May 2026 19:20:06 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 2.95,
+      "category": "colorectal"
+    },
+    {
+      "title": "France blames stomach bug for new cruise outbreak, lifts lockdown",
+      "link": "https://medicalxpress.com/news/2026-05-france-blames-stomach-bug-cruise.html",
+      "summary": "French authorities on Wednesday allowed asymptomatic passengers to leave a British cruise ship, saying a gastrointestinal virus was behind an outbreak of sickness that came after an elderly man died of a heart attack.",
+      "date": "Thu, 14 May 2026 04:20:01 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 2.95,
+      "category": "colorectal"
+    },
+    {
+      "title": "The cell keeps the score: \u2018memory\u2019, inflammation and bowel cancer",
+      "link": "https://news.cancerresearchuk.org/2026/05/18/the-cell-keeps-the-score-memory-inflammation-and-bowel-cancer/",
+      "summary": "A new mouse study has shown that the way cells \u201cremember\u201d chronic inflammation could be a missing link between colitis and bowel cancer. If the same holds true in humans, it could lead to a new way to prevent cancer. The post The cell keeps the score: &#8216;memory&#8217;,\u2026",
+      "date": "Mon, 18 May 2026 13:21:42 +0000",
+      "source": "Cancer Research UK news",
+      "score": 2.7,
+      "category": "colorectal"
+    },
+    {
+      "title": "MIT scientists discover amino acid that helps the gut heal itself",
+      "link": "https://www.sciencedaily.com/releases/2026/05/260520233223.htm",
+      "summary": "MIT scientists have identified cysteine \u2014 an amino acid found in foods like meat, dairy, beans, and nuts \u2014 as a potent trigger for intestinal repair. In mice, a cysteine-rich diet activated immune cells that released healing signals, helping stem cells rebuild damaged intestinal\u2026",
+      "date": "Thu, 21 May 2026 00:40:33 EDT",
+      "source": "ScienceDaily \u2014 immune system",
+      "score": 2.55,
+      "category": "colorectal"
+    },
+    {
+      "title": "How aggressive breast cancer turns off the immune system",
+      "link": "https://www.sciencedaily.com/releases/2026/04/260411022031.htm",
+      "summary": "Researchers are launching a new project to crack the mystery of aggressive breast cancer, where predicting disease progression remains a major hurdle. By studying how tumors interact with and suppress the immune system, scientists aim to identify new biomarkers that reveal how\u2026",
+      "date": "Sun, 12 Apr 2026 07:03:28 EDT",
+      "source": "ScienceDaily \u2014 cancer",
+      "score": 1.7,
+      "category": "drug-news"
+    },
+    {
+      "title": "A simple hand photo may be the key to detecting a serious disease",
+      "link": "https://www.sciencedaily.com/releases/2026/03/260303201807.htm",
+      "summary": "Researchers at Kobe University have developed an AI system that can detect acromegaly, a rare hormone disorder, by analyzing photos of the back of the hand and a clenched fist. The disease often develops slowly and can take years to diagnose, even though untreated cases may\u2026",
+      "date": "Wed, 04 Mar 2026 11:59:51 EST",
+      "source": "ScienceDaily \u2014 colorectal cancer",
+      "score": 1.5,
+      "category": "general-oncology"
+    },
+    {
+      "title": "Combination treatment improves response to immunotherapy for lung cancer",
+      "link": "https://www.sciencedaily.com/releases/2024/09/240925123547.htm",
+      "summary": "Researchers have tested a combination of treatments in mice with lung cancer and shown that these allow immunotherapies to target non-responsive tumors.",
+      "date": "Wed, 25 Sep 2024 12:35:47 EDT",
+      "source": "ScienceDaily \u2014 colorectal cancer",
+      "score": 1.5,
+      "category": "general-oncology"
+    },
+    {
+      "title": "Molecular pathways behind inflammation in alcohol-associated liver disease mapped",
+      "link": "https://medicalxpress.com/news/2026-05-molecular-pathways-inflammation-alcohol-liver.html",
+      "summary": "Cedars-Sinai Health Sciences University investigators have identified molecular mechanisms that drive inflammation in alcohol-associated liver disease. Their preclinical discoveries could one day provide targets for therapies to treat the potentially fatal condition.",
+      "date": "Thu, 21 May 2026 19:20:03 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 1.45,
+      "category": "general-oncology"
+    },
+    {
+      "title": "Vitamin C may help prevent cancer, according to study of dietary patterns and water quality",
+      "link": "https://medicalxpress.com/news/2026-05-vitamin-cancer-dietary-patterns-quality.html",
+      "summary": "A new study from the University of Waterloo uses mathematical modeling to examine how Vitamin C affects chemical reactions in the digestive system that are linked to cancer development. Over the last several decades, North American diets have seen a steady increase in exposure\u2026",
+      "date": "Wed, 20 May 2026 13:20:04 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 1.45,
+      "category": "drug-news"
+    },
+    {
+      "title": "A 'bet-hedging' strategy that helps gut bacteria survive and recover",
+      "link": "https://medicalxpress.com/news/2026-05-hedging-strategy-gut-bacteria-survive.html",
+      "summary": "Researchers at the Icahn School of Medicine at Mount Sinai and collaborators have discovered that many gut bacteria use a flexible survival strategy to withstand disruptions such as antibiotics and diet changes.",
+      "date": "Tue, 19 May 2026 11:00:07 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 1.45,
+      "category": "general-oncology"
+    },
+    {
+      "title": "Scientists develop first-in-class drug candidate for chronic itch",
+      "link": "https://medicalxpress.com/news/2026-05-scientists-class-drug-candidate-chronic.html",
+      "summary": "Chronic itch is often described as an \"invisible torment.\" It can persist for weeks or months, severely affecting sleep, mental health, and quality of life. In patients with cholestatic liver disease, chronic itch remains a major clinical challenge, and current treatments often\u2026",
+      "date": "Mon, 18 May 2026 18:40:06 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 1.45,
+      "category": "drug-news"
+    },
+    {
+      "title": "Endoscopic procedure associated with greater short-term weight loss than oral semaglutide, study finds",
+      "link": "https://medicalxpress.com/news/2026-05-endoscopic-procedure-greater-short-term.html",
+      "summary": "A comparative study, presented at ESGE Days 2026, has found that endoscopic sleeve gastroplasty (ESG) is associated with significantly greater short-term weight loss than oral semaglutide in adults with obesity.",
+      "date": "Thu, 14 May 2026 18:10:01 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 1.45,
+      "category": "drug-news"
+    },
+    {
+      "title": "The liver's immune cells might be the key to curing hepatitis B",
+      "link": "https://medicalxpress.com/news/2026-05-liver-immune-cells-key-hepatitis.html",
+      "summary": "Fifteen years ago, doctors in Europe noticed a remarkable thing happening in people with chronic hepatitis B infections. When patients went off their medications, the virus started to come back\u2014and then some of the patients were cured. Something was goading their immune systems\u2026",
+      "date": "Thu, 14 May 2026 12:11:31 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 1.45,
+      "category": "drug-news"
+    },
+    {
+      "title": "How philanthropy is helping promising cancer treatments reach clinical trials sooner",
+      "link": "https://news.cancerresearchuk.org/2026/05/20/how-philanthropy-is-helping-promising-cancer-treatments-reach-clinical-trials-sooner/",
+      "summary": "On International Clinical Trials Day, we\u2019re spotlighting how philanthropy-backed clinical trials at Cancer Research UK are helping promising treatments reach people affected by rare and hard-to-treat cancers. The post How philanthropy is helping promising cancer treatments reach\u2026",
+      "date": "Wed, 20 May 2026 08:28:01 +0000",
+      "source": "Cancer Research UK news",
+      "score": 1.2,
+      "category": "clinical-trial"
+    },
+    {
+      "title": "New study looks for better ways to prevent skin cancer in the people most at risk",
+      "link": "https://news.cancerresearchuk.org/2026/05/11/new-study-looks-for-better-ways-to-stop-skin-cancer-in-the-people-most-at-risk/",
+      "summary": "A new clinical trial is looking at how we can prevent a type of non-melanoma skin cancer for people with weakened immune systems. The post New study looks for better ways to prevent skin cancer in the people most at risk appeared first on Cancer Research UK - Cancer News .",
+      "date": "Mon, 11 May 2026 16:32:59 +0000",
+      "source": "Cancer Research UK news",
+      "score": 1.2,
+      "category": "clinical-trial"
+    }
+  ]
+}
