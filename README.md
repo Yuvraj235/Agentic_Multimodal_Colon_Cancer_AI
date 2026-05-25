@@ -243,7 +243,7 @@ Run this behind a reverse proxy (nginx / Caddy) that terminates TLS. Read [`SECU
 | `SECURITY.md` | Threat model and operator runbook |
 | `ColonAI_Pitch.pdf` | Buyer-ready 7-page pitch deck |
 | `ColonAI_Handover.pdf` | Full technical handover for future maintainers |
-| `research_paper.tex` | The full research paper |
+
 
 The training scripts, internal architecture details, exact loss functions, and dataset processing pipelines are intentionally kept inside the code rather than spelled out here. Read the paper for the academic context.
 
