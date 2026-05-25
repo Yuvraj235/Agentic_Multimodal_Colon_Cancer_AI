@@ -1453,11 +1453,62 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
     # on raw pixels, so it doesn't share the model's training-distribution
     # blind spots).
     try:
-        from src.app.image_atypicality import compute_image_readout
+        from src.app.image_atypicality import compute_image_readout, detect_advanced_lesion
         readout = compute_image_readout(img_np)
         out["image_readout"] = readout.to_dict()
+        # ── Invasive / advanced-disease detector (pixel-stats override) ──
+        # If pure-pixel statistics show signs of advanced colorectal disease
+        # (deep ulceration / heavy bleeding / nodular mass / fungating
+        # tissue) — features the 5-class classifier was NEVER trained on —
+        # we set a flag here so the safety policy can override "polyps 87%"
+        # with "Atypical lesion — urgent endoscopist review".
+        adv = detect_advanced_lesion(img_np)
+        out["advanced_lesion"] = adv
     except Exception as exc:
         out["image_readout"] = {"error": f"{type(exc).__name__}: {exc}"}
+
+    # ── TCGA tabular stage classifier ─────────────────────────────────
+    # A REAL stage estimate (I/II/III/IV) trained on TCGA's 1,319
+    # labelled cases. ~53% accuracy on 4-class (vs 25% random) using
+    # only demographics + family history + smoking — no T/N/M leakage.
+    # Provides a SECOND, independent stage estimate alongside the
+    # image-based one (which was always essentially blank because
+    # HyperKvasir has no stage labels).
+    try:
+        from pathlib import Path as _P
+        import joblib as _joblib
+        _stage_path = _P("outputs/unified_multimodal_v2/tcga_stage_clf.joblib")
+        if _stage_path.exists():
+            _stage_obj = _joblib.load(_stage_path)
+            _clf = _stage_obj["model"]; _enc = _stage_obj["encoder"]
+            _feat_cols = _stage_obj["feature_cols"]
+            # Build a 1-row feature vector from the patient form
+            import pandas as _pd
+            _row = {
+                "age":              float(patient.get("age", 50) or 50),
+                "gender_male":      1.0 if str(patient.get("gender","")).lower() == "male" else 0.0,
+                "race_white":       1.0,    # no race field in our form — assume default
+                "bmi":              float(patient.get("bmi", 25) or 25),
+                "site_rectum":      0.0,    # form doesn't ask; default to colon
+                "pack_years":       float(patient.get("pack_years", 0) or 0),
+                "cigs_per_day":     float(patient.get("cigs_per_day", 0) or 0),
+                "alcohol_history":  1.0 if str(patient.get("alcohol","")).lower() == "yes" else 0.0,
+                "family_hx_cancer": 1.0 if str(patient.get("family_history","")).lower() == "yes" else 0.0,
+            }
+            _x = _pd.DataFrame([[_row.get(c, np.nan) for c in _feat_cols]],
+                                columns=_feat_cols)
+            _probs = _clf.predict_proba(_x)[0]
+            _pred  = _enc.classes_[int(_probs.argmax())]
+            out["tcga_stage_estimate"] = {
+                "predicted_stage": f"Stage {_pred}",
+                "confidence":      float(_probs.max()),
+                "probabilities":   {f"Stage {c}": float(p)
+                                     for c, p in zip(_enc.classes_, _probs)},
+                "trained_on":      _stage_obj.get("trained_on", "TCGA-COAD"),
+                "n_train_samples": _stage_obj.get("n_samples", 0),
+            }
+    except Exception as _stg_exc:
+        out["tcga_stage_estimate"] = {"error": f"{type(_stg_exc).__name__}: {_stg_exc}"}
 
     # ── RELIABILITY LAYER ──────────────────────────────────────────────
     # Run TTA, prototype-OOD, agent-consensus and aggregate into a TrustReport.
@@ -3507,6 +3558,92 @@ def page_results():
         st.markdown(
             rationale_card_html(cc.get("rationale", []), cc.get("flags", [])),
             unsafe_allow_html=True)
+
+    # ── Invasive / advanced-lesion override banner ──────────────────────
+    # Fires when the pixel-statistics safety net detects features the
+    # 5-class classifier was never trained on. Highest-severity warning
+    # on the page.
+    adv = analysis.get("advanced_lesion") or {}
+    if isinstance(adv, dict) and adv.get("is_advanced"):
+        from src.app.security import escape_html as _esc
+        reasons_html = "".join(
+            f"<li style='margin:4px 0;'>{_esc(r)}</li>"
+            for r in adv.get("reasons", []))
+        st.markdown(
+            f"""
+            <div style="background:linear-gradient(135deg,#FEE2E2 0%,#FECACA 100%);
+                        border:3px solid #B91C1C;border-radius:14px;
+                        padding:18px 22px;margin:14px 0;
+                        box-shadow:0 6px 14px rgba(185,28,28,0.18);">
+              <div style="font-size:1rem;font-weight:800;color:#7F1D1D;
+                          margin-bottom:8px;">
+                🚨 ATYPICAL LESION DETECTED — urgent endoscopist review
+              </div>
+              <div style="color:#7F1D1D;font-size:0.9rem;line-height:1.55;
+                          margin-bottom:8px;">
+                Pixel statistics found features that the AI's training data
+                did NOT contain (the model knows polyps, ulcerative colitis,
+                Barrett's and post-therapy sites — it does NOT know advanced
+                colorectal carcinoma). Severity score:
+                <b>{float(adv.get("severity", 0))*100:.0f}%</b>.
+              </div>
+              <ul style="color:#7F1D1D;font-size:0.85rem;margin:0 0 0 18px;padding:0;">
+                {reasons_html}
+              </ul>
+              <div style="color:#7F1D1D;font-size:0.85rem;margin-top:10px;
+                          font-weight:600;">
+                The pathology class shown below should be treated as untrusted
+                — request a 2-week-wait referral for biopsy.
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # ── TCGA tabular stage estimate ──────────────────────────────────
+    # Independent of the image — trained on 1,319 real TCGA colon-cancer
+    # cases. Shown as a SECONDARY estimate, never as primary diagnosis.
+    tse = analysis.get("tcga_stage_estimate") or {}
+    if isinstance(tse, dict) and tse.get("predicted_stage"):
+        from src.app.security import escape_html as _esc
+        probs = tse.get("probabilities", {})
+        bars_html = ""
+        for stage, p in sorted(probs.items(), key=lambda x: -x[1]):
+            pct = p * 100
+            color = "#0B5FFF" if stage == tse["predicted_stage"] else "#94A3B8"
+            bars_html += (
+                f"<div style='margin:5px 0;'>"
+                f"  <div style='display:flex;justify-content:space-between;"
+                f"               font-size:0.8rem;margin-bottom:2px;'>"
+                f"    <span style='color:#0F172A;'><b>{_esc(stage)}</b></span>"
+                f"    <span style='color:{color};font-weight:700;'>{pct:.0f}%</span>"
+                f"  </div>"
+                f"  <div style='background:#F1F5F9;border-radius:5px;height:6px;'>"
+                f"    <div style='background:{color};height:100%;width:{pct:.0f}%;border-radius:5px;'></div>"
+                f"  </div></div>")
+        st.markdown(
+            f"""
+            <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:14px;
+                        padding:18px 22px;margin:14px 0;
+                        box-shadow:0 2px 8px rgba(15,23,42,0.04);">
+              <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.7px;
+                          color:#7C3AED;font-weight:800;margin-bottom:6px;">
+                Independent cancer-stage estimate (from clinical features only)
+              </div>
+              <div style="font-size:0.95rem;color:#0F172A;line-height:1.5;
+                          font-weight:600;margin-bottom:10px;">
+                Based on age, BMI, smoking, family history and other clinical
+                features, the most likely AJCC stage IF cancer were present is
+                <b style='color:#7C3AED;'>{_esc(tse["predicted_stage"])}</b>
+                ({tse.get("confidence", 0)*100:.0f}% confidence).
+              </div>
+              {bars_html}
+              <div style="font-size:0.7rem;color:#94A3B8;margin-top:10px;font-style:italic;line-height:1.4;">
+                Trained on TCGA-COAD ({tse.get("n_train_samples", 0):,} labelled
+                cases). This is a population-level estimate from demographics,
+                NOT a diagnosis. Image-based staging requires histopathology
+                data we don't have — see docs/STAGING_ROADMAP.md.
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
 
     # ── Hierarchical-UC hedge banner (only fires when needed) ─────────
     sp = analysis.get("smart_prediction") or {}

@@ -30,6 +30,7 @@ from dataclasses import dataclass, asdict
 from typing import Dict, Optional
 
 import numpy as np
+import cv2
 
 
 @dataclass
@@ -421,3 +422,103 @@ def compute_image_readout(arr: np.ndarray) -> ImageReadout:
         is_endoscopy=True,
         endoscopy_score=float(gate["score"]),
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Invasive / advanced-disease detector (pixel-statistics override)
+# ─────────────────────────────────────────────────────────────────────────────
+def detect_advanced_lesion(arr: np.ndarray) -> Dict:
+    """Detect visual signs of advanced colorectal disease that the
+    5-class classifier (polyps / UC / Barrett's / therapeutic) was NEVER
+    trained on — fungating mass, deep ulceration, heavy contact bleeding,
+    nodular irregular surface.
+
+    When this returns is_advanced=True, the safety policy should OVERRIDE
+    the classifier's confident call with "Atypical lesion — urgent
+    endoscopist review required" regardless of what class was predicted.
+    This stops the model from confidently mis-labelling an invasive
+    tumour as 'polyps' just because polyps is the closest class it knows.
+
+    Returns:
+        {
+          is_advanced:    bool,
+          severity:       float in [0..1]   higher = more advanced
+          signals:        dict of sub-scores
+          reasons:        list[str]         human-readable bullets
+        }
+    """
+    rgb = _to_uint8_rgb(arr)
+    if rgb is None or rgb.size < 100:
+        return {"is_advanced": False, "severity": 0.0,
+                "signals": {}, "reasons": []}
+
+    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+    H, S, V = hsv[..., 0], hsv[..., 1], hsv[..., 2]
+
+    # 1. Deep ulceration / cavitation: large CONNECTED dark patches
+    #    (not just shadows — sustained low-V regions ≥ 1 % of frame)
+    dark = (V < 60).astype(np.uint8)
+    n, _, stats, _ = cv2.connectedComponentsWithStats(dark, 8)
+    img_area = float(rgb.shape[0] * rgb.shape[1])
+    biggest_dark = (float(stats[1:, cv2.CC_STAT_AREA].max())
+                    if n > 1 else 0.0) / img_area
+    s_ulceration = float(min(1.0, biggest_dark * 8))   # 12.5 %+ → 1.0
+
+    # 2. Heavy contact bleeding: BRIGHT red-saturated pixels (fresh blood
+    #    is different from healthy mucosa — high saturation + low hue + high value)
+    blood = (((H < 8) | (H > 170)) & (S > 130) & (V > 100)).astype(np.uint8)
+    s_bleeding = float(min(1.0, blood.mean() * 4))     # 25 %+ → 1.0
+
+    # 3. Nodular / irregular surface: high local-variance texture
+    #    Compute variance of Laplacian in 16×16 blocks; take the 90th-pct.
+    lap = cv2.Laplacian(gray, cv2.CV_32F, ksize=3)
+    blocks = []
+    for y in range(0, gray.shape[0] - 16, 16):
+        for x in range(0, gray.shape[1] - 16, 16):
+            blocks.append(float(lap[y:y+16, x:x+16].var()))
+    if blocks:
+        nodular = float(np.percentile(blocks, 90))
+        s_nodular = float(min(1.0, nodular / 5000.0))  # >5000 var → 1.0
+    else:
+        s_nodular = 0.0
+
+    # 4. Mass effect: very low-saturation white-ish reflection patch
+    #    (large saturation drop indicates fungating tissue / reflective surface)
+    bright_dull = ((V > 200) & (S < 40)).astype(np.uint8)
+    s_mass = float(min(1.0, bright_dull.mean() * 6))    # 16 %+ → 1.0
+
+    signals = {
+        "deep_ulceration": s_ulceration,
+        "contact_bleeding": s_bleeding,
+        "nodular_surface": s_nodular,
+        "mass_reflection": s_mass,
+    }
+
+    # Composite severity = max signal (any ONE strong sign is enough to flag)
+    severity = float(max(signals.values()))
+
+    # Trigger if severity ≥ 0.55 OR any TWO signals ≥ 0.35
+    n_moderate = sum(1 for v in signals.values() if v >= 0.35)
+    is_advanced = (severity >= 0.55) or (n_moderate >= 2)
+
+    reasons: list = []
+    if s_ulceration >= 0.35:
+        reasons.append(f"Large dark region ({s_ulceration*100:.0f}% severity) — "
+                       f"could indicate deep ulceration or cavitation.")
+    if s_bleeding >= 0.35:
+        reasons.append(f"Heavy red-saturated patches ({s_bleeding*100:.0f}%) — "
+                       f"suggests contact bleeding or fresh blood.")
+    if s_nodular >= 0.35:
+        reasons.append(f"Highly nodular/irregular surface texture "
+                       f"({s_nodular*100:.0f}%) — possible mass effect.")
+    if s_mass >= 0.35:
+        reasons.append(f"Large reflective fungating-looking patches "
+                       f"({s_mass*100:.0f}%) — manual review recommended.")
+
+    return {
+        "is_advanced": is_advanced,
+        "severity":    severity,
+        "signals":     signals,
+        "reasons":     reasons,
+    }

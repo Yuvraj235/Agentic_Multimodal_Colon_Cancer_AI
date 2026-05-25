@@ -1,0 +1,54 @@
+{
+  "n_samples": 1319,
+  "classes": [
+    "I",
+    "II",
+    "III",
+    "IV"
+  ],
+  "cv_5_honest": {
+    "mean_accuracy": 0.5344999423896761,
+    "mean_macro_f1": 0.519113723039083,
+    "per_class_f1": {
+      "I": 0.38037910465826585,
+      "II": 0.526313624387735,
+      "III": 0.5594973840351739,
+      "IV": 0.6102647790751573
+    }
+  },
+  "cv_5_with_tnm": {
+    "mean_accuracy": 0.9969696969696968,
+    "mean_macro_f1": 0.9975797101449275,
+    "per_class_f1": {
+      "I": 1.0,
+      "II": 0.9946666666666667,
+      "III": 0.9956521739130434,
+      "IV": 1.0
+    }
+  },
+  "features_honest": [
+    "age",
+    "gender_male",
+    "race_white",
+    "bmi",
+    "site_rectum",
+    "pack_years",
+    "cigs_per_day",
+    "alcohol_history",
+    "family_hx_cancer"
+  ],
+  "features_full": [
+    "age",
+    "gender_male",
+    "race_white",
+    "bmi",
+    "site_rectum",
+    "t_stage",
+    "n_stage",
+    "m_stage",
+    "pack_years",
+    "cigs_per_day",
+    "alcohol_history",
+    "family_hx_cancer"
+  ]
+}
