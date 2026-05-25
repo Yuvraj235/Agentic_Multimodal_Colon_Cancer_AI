@@ -26,15 +26,24 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install minimal deps for static analysis
-        run: pip install pyflakes
+      - name: Install minimal deps for static analysis + live-status probe
+        run: |
+          pip install pyflakes playwright
+          playwright install --with-deps chromium
 
-      - name: Run auto-bug-check
+      - name: Run auto-bug-check (static analysis + cleanup + Space probe)
         id: check
         continue-on-error: true
         run: |
           python scripts/auto_bug_check.py
-          echo "exit_code=$?" >> $GITHUB_OUTPUT
+          echo "static_exit=$?" >> $GITHUB_OUTPUT
+
+      - name: Probe LIVE Space (real-prediction verification, not just HTTP 200)
+        id: live
+        continue-on-error: true
+        run: |
+          python scripts/check_live_status.py
+          echo "live_exit=$?" >> $GITHUB_OUTPUT
 
       - name: Commit auto-cleanups (stale files / whitespace)
         run: |
@@ -48,39 +57,58 @@ jobs:
             git push
           fi
 
-      - name: Open a GitHub issue if there are critical bugs
-        if: failure() || steps.check.outputs.exit_code != '0'
+      - name: Open a GitHub issue if there are critical bugs OR Space is unhealthy
+        if: steps.check.outputs.static_exit != '0' || steps.live.outputs.live_exit != '0'
         uses: actions/github-script@v7
         with:
           script: |
             const fs   = require('fs');
-            const path = 'outputs/auto_bug_report.json';
-            if (!fs.existsSync(path)) return;
-            const report = JSON.parse(fs.readFileSync(path, 'utf8'));
-            if (report.overall_ok) return;
-
             const lines = [];
-            lines.push("Daily ColonAI bug-check found issues that need a human:");
+            lines.push("Daily ColonAI auto-check found issues that need a human:");
             lines.push("");
-            if (report.syntax_errors.length)
-              lines.push("**Syntax errors:**\n" +
-                         report.syntax_errors.map(e => `- \`${e}\``).join("\n"));
-            if (report.critical_issues.length)
-              lines.push("\n**Critical (undefined names — would crash at runtime):**\n" +
-                         report.critical_issues.map(e => `- \`${e}\``).join("\n"));
-            if (report.json_errors.length)
-              lines.push("\n**JSON errors:**\n" +
-                         report.json_errors.map(e => `- \`${e}\``).join("\n"));
-            if (report.hf_space && !report.hf_space.ok)
-              lines.push(`\n**HF Space unhealthy:** stage \`${report.hf_space.space_stage || '?'}\` — ${report.hf_space.error || ''}`);
-            lines.push(`\n*Soft warnings (cleanup-only, not crashes): ${report.soft_warnings.length}*`);
-            lines.push(`\nRun \`python3 scripts/auto_bug_check.py\` locally for the full report.`);
+
+            // Static-analysis report
+            if (fs.existsSync('outputs/auto_bug_report.json')) {
+              const r = JSON.parse(fs.readFileSync('outputs/auto_bug_report.json','utf8'));
+              if (!r.overall_ok) {
+                if (r.syntax_errors.length)
+                  lines.push("**Syntax errors:**\n" +
+                             r.syntax_errors.map(e => `- \`${e}\``).join("\n"));
+                if (r.critical_issues.length)
+                  lines.push("\n**Critical (undefined names — would crash at runtime):**\n" +
+                             r.critical_issues.map(e => `- \`${e}\``).join("\n"));
+                if (r.json_errors.length)
+                  lines.push("\n**JSON errors:**\n" +
+                             r.json_errors.map(e => `- \`${e}\``).join("\n"));
+                if (r.hf_space && !r.hf_space.ok)
+                  lines.push(`\n**HF Space HTTP/stage unhealthy:** stage \`${r.hf_space.space_stage || '?'}\` — ${r.hf_space.error || ''}`);
+                lines.push(`\n*Soft warnings (cleanup-only): ${r.soft_warnings.length}*`);
+              }
+            }
+
+            // Live-prediction probe report
+            if (fs.existsSync('outputs/live_status.json')) {
+              const l = JSON.parse(fs.readFileSync('outputs/live_status.json','utf8'));
+              if (l.status !== 'READY') {
+                lines.push(`\n**Live Space NOT producing real predictions:** \`${l.status}\` — ${l.reason}`);
+                if (l.sidebar_text) {
+                  lines.push("\n<details><summary>Sidebar text</summary>\n\n```\n"
+                             + l.sidebar_text.substring(0, 1500) + "\n```\n</details>");
+                }
+                if (l.alerts && l.alerts.length) {
+                  lines.push("\n**Alert banners on the page:**\n" +
+                             l.alerts.map(a => `- ${a}`).join("\n"));
+                }
+              }
+            }
+
+            lines.push(`\nRun \`python3 scripts/auto_bug_check.py && python3 scripts/check_live_status.py\` locally for full details.`);
             const body = lines.join("\n");
 
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo:  context.repo.repo,
-              title: `🐛 Auto-bug-check: issues on ${new Date().toISOString().slice(0,10)}`,
+              title: `🐛 Auto-check: issues on ${new Date().toISOString().slice(0,10)}`,
               body:  body,
               labels:["auto-bug-check"],
             });
