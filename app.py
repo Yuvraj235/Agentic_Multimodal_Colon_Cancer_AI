@@ -241,7 +241,8 @@ STEPS = [
     "Results",
     "Find Doctors",
     "Download Report",
-    "Live Video Mode",      # NEW step 6 — real-time video / webcam
+    "Live Video Mode",      # step 6 — real-time video / webcam
+    "Latest Research",      # step 7 — auto-updated cancer-news feed
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1486,6 +1487,18 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
                     out["xai_agreement"] = gradcam_ig_agreement(gradcam_heatmap, ig_map)
             except Exception as exc:
                 out["ig_error"] = f"{type(exc).__name__}: {exc}"
+
+        # ── Segmentation decoder — wire it in so cross_check has the 3rd signal
+        # The decoder was trained but the live inference path never invoked it
+        # (bug — out["seg_mask"] was always None). predict_seg_mask returns
+        # a sigmoid mask in [0,1] at 224x224, or None if seg_head.pth is missing.
+        try:
+            from src.app.segmentation import predict_seg_mask
+            _seg = predict_seg_mask(system["model"], img_tensor, device)
+            if _seg is not None:
+                out["seg_mask"] = _seg
+        except Exception as exc:
+            out["seg_error"] = f"{type(exc).__name__}: {exc}"
     except Exception as exc:
         out["trust_report"] = {"error": f"{type(exc).__name__}: {exc}"}
 
@@ -6718,6 +6731,149 @@ _COLON_BUDDY_WIDGET_HTML = r"""
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# LATEST RESEARCH page — auto-updated cancer-news feed
+# ─────────────────────────────────────────────────────────────────────────────
+def page_latest_research():
+    """Daily-refreshed news feed of cancer research (colon-cancer focus).
+
+    Reads outputs/cancer_news.json which is produced by
+    scripts/scrape_cancer_news.py — locally on demand and automatically
+    every day via .github/workflows/scrape-news.yml (commits the JSON
+    back to the repo so the HF Space pulls the fresh data).
+    """
+    from src.app.security import escape_html as _esc
+
+    render_hero(
+        "Latest cancer research",
+        "Hand-curated news from oncology journals and research outlets — updated daily. "
+        "Tap a card to read the full story on the source's website.",
+        badges=["Step 8 of 8", "Auto-updated · public RSS feeds", "Not medical advice"],
+    )
+
+    news_path = ROOT / "outputs/cancer_news.json"
+    if not news_path.exists():
+        st.warning(
+            "📰 No news feed cached yet. Run "
+            "`python3 scripts/scrape_cancer_news.py` once to populate it, "
+            "or wait for the daily GitHub Action to run.")
+        return
+
+    try:
+        payload = json.loads(news_path.read_text())
+    except Exception as e:
+        st.error(f"Could not load news feed: {e}")
+        return
+
+    items = payload.get("items", [])
+    if not items:
+        st.info("News feed is empty right now — try again later.")
+        return
+
+    # Header bar with freshness + category filter
+    gen_at = payload.get("generated_at", "")
+    fresh_label = "earlier today"
+    try:
+        from datetime import datetime, timezone
+        ts = datetime.fromisoformat(gen_at.replace("Z", "+00:00"))
+        delta = (datetime.now(timezone.utc) - ts).total_seconds() / 3600
+        if   delta < 1:   fresh_label = "less than an hour ago"
+        elif delta < 24:  fresh_label = f"{int(delta)} hour(s) ago"
+        else:             fresh_label = f"{int(delta/24)} day(s) ago"
+    except Exception:
+        pass
+
+    cats = sorted({it.get("category", "general-oncology") for it in items})
+    CAT_LABELS = {
+        "colorectal":       "🎯 Colon & rectal cancer",
+        "ibd":              "🩻 IBD (UC / Crohn's)",
+        "drug-news":        "💊 New drugs & approvals",
+        "clinical-trial":   "🧪 Clinical trials",
+        "general-oncology": "🔬 General oncology",
+    }
+    options = ["All"] + [CAT_LABELS.get(c, c) for c in cats]
+    val_to_cat = {CAT_LABELS.get(c, c): c for c in cats}
+
+    cols = st.columns([3, 2])
+    with cols[0]:
+        st.markdown(
+            f"<div style='font-size:0.9rem;color:#475569;'>📊 "
+            f"<b>{len(items)}</b> stories · updated {fresh_label} · "
+            f"<a href='https://github.com/Yuvraj235/Agentic_Multimodal_Colon_Cancer_AI/"
+            f"blob/main/outputs/cancer_news.json' target='_blank'>view raw feed</a></div>",
+            unsafe_allow_html=True)
+    with cols[1]:
+        picked = st.selectbox("Filter by category", options, index=0,
+                              label_visibility="collapsed")
+    selected = (None if picked == "All" else val_to_cat.get(picked))
+    filtered = [it for it in items if selected is None or it["category"] == selected]
+
+    if not filtered:
+        st.info("No stories in this category right now.")
+        return
+
+    # Render as cards (2-column grid)
+    st.markdown("<div style='margin:14px 0;'></div>", unsafe_allow_html=True)
+    for i in range(0, len(filtered), 2):
+        c1, c2 = st.columns(2)
+        for col, it in zip([c1, c2], filtered[i:i+2]):
+            with col:
+                cat   = it.get("category", "general-oncology")
+                cat_label = CAT_LABELS.get(cat, cat)
+                badge_color = {
+                    "colorectal":      "#0B5FFF",
+                    "ibd":             "#7C3AED",
+                    "drug-news":       "#16A34A",
+                    "clinical-trial":  "#D97706",
+                    "general-oncology":"#64748B",
+                }.get(cat, "#64748B")
+                st.markdown(f"""
+                <div style="background:#FFF;border:1px solid #E2E8F0;
+                            border-radius:14px;padding:18px 20px;
+                            box-shadow:0 2px 6px rgba(15,23,42,0.04);
+                            height:230px;display:flex;flex-direction:column;
+                            margin-bottom:14px;">
+                  <div style="display:inline-block;background:{badge_color};color:white;
+                              font-size:0.7rem;font-weight:700;padding:3px 10px;
+                              border-radius:999px;letter-spacing:0.3px;
+                              text-transform:uppercase;margin-bottom:10px;
+                              align-self:flex-start;">
+                    {_esc(cat_label)}
+                  </div>
+                  <div style="font-size:1.02rem;font-weight:700;color:#0F172A;
+                              line-height:1.35;margin-bottom:8px;">
+                    {_esc(it.get("title",""))[:140]}
+                  </div>
+                  <div style="font-size:0.85rem;color:#475569;line-height:1.45;
+                              flex-grow:1;overflow:hidden;">
+                    {_esc(it.get("summary",""))[:180]}…
+                  </div>
+                  <div style="display:flex;justify-content:space-between;
+                              align-items:center;margin-top:10px;
+                              padding-top:10px;border-top:1px solid #F1F5F9;">
+                    <div style="font-size:0.72rem;color:#64748B;">
+                      {_esc(it.get("source",""))}
+                    </div>
+                    <a href="{_esc(it.get('link','#'))}" target="_blank"
+                       style="font-size:0.8rem;color:#0B5FFF;font-weight:600;
+                              text-decoration:none;">
+                      Read more →
+                    </a>
+                  </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+    # Footer note
+    st.markdown("<div style='margin-top:20px;'></div>", unsafe_allow_html=True)
+    st.caption(
+        "ℹ️ These stories are aggregated from public RSS feeds "
+        "(ScienceDaily, MedicalXpress, Cancer Research UK). "
+        "They are NOT screened by ColonAI's clinical safety policy — "
+        "always check the source before drawing conclusions, "
+        "and never use them as a substitute for medical advice."
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 def main():
     render_css()
     # Dark-mode overlay (applied conditionally over the base CSS)
@@ -6819,6 +6975,8 @@ def main():
         page_report()
     elif step == 6:
         page_live_video()
+    elif step == 7:
+        page_latest_research()
     else:
         st.session_state["step"] = 0
         st.rerun()

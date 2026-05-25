@@ -50,3 +50,6 @@ huggingface_hub>=0.20.0
 fastapi>=0.110.0
 uvicorn>=0.27.0
 python-multipart>=0.0.9
+
+# Daily cancer-news scraper (scripts/scrape_cancer_news.py)
+feedparser>=6.0.0

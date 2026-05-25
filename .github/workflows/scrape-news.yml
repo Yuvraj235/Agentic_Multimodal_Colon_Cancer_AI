@@ -1,0 +1,43 @@
+name: Daily cancer-news scrape
+
+on:
+  # Run every day at 06:00 UTC (~11:30 IST, ~07:00 UK, ~02:00 EST)
+  schedule:
+    - cron: "0 6 * * *"
+  # Allow manual triggers
+  workflow_dispatch:
+
+permissions:
+  contents: write   # need to push the JSON back
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install feedparser
+        run: pip install feedparser
+
+      - name: Scrape cancer news
+        run: python scripts/scrape_cancer_news.py
+
+      - name: Commit + push if changed
+        run: |
+          git config user.name  "colonai-bot"
+          git config user.email "colonai-bot@users.noreply.github.com"
+          git add outputs/cancer_news.json
+          if git diff --staged --quiet; then
+            echo "No changes."
+          else
+            git commit -m "chore(news): daily cancer-news refresh ($(date -u +%Y-%m-%d))"
+            git push
+          fi
