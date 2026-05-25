@@ -1,0 +1,86 @@
+name: Daily auto-bug-check
+
+on:
+  # Run every day at 04:00 UTC (offset from news scraper at 06:00 so
+  # the two cron jobs don't fight over the same commit).
+  schedule:
+    - cron: "0 4 * * *"
+  # Allow manual triggers from the GitHub UI
+  workflow_dispatch:
+
+permissions:
+  contents: write          # push auto-cleanups
+  issues:   write          # open an issue if a critical bug is found
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install minimal deps for static analysis
+        run: pip install pyflakes
+
+      - name: Run auto-bug-check
+        id: check
+        continue-on-error: true
+        run: |
+          python scripts/auto_bug_check.py
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
+
+      - name: Commit auto-cleanups (stale files / whitespace)
+        run: |
+          git config user.name  "colonai-bot"
+          git config user.email "colonai-bot@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "Nothing to commit."
+          else
+            git commit -m "chore(auto-bug-check): clean stale files + whitespace ($(date -u +%Y-%m-%d))"
+            git push
+          fi
+
+      - name: Open a GitHub issue if there are critical bugs
+        if: failure() || steps.check.outputs.exit_code != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs   = require('fs');
+            const path = 'outputs/auto_bug_report.json';
+            if (!fs.existsSync(path)) return;
+            const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+            if (report.overall_ok) return;
+
+            const lines = [];
+            lines.push("Daily ColonAI bug-check found issues that need a human:");
+            lines.push("");
+            if (report.syntax_errors.length)
+              lines.push("**Syntax errors:**\n" +
+                         report.syntax_errors.map(e => `- \`${e}\``).join("\n"));
+            if (report.critical_issues.length)
+              lines.push("\n**Critical (undefined names — would crash at runtime):**\n" +
+                         report.critical_issues.map(e => `- \`${e}\``).join("\n"));
+            if (report.json_errors.length)
+              lines.push("\n**JSON errors:**\n" +
+                         report.json_errors.map(e => `- \`${e}\``).join("\n"));
+            if (report.hf_space && !report.hf_space.ok)
+              lines.push(`\n**HF Space unhealthy:** stage \`${report.hf_space.space_stage || '?'}\` — ${report.hf_space.error || ''}`);
+            lines.push(`\n*Soft warnings (cleanup-only, not crashes): ${report.soft_warnings.length}*`);
+            lines.push(`\nRun \`python3 scripts/auto_bug_check.py\` locally for the full report.`);
+            const body = lines.join("\n");
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              title: `🐛 Auto-bug-check: issues on ${new Date().toISOString().slice(0,10)}`,
+              body:  body,
+              labels:["auto-bug-check"],
+            });

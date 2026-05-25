@@ -22,7 +22,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Optional, Dict, List
-import json, time, hashlib
+import json, time, hashlib, os
 
 
 # ─────────────────────────────────────────────────────────────────────────────
