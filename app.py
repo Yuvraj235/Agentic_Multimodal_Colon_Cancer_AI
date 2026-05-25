@@ -1467,6 +1467,23 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
     except Exception as exc:
         out["image_readout"] = {"error": f"{type(exc).__name__}: {exc}"}
 
+    # ── Clinical polyp / IBD sub-typing ────────────────────────────────
+    # Paris classification (morphology), NICE classification (predicted
+    # histology from surface pattern), BSG-aligned size stratification,
+    # Crohn's vs UC differential, diverticulosis + hemorrhoid detection.
+    # All from the seg mask + image pixels — no extra training needed.
+    try:
+        from src.app.polyp_typing import full_sub_typing
+        out["sub_typing"] = full_sub_typing(
+            image_rgb       = img_np,
+            mask            = out.get("seg_mask"),
+            pathology_class = getattr(fd, "pathology_class", ""),
+            symptoms_text   = symptoms or "",
+            patient         = patient,
+        )
+    except Exception as _st_exc:
+        out["sub_typing"] = {"error": f"{type(_st_exc).__name__}: {_st_exc}"}
+
     # ── TCGA tabular stage classifier ─────────────────────────────────
     # A REAL stage estimate (I/II/III/IV) trained on TCGA's 1,319
     # labelled cases. ~53% accuracy on 4-class (vs 25% random) using
@@ -3742,6 +3759,153 @@ def page_results():
               </div>
             </div>
             """, unsafe_allow_html=True)
+
+    # ── Polyp / IBD sub-typing cards ───────────────────────────────────
+    # Paris (morphology), NICE (predicted histology), size (BSG-aligned),
+    # IBD differential, diverticulosis, hemorrhoid detection.
+    st_sub = analysis.get("sub_typing") or {}
+    if isinstance(st_sub, dict) and st_sub:
+        from src.app.security import escape_html as _esc
+
+        # Polyp sub-typing trio (Paris + NICE + size)
+        if st_sub.get("paris") or st_sub.get("nice") or st_sub.get("size"):
+            paris = st_sub.get("paris", {})
+            nice  = st_sub.get("nice",  {})
+            size_ = st_sub.get("size",  {})
+            cards_html = ""
+            if paris and paris.get("paris_type") not in (None, "unknown"):
+                cards_html += (
+                    f"<div style='flex:1;background:#F8FAFC;border-radius:10px;"
+                    f"             padding:14px 16px;border:1px solid #E2E8F0;'>"
+                    f"  <div style='font-size:0.7rem;text-transform:uppercase;"
+                    f"               letter-spacing:0.7px;color:#475569;font-weight:800;"
+                    f"               margin-bottom:5px;'>Paris classification</div>"
+                    f"  <div style='font-size:1.6rem;font-weight:800;color:#0B5FFF;'>"
+                    f"    {_esc(paris.get('paris_type', '?'))}</div>"
+                    f"  <div style='font-size:0.78rem;color:#64748B;margin-top:4px;'>"
+                    f"    {_esc(paris.get('rationale', ''))}</div>"
+                    f"  <div style='font-size:0.72rem;color:#94A3B8;margin-top:8px;'>"
+                    f"    Confidence: {float(paris.get('confidence', 0))*100:.0f}%</div>"
+                    f"</div>")
+            if nice and nice.get("nice_type") not in (None, "unknown"):
+                nice_color = {"Type 1": "#16A34A", "Type 2": "#D97706",
+                              "Type 3": "#B91C1C"}.get(nice.get("nice_type"), "#64748B")
+                cards_html += (
+                    f"<div style='flex:1;background:#F8FAFC;border-radius:10px;"
+                    f"             padding:14px 16px;border:1px solid #E2E8F0;'>"
+                    f"  <div style='font-size:0.7rem;text-transform:uppercase;"
+                    f"               letter-spacing:0.7px;color:#475569;font-weight:800;"
+                    f"               margin-bottom:5px;'>NICE surface pattern</div>"
+                    f"  <div style='font-size:1.6rem;font-weight:800;color:{nice_color};'>"
+                    f"    {_esc(nice.get('nice_type', '?'))}</div>"
+                    f"  <div style='font-size:0.78rem;color:#64748B;margin-top:4px;'>"
+                    f"    {_esc(nice.get('predicted_histology', ''))}</div>"
+                    f"  <div style='font-size:0.72rem;color:#94A3B8;margin-top:8px;'>"
+                    f"    Confidence: {float(nice.get('confidence', 0))*100:.0f}%</div>"
+                    f"</div>")
+            if size_ and size_.get("size_mm") is not None:
+                size_color = {"diminutive (< 5 mm)":   "#16A34A",
+                              "small (5-9 mm)":        "#16A34A",
+                              "large (10-19 mm)":      "#D97706",
+                              "giant (≥ 20 mm)":       "#B91C1C"}.get(
+                                  size_.get("size_category", ""), "#64748B")
+                cards_html += (
+                    f"<div style='flex:1;background:#F8FAFC;border-radius:10px;"
+                    f"             padding:14px 16px;border:1px solid #E2E8F0;'>"
+                    f"  <div style='font-size:0.7rem;text-transform:uppercase;"
+                    f"               letter-spacing:0.7px;color:#475569;font-weight:800;"
+                    f"               margin-bottom:5px;'>Estimated size</div>"
+                    f"  <div style='font-size:1.6rem;font-weight:800;color:{size_color};'>"
+                    f"    ~{size_.get('size_mm', 0)} mm</div>"
+                    f"  <div style='font-size:0.78rem;color:#64748B;margin-top:4px;'>"
+                    f"    {_esc(size_.get('size_category', ''))}</div>"
+                    f"  <div style='font-size:0.72rem;color:#94A3B8;margin-top:8px;'>"
+                    f"    Assumes ~30 mm scope field-of-view</div>"
+                    f"</div>")
+            if cards_html:
+                st.markdown(f"""
+                <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:14px;
+                            padding:18px 22px;margin:14px 0;
+                            box-shadow:0 2px 8px rgba(15,23,42,0.04);">
+                  <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.7px;
+                              color:#0B5FFF;font-weight:800;margin-bottom:12px;">
+                    Polyp sub-typing  ·  Paris × NICE × BSG size
+                  </div>
+                  <div style='display:flex;gap:10px;flex-wrap:wrap;'>{cards_html}</div>
+                  <div style="font-size:0.7rem;color:#94A3B8;margin-top:12px;font-style:italic;">
+                    Computed from the segmentation mask + image pixels (no extra
+                    training data needed). Paris = morphology; NICE = predicted
+                    histology from surface pattern; size = estimated from mask.
+                  </div>
+                </div>
+                """, unsafe_allow_html=True)
+                # Clinical recommendation derived from these
+                if paris.get("removal_technique"):
+                    st.info(f"🔪 **Recommended removal technique:** "
+                            f"{paris['removal_technique']}")
+                if nice.get("cancer_risk"):
+                    st.info(f"🎗️ **Cancer-risk stratification:** "
+                            f"{nice['cancer_risk']}")
+                if size_.get("bsg_surveillance"):
+                    st.info(f"📅 **BSG surveillance:** "
+                            f"{size_['bsg_surveillance']}")
+
+        # IBD differential
+        ibd = st_sub.get("ibd_differential", {})
+        if ibd and ibd.get("verdict"):
+            crohns_s = float(ibd.get("crohns_score", 0))
+            uc_s     = float(ibd.get("uc_score", 0))
+            total    = max(crohns_s + uc_s, 1)
+            cr_pct   = crohns_s / total * 100
+            uc_pct   = uc_s     / total * 100
+            reasons_html = "".join(f"<li style='margin:3px 0;'>{_esc(r)}</li>"
+                                    for r in ibd.get("rationale", []))
+            st.markdown(f"""
+            <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:14px;
+                        padding:18px 22px;margin:14px 0;
+                        box-shadow:0 2px 8px rgba(15,23,42,0.04);">
+              <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.7px;
+                          color:#7C3AED;font-weight:800;margin-bottom:8px;">
+                IBD differential  ·  Crohn's vs Ulcerative Colitis
+              </div>
+              <div style="font-size:1rem;color:#0F172A;font-weight:600;margin-bottom:10px;">
+                {_esc(ibd.get("verdict", ""))}
+              </div>
+              <div style='display:flex;gap:8px;margin:8px 0;'>
+                <div style='flex:1;background:#F1F5F9;border-radius:6px;height:8px;'>
+                  <div style='background:#0B5FFF;height:100%;width:{cr_pct:.0f}%;border-radius:6px;'></div>
+                </div>
+                <span style='font-size:0.8rem;color:#0B5FFF;font-weight:700;'>Crohn's {cr_pct:.0f}%</span>
+              </div>
+              <div style='display:flex;gap:8px;margin:8px 0;'>
+                <div style='flex:1;background:#F1F5F9;border-radius:6px;height:8px;'>
+                  <div style='background:#16A34A;height:100%;width:{uc_pct:.0f}%;border-radius:6px;'></div>
+                </div>
+                <span style='font-size:0.8rem;color:#16A34A;font-weight:700;'>UC {uc_pct:.0f}%</span>
+              </div>
+              <ul style="font-size:0.85rem;color:#475569;margin:10px 0 0 18px;padding:0;">
+                {reasons_html}
+              </ul>
+              <div style="font-size:0.85rem;color:#0F172A;margin-top:10px;font-weight:600;">
+                💡 {_esc(ibd.get("recommendation", ""))}
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Diverticulosis + hemorrhoid (only show if detected)
+        div_  = st_sub.get("diverticulosis", {})
+        hemo = st_sub.get("hemorrhoid", {})
+        extras = []
+        if div_  and div_.get("detected"):
+            extras.append(("🟫 Diverticulosis pattern detected",
+                           f"{div_.get('n_candidates', 0)} pouch-like dark patches",
+                           div_.get("interpretation", "")))
+        if hemo and hemo.get("detected"):
+            extras.append(("🩸 Possible hemorrhoid signs",
+                           f"vascular score {hemo.get('score', 0)*100:.0f}%",
+                           hemo.get("interpretation", "")))
+        for icon_title, subtitle, interp in extras:
+            st.warning(f"**{icon_title}** ({subtitle})\n\n{interp}")
 
     # ── Smart per-image evidence card ─────────────────────────────────
     # Lesion size %, location octant, attention focus, contrast, shape,
