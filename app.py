@@ -904,13 +904,19 @@ def load_ai_system():
             "checkpoint_loaded": ckpt_loaded,
         }
     except Exception as e:
-        # Don't leak tracebacks into the response — they may reveal absolute
-        # paths or internal module names that help an attacker. The full
-        # trace is sent to the server log instead via Streamlit's logger.
+        # Capture the actual exception message AND a short traceback summary
+        # so the sidebar diagnostic shows us what really went wrong. This is
+        # our own deployment — exposing the error to the operator is fine
+        # (it's gated behind the "ℹ︎ Why?" expander, only visible if load failed).
         import logging, traceback
         logging.getLogger("colonai.app").exception("model load failed")
-        return {"ready": False, "error_type": type(e).__name__,
-                "error": "Model failed to load — see server log."}
+        tb_summary = traceback.format_exc()
+        # Keep last 6 lines of the trace — usually shows the failing call
+        tb_short = "\n".join(tb_summary.splitlines()[-8:])
+        return {"ready": False,
+                "error_type": type(e).__name__,
+                "error": str(e)[:500],
+                "traceback_tail": tb_short}
 
 
 @st.cache_resource(show_spinner=False)
@@ -1944,8 +1950,8 @@ def render_sidebar_progress():
             '<span class="status-dot status-dot-err"></span>Model load failed — demo mode</div>',
             unsafe_allow_html=True,
         )
-        # Surface the actual reason from the checkpoint downloader so the user
-        # (and we) can see WHY it failed without having to fish through logs.
+        # Surface BOTH the checkpoint-downloader state AND the actual exception
+        # that load_ai_system raised — that's what we need to fix the bug.
         try:
             _cs = CHECKPOINT_STATUS
             _stage  = _cs.get("stage", "unknown")
@@ -1965,6 +1971,22 @@ def render_sidebar_progress():
                     unsafe_allow_html=True)
                 if _log:
                     st.code("\n".join(_log[-15:]), language="text")
+                # NEW: also show the actual load_ai_system exception
+                _et = system.get("error_type")
+                _em = system.get("error", "")
+                _tb = system.get("traceback_tail", "")
+                if _et or _em:
+                    st.markdown(
+                        f"<div style='margin-top:8px;padding:8px;"
+                        f"background:#FEE2E2;border-left:3px solid #B91C1C;"
+                        f"font-size:0.75rem;'>"
+                        f"<b style='color:#B91C1C'>Exception:</b> "
+                        f"<code>{_et}</code><br>"
+                        f"<span style='color:#7F1D1D'>{_em}</span>"
+                        f"</div>",
+                        unsafe_allow_html=True)
+                if _tb:
+                    st.code(_tb, language="text")
         except Exception:
             pass
     else:
