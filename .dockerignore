@@ -26,13 +26,16 @@ paper_figures
 notebooks
 
 # Most of outputs/ is logs / figures / manifests we don't need in the
-# image. But we DO need the v2 checkpoint + temperature so the app finds
-# them at the expected path on first boot without runtime download.
+# image. But we DO need the v2 model artefacts AND the cancer-news
+# JSON so the app finds them at the expected path on first boot
+# without runtime download.
 outputs/*
 !outputs/unified_multimodal_v2
+!outputs/cancer_news.json
 outputs/unified_multimodal_v2/*
 !outputs/unified_multimodal_v2/checkpoints
 !outputs/unified_multimodal_v2/temperature.json
+!outputs/unified_multimodal_v2/seg_head.pth
 outputs/unified_multimodal_v2/checkpoints/*
 !outputs/unified_multimodal_v2/checkpoints/best_model.pth
 
