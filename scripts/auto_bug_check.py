@@ -48,6 +48,7 @@ SCAN_PATTERNS = [
     "scripts/validate_gradcam_v2.py",
     "scripts/benchmark_fps.py",
     "scripts/test_agent_coherence.py",
+    "scripts/test_explainability.py",
     "scripts/make_gradcam_overlays.py",
 ]
 

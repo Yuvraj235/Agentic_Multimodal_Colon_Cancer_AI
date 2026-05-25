@@ -1762,6 +1762,143 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
                                  "reason": f"safety-policy unavailable: {exc}",
                                  "disclaimer": "Treat output as provisional."}
 
+    # ── UNIFIED EXPLANATION ENGINE ─────────────────────────────────────
+    # Builds the structured decision trace, per-modality attribution,
+    # disagreement detection, and the patient-facing narrative + the
+    # clinician dossier. This is the "audit log" of a single inference
+    # — every output below is derivable from data already computed above.
+    # All defensive: any sub-step that fails will be skipped silently,
+    # and a top-level explanation_error will record the failure.
+    try:
+        from src.app.decision_trace import build_trace, detect_disagreements
+        from src.app.modality_attribution import fused_attribution
+        from src.app.explanation_engine import (
+            narrative as _explain_narrative,
+            clinician_report as _explain_report,
+        )
+
+        # 1. Convert the silencing ablation we already computed into a
+        #    silencing_attribution-style result.
+        _abl = out.get("ablation", {}) or {}
+        _silencing = None
+        if isinstance(_abl, dict) and not _abl.get("error"):
+            _deltas = {
+                "image":   max(0.0, float(_abl.get("image_drop_pp",   0)) / 100.0),
+                "text":    max(0.0, float(_abl.get("text_drop_pp",    0)) / 100.0),
+                "tabular": max(0.0, float(_abl.get("tabular_drop_pp", 0)) / 100.0),
+            }
+            _total = sum(_deltas.values())
+            if _total > 1e-6:
+                _silencing = {
+                    "contributions": {k: float(v / _total * 100.0)
+                                       for k, v in _deltas.items()},
+                    "deltas":          _deltas,
+                    "baseline_prob":   float(_abl.get("base_prob", 0.0)),
+                    "predicted_class": _abl.get("predicted_class", ""),
+                    "method":          "silencing",
+                    "interpretable":   True,
+                }
+
+        # Fall back to confidence-weighted heuristic if silencing was unavailable
+        _attr = fused_attribution(
+            image_confidence   = float(getattr(fd, "image_weight",   0.0)),
+            text_confidence    = float(getattr(fd, "text_weight",    0.0)),
+            tabular_confidence = float(getattr(fd, "tabular_weight", 0.0)),
+            silencing_result   = _silencing,
+        )
+        out["modality_attribution"] = _attr
+
+        # 2. Build the structured decision trace
+        _adv = out.get("advanced_lesion") or {}
+        _atyp_fired = bool(_adv.get("flagged", _adv.get("override", False)))
+        _safety_obj = out.get("safety_verdict") or {}
+        _safety_passed = (str(_safety_obj.get("action", "show")).lower() == "show")
+        _tcga_obj = out.get("tcga_stage_estimate") or {}
+        _tcga_finding = None
+        if _tcga_obj and not _tcga_obj.get("error") and _tcga_obj.get("predicted_stage"):
+            _tcga_finding = {
+                "stage":      str(_tcga_obj.get("predicted_stage", "")).replace("Stage ", ""),
+                "confidence": float(_tcga_obj.get("confidence", 0.0)),
+                "evidence":   {"n_train_samples": _tcga_obj.get("n_train_samples", 0)},
+            }
+        _trace = build_trace(
+            smart_pred           = out.get("smart_prediction"),
+            atypicality_finding  = ({"override":   _atyp_fired,
+                                     "atypical":   _atyp_fired,
+                                     "reasons":    _adv.get("reasons", _adv.get("findings", [])),
+                                     "label":      _adv.get("label",
+                                                   "Atypical lesion — urgent endoscopist review"),
+                                     "confidence": float(_adv.get("confidence", 0.85))}
+                                    if _adv else None),
+            polyp_typing_finding = out.get("sub_typing"),
+            fusion_finding       = {"finding":          f"Fused call: {fd.pathology_class}",
+                                    "confidence":       float(getattr(fd, "overall_confidence", 0.0)),
+                                    "modality_weights": {
+                                        "image":   float(getattr(fd, "image_weight",   0.0)),
+                                        "text":    float(getattr(fd, "text_weight",    0.0)),
+                                        "tabular": float(getattr(fd, "tabular_weight", 0.0)),
+                                    }},
+            xai_finding          = {"finding":              f"Predictive entropy {float(getattr(xai, 'uncertainty', 0.0)):.3f}",
+                                    "confidence":           max(0.0, 1.0 - min(float(getattr(xai, "uncertainty", 0.0)), 1.0)),
+                                    "epistemic_uncertainty": float(getattr(xai, "uncertainty", 0.0))},
+            safety_finding       = {"passed":      _safety_passed,
+                                    "confidence":  1.0,
+                                    "evidence":    [_safety_obj.get("reason", "")]},
+            tcga_stage_finding   = _tcga_finding,
+            clinical_finding     = {"recommendation": getattr(rec, "primary_action", ""),
+                                    "confidence":     0.85,
+                                    "evidence":       list(getattr(rec, "investigations", []))[:3]},
+            llm_refined          = bool((out.get("llm_refined") or {}).get("refined_paragraph")),
+            final_verdict        = fd.pathology_class,
+            final_confidence     = float(getattr(fd, "overall_confidence", 0.0)),
+        )
+        out["decision_trace"] = _trace
+        out["disagreement"]   = detect_disagreements(_trace)
+
+        # 3. Patient-facing narrative (≤ ~130 words, deterministic)
+        out["explanation_paragraph"] = _explain_narrative(
+            final_class       = fd.pathology_class,
+            final_confidence  = float(getattr(fd, "overall_confidence", 0.0)),
+            smart_pred        = out.get("smart_prediction"),
+            attribution       = _attr,
+            disagreement      = out.get("disagreement"),
+            atypicality_fired = _atyp_fired,
+            tcga_stage        = _tcga_finding,
+        )
+
+        # 4. Structured clinician dossier (sections renderable in UI / PDF)
+        out["explanation_report"] = _explain_report(
+            final_class             = fd.pathology_class,
+            final_confidence        = float(getattr(fd, "overall_confidence", 0.0)),
+            trace                   = _trace,
+            attribution             = _attr,
+            polyp_typing            = out.get("sub_typing"),
+            tcga_stage              = _tcga_finding,
+            smart_rationale_text    = (out.get("smart_rationale") or {}).get("summary"),
+            clinical_recommendation = getattr(rec, "primary_action", None),
+        )
+
+        # 5. Optional: per-class prototype retrieval if bank is built
+        try:
+            from src.app.prototype_retrieval import (
+                is_bank_available, retrieve_similar, neighbour_concordance,
+            )
+            if is_bank_available():
+                _emb = None
+                _fe = getattr(fd, "fused_embedding", None)
+                if _fe is not None:
+                    _emb = (_fe.detach().cpu().numpy().squeeze()
+                            if hasattr(_fe, "detach") else np.asarray(_fe).squeeze())
+                if _emb is not None and _emb.size > 0:
+                    _neigh = retrieve_similar(_emb, k=5)
+                    out["prototype_neighbours"] = _neigh
+                    out["neighbour_concordance"] = neighbour_concordance(
+                        _neigh, fd.pathology_class)
+        except Exception:
+            pass
+    except Exception as _exp_exc:
+        out["explanation_error"] = f"{type(_exp_exc).__name__}: {_exp_exc}"
+
     # Apply NICE NG12 / red-flag clinical-rule overrides on top of the model
     out = apply_clinical_overrides(out, patient, symptoms, pain_scale, symptom_duration)
     return out
@@ -3949,6 +4086,272 @@ def page_results():
             </div>
             """,
             unsafe_allow_html=True)
+
+    # ── UNIFIED EXPLANATION — patient-facing narrative ─────────────────
+    # One ≤130-word paragraph that summarises everything: the verdict,
+    # which modality drove it, whether agents disagreed, stability under
+    # perturbations, neighbour concordance, and (if relevant) the TCGA
+    # secondary stage estimate. Deterministic — same inputs → same words.
+    _expl_para = analysis.get("explanation_paragraph") or ""
+    if _expl_para:
+        from src.app.security import escape_html as _esc
+        import re as _re
+        _para_html = _esc(_expl_para)
+        # Render simple **markdown** → <b>
+        _para_html = _re.sub(r"\*\*(.+?)\*\*",
+                             lambda m: f"<b>{m.group(1)}</b>", _para_html)
+        st.markdown(
+            f"""
+            <div style="background:linear-gradient(135deg,#F5F3FF 0%,#EDE9FE 100%);
+                        border:1.5px solid #C4B5FD;border-radius:14px;
+                        padding:18px 22px;margin:14px 0;
+                        box-shadow:0 4px 12px rgba(124,58,237,0.06);">
+              <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.7px;
+                          color:#5B21B6;font-weight:800;margin-bottom:8px;">
+                Why the system reached this verdict
+              </div>
+              <div style="font-size:1.02rem;color:#1F2937;line-height:1.7;
+                          font-weight:500;">
+                {_para_html}
+              </div>
+              <div style="font-size:0.7rem;color:#7C3AED;margin-top:10px;opacity:0.75;">
+                Generated by the unified explanation engine
+                (decision trace + modality attribution + disagreement
+                detection). Deterministic — same inputs always produce the
+                same paragraph.
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # ── Per-modality attribution bar ───────────────────────────────────
+    # Shows which input (image / text / tabular) drove the decision,
+    # estimated by ablation (silencing each modality and observing the
+    # change in the predicted-class probability).
+    _attr = analysis.get("modality_attribution") or {}
+    if isinstance(_attr, dict) and _attr.get("interpretable"):
+        from src.app.security import escape_html as _esc
+        _contribs = _attr.get("contributions", {})
+        _method = _attr.get("method", "?")
+        # Sort by contribution descending
+        _items = sorted(_contribs.items(), key=lambda kv: -kv[1])
+        _bars = ""
+        _palette = {"image": "#0B5FFF", "text": "#16A34A", "tabular": "#D97706"}
+        _label_map = {"image": "Endoscopic image",
+                      "text": "Clinical text",
+                      "tabular": "Tabular features"}
+        for _mod, _pct in _items:
+            _color = _palette.get(_mod, "#64748B")
+            _label = _label_map.get(_mod, _mod.title())
+            _bars += (
+                f"<div style='margin:10px 0;'>"
+                f"  <div style='display:flex;justify-content:space-between;"
+                f"               font-size:0.88rem;margin-bottom:4px;'>"
+                f"    <span style='color:#0F172A;'><b>{_esc(_label)}</b></span>"
+                f"    <span style='color:{_color};font-weight:700;'>{_pct:.0f}%</span>"
+                f"  </div>"
+                f"  <div style='background:#F1F5F9;border-radius:8px;height:14px;"
+                f"               overflow:hidden;'>"
+                f"    <div style='background:linear-gradient(90deg,{_color} 0%,{_color}99 100%);"
+                f"                 height:100%;width:{_pct:.0f}%;border-radius:8px;"
+                f"                 transition:width 0.6s ease;'></div>"
+                f"  </div>"
+                f"</div>"
+            )
+        st.markdown(
+            f"""
+            <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:14px;
+                        padding:18px 22px;margin:14px 0;
+                        box-shadow:0 2px 8px rgba(15,23,42,0.04);">
+              <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.7px;
+                          color:#0B5FFF;font-weight:800;margin-bottom:12px;">
+                Which input modality drove the decision?
+              </div>
+              {_bars}
+              <div style="font-size:0.72rem;color:#94A3B8;margin-top:12px;
+                          font-style:italic;line-height:1.45;">
+                Estimated by <b>{_esc(_method)}</b>: each modality is silenced
+                in turn (image → mid-grey, text → empty, tabular → median patient)
+                and the resulting drop in the predicted-class probability is
+                normalised to 100%. A high percentage means the model would
+                have changed its mind if that input had been removed.
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # ── Disagreement summary (only fires when agents disagree) ─────────
+    _disagree = analysis.get("disagreement") or {}
+    if isinstance(_disagree, dict) and not _disagree.get("unanimous", True):
+        from src.app.security import escape_html as _esc
+        _agreed = _disagree.get("agreed", [])
+        _disagreed_list = _disagree.get("disagreed", [])
+        _ratio = float(_disagree.get("ratio", 1.0)) * 100
+        _chips = "".join(
+            f"<span style='display:inline-block;background:#FEE2E2;color:#991B1B;"
+            f"             border:1px solid #FCA5A5;border-radius:999px;"
+            f"             padding:3px 10px;margin:3px;font-size:0.78rem;"
+            f"             font-weight:600;'>{_esc(a)}</span>"
+            for a in _disagreed_list)
+        st.markdown(
+            f"""
+            <div style="background:linear-gradient(135deg,#FFF7ED 0%,#FED7AA 100%);
+                        border:1.5px solid #FB923C;border-radius:14px;
+                        padding:16px 20px;margin:14px 0;">
+              <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.7px;
+                          color:#9A3412;font-weight:800;margin-bottom:8px;">
+                ⚠️ Agent disagreement detected ({_ratio:.0f}% agreement)
+              </div>
+              <div style="font-size:0.9rem;color:#7C2D12;margin-bottom:8px;">
+                The following agents raised a concern about the final verdict:
+              </div>
+              <div>{_chips}</div>
+              <div style="font-size:0.78rem;color:#9A3412;margin-top:10px;
+                          font-style:italic;">
+                Review the step-by-step reasoning chain below. When agents
+                disagree, the model is operating outside its zone of confidence
+                — a second opinion is recommended.
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # ── Step-by-step reasoning chain (collapsible) ─────────────────────
+    _trace_rows = analysis.get("decision_trace") or []
+    if _trace_rows:
+        from src.app.security import escape_html as _esc
+        with st.expander("🔍  Step-by-step reasoning chain  ·  full agent trace",
+                          expanded=False):
+            _effect_color = {
+                "support":    ("✓", "#16A34A"),
+                "contradict": ("✗", "#B91C1C"),
+                "override":   ("⚠", "#D97706"),
+                "abstain":    ("○", "#64748B"),
+                "noop":       ("·", "#94A3B8"),
+                "refine":     ("✎", "#7C3AED"),
+            }
+            _rows_html = ""
+            for _i, _step in enumerate(_trace_rows, start=1):
+                _agent = _step.get("agent", "?").replace("_", " ").title()
+                _stage = _step.get("stage", "")
+                _eff   = _step.get("effect", "support")
+                _icon, _col = _effect_color.get(_eff, ("•", "#64748B"))
+                _conf  = float(_step.get("confidence", 0.0))
+                _ev    = _step.get("evidence", []) or []
+                _ev_html = ""
+                if _ev:
+                    _ev_html = (
+                        "<ul style='font-size:0.8rem;color:#475569;"
+                        "           margin:6px 0 0 18px;padding:0;'>" +
+                        "".join(f"<li style='margin:2px 0;'>{_esc(str(x))}</li>"
+                                for x in _ev[:5]) +
+                        "</ul>"
+                    )
+                _rows_html += (
+                    f"<div style='border-left:3px solid {_col};"
+                    f"             background:#F8FAFC;border-radius:0 8px 8px 0;"
+                    f"             padding:10px 14px;margin:8px 0;'>"
+                    f"  <div style='display:flex;justify-content:space-between;"
+                    f"               align-items:center;'>"
+                    f"    <div>"
+                    f"      <span style='font-size:1.1rem;color:{_col};"
+                    f"                   font-weight:800;'>{_icon}</span>"
+                    f"      <span style='font-size:0.85rem;color:#0F172A;"
+                    f"                   font-weight:700;margin-left:6px;'>"
+                    f"        Step {_i}: {_esc(_agent)} ({_esc(_stage)})</span>"
+                    f"    </div>"
+                    f"    <span style='font-size:0.78rem;color:#64748B;"
+                    f"                 font-weight:600;'>"
+                    f"      conf {_conf*100:.0f}%</span>"
+                    f"  </div>"
+                    f"  <div style='font-size:0.88rem;color:#1F2937;"
+                    f"               margin-top:6px;line-height:1.45;'>"
+                    f"    {_esc(_step.get('finding', ''))}</div>"
+                    f"  {_ev_html}"
+                    f"</div>"
+                )
+            st.markdown(_rows_html, unsafe_allow_html=True)
+            # Download buttons for the trace + the full clinician report
+            try:
+                import json as _json
+                _payload = _json.dumps(_trace_rows, indent=2, default=str)
+                _dl_cols = st.columns(2)
+                with _dl_cols[0]:
+                    st.download_button(
+                        "Download trace as JSON (audit log)",
+                        data=_payload,
+                        file_name="colonai_decision_trace.json",
+                        mime="application/json",
+                        use_container_width=True,
+                    )
+                _rep = analysis.get("explanation_report")
+                if _rep:
+                    try:
+                        from src.app.explanation_engine import report_to_markdown
+                        _md = report_to_markdown(_rep)
+                        with _dl_cols[1]:
+                            st.download_button(
+                                "Download clinician report (markdown)",
+                                data=_md,
+                                file_name="colonai_clinician_report.md",
+                                mime="text/markdown",
+                                use_container_width=True,
+                            )
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+    # ── Similar training cases (prototype retrieval, optional) ─────────
+    _neigh = analysis.get("prototype_neighbours") or []
+    _conc  = analysis.get("neighbour_concordance") or {}
+    if _neigh:
+        from src.app.security import escape_html as _esc
+        from src.app.patient_ui import PLAIN_NAMES
+        _agrees = bool(_conc.get("agrees", False))
+        _conc_pct = float(_conc.get("concordance", 0.0)) * 100
+        _verdict_color = "#16A34A" if _agrees else "#D97706"
+        _verdict_icon = "✓" if _agrees else "⚠"
+        _verdict_text = (
+            f"{_verdict_icon} {_conc_pct:.0f}% of the most-similar training "
+            f"cases agree with the prediction"
+            if _agrees else
+            f"{_verdict_icon} Only {_conc_pct:.0f}% of similar training "
+            f"cases match the prediction — review carefully"
+        )
+        _rows = ""
+        for _n in _neigh:
+            _lbl = PLAIN_NAMES.get(_n.get("label", ""), _n.get("label", "?"))
+            _sim = float(_n.get("similarity", 0.0))
+            _rows += (
+                f"<div style='display:flex;justify-content:space-between;"
+                f"             padding:8px 12px;border-bottom:1px solid #F1F5F9;'>"
+                f"  <span style='color:#0F172A;font-size:0.88rem;'>"
+                f"    <b>Rank {_n.get('rank','?')}</b> — {_esc(_lbl)}</span>"
+                f"  <span style='color:#64748B;font-size:0.85rem;'>"
+                f"    similarity {_sim:.3f}</span>"
+                f"</div>"
+            )
+        st.markdown(
+            f"""
+            <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:14px;
+                        padding:18px 22px;margin:14px 0;
+                        box-shadow:0 2px 8px rgba(15,23,42,0.04);">
+              <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.7px;
+                          color:#0B5FFF;font-weight:800;margin-bottom:8px;">
+                Most-similar training cases (case-based reasoning)
+              </div>
+              <div style="font-size:0.95rem;color:{_verdict_color};
+                          font-weight:700;margin-bottom:10px;">
+                {_verdict_text}
+              </div>
+              {_rows}
+              <div style="font-size:0.72rem;color:#94A3B8;margin-top:10px;
+                          font-style:italic;line-height:1.45;">
+                Nearest neighbours in the fused-embedding space (cosine
+                similarity). High concordance with the model's prediction
+                is an independent sanity check; low concordance suggests
+                this case is unusual relative to the training set.
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
 
     # ── Privacy-safe doctor feedback widget ────────────────────────────
     # Records "AI got it right / wrong" against the predicted case. Used
