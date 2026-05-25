@@ -49,11 +49,15 @@ jobs:
         run: |
           git config user.name  "colonai-bot"
           git config user.email "colonai-bot@users.noreply.github.com"
-          git add -A
+          # Track tracked-file changes (whitespace rewrites, code edits)
+          git add -u
+          # Force-add the per-run JSON reports under outputs/ (gitignored)
+          # so the next run can compare and the issue body can include them.
+          git add -f outputs/auto_bug_report.json outputs/live_status.json 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "Nothing to commit."
           else
-            git commit -m "chore(auto-bug-check): clean stale files + whitespace ($(date -u +%Y-%m-%d))"
+            git commit -m "chore(auto-bug-check): clean stale files + report ($(date -u +%Y-%m-%d))"
             git push
           fi
 
