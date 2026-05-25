@@ -103,6 +103,33 @@ _DISCLAIMER_BASE = (
 # ─────────────────────────────────────────────────────────────────────────────
 # Core safety evaluator
 # ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# Per-class threshold loader (cached)
+# ─────────────────────────────────────────────────────────────────────────────
+_PCT_CACHE = None
+
+def _per_class_thresholds() -> Dict[str, float]:
+    """Load per-class abstention thresholds if available.
+
+    Set the env var COLONAI_PER_CLASS_THRESHOLDS to point to a JSON file
+    produced by scripts/calibrate_per_class_thresholds.py. Falls back
+    to a hardcoded default path or {} if not present.
+    """
+    global _PCT_CACHE
+    if _PCT_CACHE is not None: return _PCT_CACHE
+    path = (os.environ.get("COLONAI_PER_CLASS_THRESHOLDS")
+            or "outputs/unified_multimodal_v2/per_class_thresholds.json")
+    try:
+        if Path(path).exists():
+            data = json.loads(Path(path).read_text())
+            _PCT_CACHE = data.get("thresholds", {})
+        else:
+            _PCT_CACHE = {}
+    except Exception:
+        _PCT_CACHE = {}
+    return _PCT_CACHE
+
+
 def evaluate_safety(
     confidence:        float,
     uncertainty:       float = 0.0,
@@ -111,6 +138,7 @@ def evaluate_safety(
     agent_agreement:   Optional[float] = None,
     pipeline_error:    Optional[str]   = None,
     strict_mode:       bool = False,
+    predicted_class:   Optional[str]   = None,
 ) -> SafetyVerdict:
     """Decide whether to show, abstain, or reject the prediction.
 
@@ -153,9 +181,21 @@ def evaluate_safety(
     if agent_agreement is not None and agent_agreement < _min_agree:
         flags.append("second_opinion_failed" if strict_mode else "agents_disagree")
 
-    # 5. Confidence + uncertainty thresholds
-    if confidence < SAFETY_CONFIG["min_confidence"]:
-        flags.append("low_confidence")
+    # 5. Confidence threshold
+    #    If we have per-class calibrated thresholds (fitted on val data via
+    #    scripts/calibrate_per_class_thresholds.py) AND we know which class
+    #    was predicted, use the class-specific threshold instead of the
+    #    global 0.75. This makes the system stricter on classes that are
+    #    over-predicted (e.g. uc-mild) and looser on classes that are
+    #    near-perfect (e.g. barretts-esoph).
+    _min_conf = SAFETY_CONFIG["min_confidence"]
+    _pct      = _per_class_thresholds()
+    if predicted_class and predicted_class in _pct:
+        _min_conf = max(_min_conf, float(_pct[predicted_class]))
+    if confidence < _min_conf:
+        flags.append(f"low_confidence_for_{predicted_class}"
+                     if predicted_class and predicted_class in _pct
+                     else "low_confidence")
     if uncertainty > SAFETY_CONFIG["max_uncertainty"]:
         flags.append("high_uncertainty")
 

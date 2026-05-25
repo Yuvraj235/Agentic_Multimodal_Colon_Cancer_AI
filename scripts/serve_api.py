@@ -139,6 +139,7 @@ class Backend:
             confidence=pred_conf, uncertainty=uncertainty,
             endoscopy_score=end_score, gradcam_focus=gc_focus,
             agent_agreement=1.0,
+            predicted_class=CLASS_NAMES_5[pred_idx],
         )
         result = {
             "verdict":         verdict.action,

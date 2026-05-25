@@ -1,0 +1,63 @@
+{
+  "method": "per-class precision-targeting threshold sweep",
+  "target_precision": 0.85,
+  "min_recall_floor": 0.1,
+  "global_min": 0.5,
+  "global_max": 0.95,
+  "temperature": 0.45,
+  "n_val_samples": 694,
+  "thresholds": {
+    "polyps": 0.5,
+    "uc-mild": 0.8909090909090909,
+    "uc-moderate-sev": 0.5,
+    "barretts-esoph": 0.5,
+    "therapeutic": 0.5
+  },
+  "per_class_details": {
+    "polyps": {
+      "chosen": 0.5,
+      "precision": 0.9722222222222222,
+      "recall": 0.9090909090909091,
+      "support": 154,
+      "tp_at_chosen": 140,
+      "fp_at_chosen": 4,
+      "fn_at_chosen": 14
+    },
+    "uc-mild": {
+      "chosen": 0.8909090909090909,
+      "precision": 0.8333333333333334,
+      "recall": 0.13513513513513514,
+      "support": 37,
+      "tp_at_chosen": 5,
+      "fp_at_chosen": 1,
+      "fn_at_chosen": 32
+    },
+    "uc-moderate-sev": {
+      "chosen": 0.5,
+      "precision": 1.0,
+      "recall": 0.15384615384615385,
+      "support": 91,
+      "tp_at_chosen": 14,
+      "fp_at_chosen": 0,
+      "fn_at_chosen": 77
+    },
+    "barretts-esoph": {
+      "chosen": 0.5,
+      "precision": 0.9912280701754386,
+      "recall": 1.0,
+      "support": 113,
+      "tp_at_chosen": 113,
+      "fp_at_chosen": 1,
+      "fn_at_chosen": 0
+    },
+    "therapeutic": {
+      "chosen": 0.5,
+      "precision": 0.9834437086092715,
+      "recall": 0.9933110367892977,
+      "support": 299,
+      "tp_at_chosen": 297,
+      "fp_at_chosen": 5,
+      "fn_at_chosen": 2
+    }
+  }
+}

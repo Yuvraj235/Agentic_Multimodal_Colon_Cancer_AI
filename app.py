@@ -1567,6 +1567,7 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
             endoscopy_score  = float(out.get("image_readout", {}).get("endoscopy_score", 1.0)),
             gradcam_focus    = _gc_focus,
             agent_agreement  = _agent_agree,
+            predicted_class  = getattr(fd, "pathology_class", None),
         )
         out["safety_verdict"] = _safety.to_dict()
         # Audit log — every prediction recorded for post-hoc review
