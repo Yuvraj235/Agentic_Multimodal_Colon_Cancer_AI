@@ -1563,6 +1563,38 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
             )
         except Exception:
             pass
+
+        # ── Privacy-safe continual learning log ─────────────────────────
+        # Records (image_sha256 + fused embedding + prediction) per case so
+        # the model can be retrained from real cases later. Does NOT store:
+        # patient name, demographics, raw image, or symptom text. See
+        # src/app/learning_log.py for the exact privacy contract.
+        try:
+            from src.app.learning_log import record_case as _lc_record
+            _img_bytes = None
+            try:
+                _img_buf = st.session_state.get("uploaded_image_bytes")
+                if _img_buf is not None:
+                    _img_bytes = bytes(_img_buf)
+            except Exception: pass
+            _emb = None
+            try:
+                _fe = getattr(fd, "fused_embedding", None)
+                if _fe is not None:
+                    _emb = (_fe.detach().cpu().numpy().squeeze()
+                            if hasattr(_fe, "detach") else np.asarray(_fe).squeeze())
+            except Exception: pass
+            _cu = _lc_record(
+                image_bytes     = _img_bytes,
+                fused_embedding = _emb,
+                predicted_class = getattr(fd, "pathology_class", "unknown"),
+                confidence      = float(getattr(fd, "overall_confidence", 0.0)),
+                uncertainty     = float(getattr(xai, "uncertainty", 0.0)),
+                safety_action   = _safety.action,
+                extras          = {"coherence": out.get("cross_check", {}).get("coherence")})
+            out["learning_case_uuid"] = _cu   # the UI feedback widget uses this
+        except Exception as _lc_exc:
+            out["learning_log_error"] = f"{type(_lc_exc).__name__}: {_lc_exc}"
     except Exception as exc:
         out["safety_verdict"] = {"action": "show",
                                  "reason": f"safety-policy unavailable: {exc}",
@@ -2446,8 +2478,9 @@ def page_symptoms_upload():
             except UploadError as _e:
                 st.error(f"Upload rejected: {_e}")
                 st.stop()
-            st.session_state["uploaded_image"]      = pil_img
-            st.session_state["uploaded_filename"]   = uploaded.name
+            st.session_state["uploaded_image"]       = pil_img
+            st.session_state["uploaded_image_bytes"] = raw_bytes   # for SHA-256 hash in the learning log
+            st.session_state["uploaded_filename"]    = uploaded.name
 
             col_img, col_info = st.columns([1, 1])
             with col_img:
@@ -3379,6 +3412,90 @@ def page_results():
     if isinstance(cc, dict) and (cc.get("rationale") or cc.get("flags")):
         st.markdown(
             rationale_card_html(cc.get("rationale", []), cc.get("flags", [])),
+            unsafe_allow_html=True)
+
+    # ── Privacy-safe doctor feedback widget ────────────────────────────
+    # Records "AI got it right / wrong" against the predicted case. Used
+    # to fine-tune the pathology head over time. Anonymous — only
+    # (image-SHA256, model-embedding, label) gets stored. See
+    # src/app/learning_log.py for the exact privacy contract.
+    _case_uuid = analysis.get("learning_case_uuid")
+    if _case_uuid and not st.session_state.get(f"feedback_sent_{_case_uuid}"):
+        st.markdown("""
+        <div style='background:#F0F9FF;border:1px solid #BAE6FD;border-radius:12px;
+                    padding:14px 18px;margin:18px 0 8px;'>
+          <div style='font-size:0.75rem;text-transform:uppercase;letter-spacing:0.7px;
+                      color:#0369A1;font-weight:800;margin-bottom:8px;'>
+            Help the model improve
+          </div>
+          <div style='font-size:0.92rem;color:#0F172A;line-height:1.45;margin-bottom:10px;'>
+            <b>Was the AI right?</b> Your answer is anonymous — we only store
+            an image hash + the model's internal feature vector, never your
+            name, image, or symptoms.
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+        fb_cols = st.columns([1, 1, 1, 2])
+        with fb_cols[0]:
+            if st.button("👍 AI was right", key=f"fb_right_{_case_uuid}",
+                         use_container_width=True):
+                try:
+                    from src.app.learning_log import record_feedback
+                    record_feedback(_case_uuid, "correct")
+                    st.session_state[f"feedback_sent_{_case_uuid}"] = "correct"
+                    st.toast("Thanks — feedback recorded anonymously.", icon="✅")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Could not record feedback: {e}")
+        with fb_cols[1]:
+            if st.button("👎 AI was wrong", key=f"fb_wrong_{_case_uuid}",
+                         use_container_width=True):
+                st.session_state[f"feedback_picking_label_{_case_uuid}"] = True
+                st.rerun()
+        with fb_cols[2]:
+            if st.button("❓ Not sure", key=f"fb_unsure_{_case_uuid}",
+                         use_container_width=True):
+                try:
+                    from src.app.learning_log import record_feedback
+                    record_feedback(_case_uuid, "unsure")
+                    st.session_state[f"feedback_sent_{_case_uuid}"] = "unsure"
+                    st.toast("Noted — no label change recorded.", icon="🤔")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Could not record feedback: {e}")
+
+        # If user clicked "AI was wrong", show class picker
+        if st.session_state.get(f"feedback_picking_label_{_case_uuid}"):
+            from src.app.patient_ui import PLAIN_NAMES
+            choices = list(PLAIN_NAMES.keys())
+            labels  = [f"{k} — {PLAIN_NAMES[k]}" for k in choices]
+            st.markdown("<div style='margin-top:10px;'></div>",
+                        unsafe_allow_html=True)
+            picked = st.radio("What's the correct answer?",
+                              options=labels, key=f"fb_pick_{_case_uuid}",
+                              horizontal=False)
+            if st.button("Submit correction",
+                         key=f"fb_submit_{_case_uuid}", type="primary"):
+                idx = labels.index(picked)
+                try:
+                    from src.app.learning_log import record_feedback
+                    record_feedback(_case_uuid, "wrong",
+                                    correct_label=choices[idx])
+                    st.session_state[f"feedback_sent_{_case_uuid}"] = "wrong"
+                    st.session_state[f"feedback_picking_label_{_case_uuid}"] = False
+                    st.toast("Thanks — correction recorded anonymously.",
+                             icon="✅")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Could not record feedback: {e}")
+
+    elif _case_uuid:
+        # Already submitted this case
+        _what = st.session_state.get(f"feedback_sent_{_case_uuid}", "")
+        st.markdown(
+            f"<div style='font-size:0.85rem;color:#15803D;margin:10px 0;'>"
+            f"✓ Thanks — your feedback ({_what}) has been recorded anonymously. "
+            f"It will help the model improve on similar cases.</div>",
             unsafe_allow_html=True)
 
     # ── RELIABILITY / TRUST PANEL ──────────────────────────────────────

@@ -24,6 +24,28 @@ posture accordingly.
 | Sensitive data in URL query strings | None of the endpoints accept PHI in query strings. |
 | HIPAA/GDPR data retention | Out of scope for this project — operator is responsible for log rotation, encryption-at-rest, and access reviews. |
 
+## Continual-learning data contract
+
+The Streamlit results page has an optional "Was the AI right?" feedback widget. When clicked, it appends a row to `outputs/learning_log/<YYYY-MM>.jsonl` (file mode `0600`, owner-only). The contract:
+
+**Stored:**
+- a random opaque `case_uuid`
+- ISO-8601 timestamp
+- SHA-256 hash of the image bytes
+- the model's 256-dimensional fused embedding (a float vector — sufficient for fine-tuning the pathology head, **not** sufficient to reconstruct the original image)
+- predicted pathology class + confidence + uncertainty
+- the safety-policy verdict (show / abstain / reject)
+- the clinician's feedback (`correct`, `wrong+label`, or `unsure`)
+
+**Never stored:**
+- patient name, age, gender, BMI, family history, smoking, alcohol fields
+- the raw image bytes
+- the raw symptom text
+- IP address, browser user-agent
+- any field that could identify the patient
+
+The `scripts/retrain_from_feedback.py` job reads these rows and fine-tunes ONLY the pathology head (everything else stays frozen). Operators who want to opt out entirely can delete the `outputs/learning_log/` directory or set `COLONAI_DISABLE_LEARNING_LOG=1`.
+
 ## Required environment variables for production
 
 | Variable | Required if | Purpose |
