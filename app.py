@@ -1311,6 +1311,51 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
     xai = result.xai_report
     rec = result.clinical_recommendation
 
+    # ── SMART INFERENCE: TTA ensemble + deep MC-Dropout + hierarchical UC
+    # Wraps the model with 5 augmented passes + 10 MC-Dropout passes and a
+    # safety rule that hedges uc-mild predictions when uc-mod-sev is plausible.
+    # The numbers we display in the rest of the UI come from this — more
+    # reliable than a single forward pass.
+    try:
+        from src.app.smart_inference import smart_predict
+        from src.data.multimodal_dataset import CLASS_NAMES_5 as _CN5
+        _sp = smart_predict(
+            model=system["model"],
+            image_tensor=img_tensor, input_ids=input_ids,
+            attention_mask=attn_mask, tabular=tab,
+            class_names=list(_CN5),
+            temperature=TEMPERATURE,
+            n_tta=5, n_mc=10,
+        )
+        # Promote TTA+MC-Dropout numbers onto the FusionDiagnosis-shaped object
+        # so the downstream code keeps working without changes.
+        try:
+            fd.pathology_class    = _sp.predicted_class
+            fd.overall_confidence = _sp.confidence
+            # Also expose differential + hedge to the UI
+        except Exception: pass
+        try:
+            xai.uncertainty = _sp.uncertainty
+        except Exception: pass
+        # Stash for the result page
+        # (use a local dict on `out` — populated later in this function)
+        _smart_pred = {
+            "predicted_class": _sp.predicted_class,
+            "confidence":      _sp.confidence,
+            "uncertainty":     _sp.uncertainty,
+            "mutual_info":     _sp.mutual_info,
+            "differential":    _sp.differential,
+            "is_hedged":       _sp.is_hedged,
+            "hedge_reason":    _sp.hedge_reason,
+            "tta_std":         _sp.tta_std,
+            "mc_std":          _sp.mc_std,
+            "n_tta":           _sp.n_tta,
+            "n_mc":            _sp.n_mc,
+            "mean_probs":      _sp.mean_probs.tolist(),
+        }
+    except Exception as _sp_exc:
+        _smart_pred = {"error": f"{type(_sp_exc).__name__}: {_sp_exc}"}
+
     # GradCAM overlay
     gradcam_heatmap = None
     gradcam_overlay = None
@@ -1381,6 +1426,7 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
         "confidence":       fd.overall_confidence,
         "all_risk_flags":   list(fd.all_risk_flags),
         "uncertainty":      xai.uncertainty,
+        "smart_prediction": _smart_pred,           # TTA + MC-Dropout + hedge
         "inference_time_ms": result.inference_time_ms,
         "recommendation": {
             "urgency":       rec.urgency,
@@ -1553,6 +1599,33 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
                 uncertainty     = float(getattr(xai, "uncertainty", 0.0)),
             )
             out["smart_rationale"] = _sr_out
+
+            # ── Optional Groq LLM rationale refinement ────────────────
+            # Only runs if GROQ_API_KEY env var is set. Strict guard rails
+            # prevent the LLM from changing the diagnosis or claiming
+            # higher confidence than our deterministic value.
+            try:
+                from src.app.llm_refine import refine_rationale as _lr, is_available
+                if is_available():
+                    _lr_out = _lr(
+                        predicted_class       = getattr(fd, "pathology_class", "unknown"),
+                        confidence            = float(getattr(fd, "overall_confidence", 0.0)),
+                        uncertainty           = float(getattr(xai, "uncertainty", 0.0)),
+                        safety_action         = "show",   # updated by safety policy below if needed
+                        deterministic_bullets = _sr_out.get("bullets", []),
+                        differential          = _smart_pred.get("differential")
+                                                  if isinstance(_smart_pred, dict) else None,
+                        is_hedged             = (_smart_pred.get("is_hedged") if
+                                                  isinstance(_smart_pred, dict) else False),
+                        hedge_reason          = (_smart_pred.get("hedge_reason") if
+                                                  isinstance(_smart_pred, dict) else None),
+                    )
+                    out["llm_refined"] = _lr_out
+            except Exception as _lr_exc:
+                out["llm_refined"] = {"refined_paragraph": "",
+                                       "fallback_used": True,
+                                       "fallback_reason":
+                                          f"{type(_lr_exc).__name__}: {_lr_exc}"}
         except Exception as _sr_exc:
             out["smart_rationale_error"] = f"{type(_sr_exc).__name__}: {_sr_exc}"
 
@@ -3434,6 +3507,104 @@ def page_results():
         st.markdown(
             rationale_card_html(cc.get("rationale", []), cc.get("flags", [])),
             unsafe_allow_html=True)
+
+    # ── Hierarchical-UC hedge banner (only fires when needed) ─────────
+    sp = analysis.get("smart_prediction") or {}
+    if isinstance(sp, dict) and sp.get("is_hedged") and sp.get("hedge_reason"):
+        from src.app.security import escape_html as _esc
+        st.markdown(
+            f"""
+            <div style="background:linear-gradient(135deg,#FEF3C7 0%,#FDE68A 100%);
+                        border:2px solid #D97706;border-radius:14px;
+                        padding:14px 18px;margin:14px 0;
+                        box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+              <div style="font-size:0.9rem;font-weight:800;color:#78350F;
+                          margin-bottom:6px;">
+                ⚠️ Clinical hedge — UC severity is uncertain
+              </div>
+              <div style="color:#78350F;font-size:0.85rem;line-height:1.5;">
+                {_esc(sp.get("hedge_reason", ""))}
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # ── Differential-diagnosis bar chart (top-3 alternatives) ─────────
+    if isinstance(sp, dict) and sp.get("differential"):
+        from src.app.security import escape_html as _esc
+        from src.app.patient_ui import PLAIN_NAMES
+        diff = sp["differential"]
+        bars_html = ""
+        for d in diff[:3]:
+            cls   = d.get("class", "")
+            prob  = float(d.get("prob", 0.0))
+            plain = PLAIN_NAMES.get(cls, cls)
+            pct   = prob * 100
+            color = "#0B5FFF" if prob == max(x["prob"] for x in diff) else "#94A3B8"
+            bars_html += (
+                f"<div style='margin:8px 0;'>"
+                f"  <div style='display:flex;justify-content:space-between;"
+                f"               font-size:0.85rem;margin-bottom:3px;'>"
+                f"    <span style='color:#0F172A;'><b>{_esc(plain)}</b></span>"
+                f"    <span style='color:{color};font-weight:700;'>{pct:.0f}%</span>"
+                f"  </div>"
+                f"  <div style='background:#F1F5F9;border-radius:6px;height:8px;"
+                f"               overflow:hidden;'>"
+                f"    <div style='background:{color};height:100%;"
+                f"                 width:{pct:.0f}%;border-radius:6px;'></div>"
+                f"  </div>"
+                f"</div>"
+            )
+        # TTA + MC-Dropout footer
+        _tta_n = sp.get("n_tta", 0); _mc_n = sp.get("n_mc", 0)
+        _tta_std = sp.get("tta_std", 0.0); _mc_std = sp.get("mc_std", 0.0)
+        st.markdown(
+            f"""
+            <div style="background:#FFF;border:1px solid #E2E8F0;border-radius:14px;
+                        padding:18px 22px;margin:14px 0;
+                        box-shadow:0 2px 8px rgba(15,23,42,0.04);">
+              <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.7px;
+                          color:#0B5FFF;font-weight:800;margin-bottom:10px;">
+                Differential — what else this could be
+              </div>
+              {bars_html}
+              <div style="font-size:0.72rem;color:#94A3B8;margin-top:12px;
+                          font-style:italic;line-height:1.4;">
+                Computed by averaging {_tta_n}-augmentation TTA ensemble + {_mc_n}-pass
+                MC-Dropout. Augmentation spread σ = {_tta_std:.2f},
+                MC-Dropout spread σ = {_mc_std:.2f}.
+                Higher spread → less stable prediction.
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # ── Optional LLM-refined plain-English paragraph (Groq Llama-3.1) ──
+    # Only renders if GROQ_API_KEY was set and the LLM output passed our
+    # guard-rails (didn't change the class, didn't claim higher confidence).
+    lr = analysis.get("llm_refined") or {}
+    if isinstance(lr, dict) and lr.get("refined_paragraph"):
+        from src.app.security import escape_html as _esc
+        st.markdown(
+            f"""
+            <div style="background:linear-gradient(135deg,#F0F9FF 0%,#E0F2FE 100%);
+                        border:1px solid #BAE6FD;border-radius:14px;
+                        padding:18px 22px;margin:14px 0;
+                        box-shadow:0 2px 8px rgba(15,23,42,0.04);">
+              <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.7px;
+                          color:#0369A1;font-weight:800;margin-bottom:6px;">
+                What this means, in plain English
+              </div>
+              <div style="font-size:1rem;color:#0F172A;line-height:1.65;
+                          font-weight:500;">
+                {_esc(lr["refined_paragraph"])}
+              </div>
+              <div style="font-size:0.7rem;color:#0369A1;margin-top:10px;
+                          opacity:0.7;">
+                Rephrased by {_esc(lr.get("model", "LLM"))}. The AI's
+                diagnosis, confidence, and safety verdict are not changed
+                by this rephrasing — only the wording.
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
 
     # ── Smart per-image evidence card ─────────────────────────────────
     # Lesion size %, location octant, attention focus, contrast, shape,

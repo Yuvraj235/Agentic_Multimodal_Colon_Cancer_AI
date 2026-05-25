@@ -53,3 +53,6 @@ python-multipart>=0.0.9
 
 # Daily cancer-news scraper (scripts/scrape_cancer_news.py)
 feedparser>=6.0.0
+
+# Required by src/app/llm_refine.py (Groq LLM rationale rewriting — optional)
+requests>=2.31.0
