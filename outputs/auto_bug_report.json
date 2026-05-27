@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-26T07:49:10.362383+00:00",
+  "generated_at": "2026-05-27T08:05:20.984480+00:00",
   "overall_ok": true,
   "n_files_scanned": 58,
   "syntax_errors": [],
@@ -122,7 +122,7 @@
     "url": "https://yuvraj2319-colonai.hf.space/",
     "ok": true,
     "http_code": 200,
-    "elapsed_ms": 425.9,
+    "elapsed_ms": 275.6,
     "error": null,
     "streamlit_health": "ok",
     "space_stage": "RUNNING",
