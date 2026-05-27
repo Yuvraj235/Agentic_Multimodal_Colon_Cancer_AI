@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-26T09:00:27.879421+00:00",
+  "generated_at": "2026-05-27T08:54:59.801400+00:00",
   "n_items": 40,
   "feed_status": [
     {
@@ -113,6 +113,15 @@
       "date": "Sat, 09 May 2026 20:58:55 EDT",
       "source": "ScienceDaily \u2014 pharmacology",
       "score": 6.55,
+      "category": "colorectal"
+    },
+    {
+      "title": "Three medical routines that older people may not need",
+      "link": "https://medicalxpress.com/news/2026-05-medical-routines-older-people.html",
+      "summary": "Enough time had passed since the patient's previous colonoscopy that she met the criteria to undergo another, said Dr. Steven Itzkowitz, a gastroenterologist at the Icahn School of Medicine at Mount Sinai in New York.",
+      "date": "Tue, 26 May 2026 21:20:01 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 5.45,
       "category": "colorectal"
     },
     {
@@ -269,15 +278,6 @@
       "category": "colorectal"
     },
     {
-      "title": "How aggressive breast cancer turns off the immune system",
-      "link": "https://www.sciencedaily.com/releases/2026/04/260411022031.htm",
-      "summary": "Researchers are launching a new project to crack the mystery of aggressive breast cancer, where predicting disease progression remains a major hurdle. By studying how tumors interact with and suppress the immune system, scientists aim to identify new biomarkers that reveal how\u2026",
-      "date": "Sun, 12 Apr 2026 07:03:28 EDT",
-      "source": "ScienceDaily \u2014 cancer",
-      "score": 1.7,
-      "category": "drug-news"
-    },
-    {
       "title": "A simple hand photo may be the key to detecting a serious disease",
       "link": "https://www.sciencedaily.com/releases/2026/03/260303201807.htm",
       "summary": "Researchers at Kobe University have developed an AI system that can detect acromegaly, a rare hormone disorder, by analyzing photos of the back of the hand and a clenched fist. The disease often develops slowly and can take years to diagnose, even though untreated cases may\u2026",
@@ -294,6 +294,24 @@
       "source": "ScienceDaily \u2014 colorectal cancer",
       "score": 1.5,
       "category": "general-oncology"
+    },
+    {
+      "title": "Vitamin D analog shuts down pancreatic cancer's shield in a clinical trial",
+      "link": "https://medicalxpress.com/news/2026-05-vitamin-d-analog-pancreatic-cancer.html",
+      "summary": "A small clinical trial led by Dana-Farber Cancer Institute researchers has put a Salk Institute idea to the test in patients: that activating the vitamin D receptor can help reshape the protective environment surrounding pancreatic tumors in ways that could make the notoriously\u2026",
+      "date": "Tue, 26 May 2026 15:52:42 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 1.45,
+      "category": "clinical-trial"
+    },
+    {
+      "title": "Residual risks of liver cancer persist after hepatitis C cure, finds study",
+      "link": "https://medicalxpress.com/news/2026-05-residual-liver-cancer-persist-hepatitis.html",
+      "summary": "National Taiwan University Hospital (NTUH), in collaboration with multiple medical centers across Taiwan, has found that patients with hepatitis C remain at a significantly elevated risk of hepatocellular carcinoma (HCC) even after successful viral eradication with direct-acting\u2026",
+      "date": "Tue, 26 May 2026 13:00:03 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 1.45,
+      "category": "drug-news"
     },
     {
       "title": "Macrophage cell therapy boosts four-year transplant-free survival in advanced cirrhosis",
@@ -372,24 +390,6 @@
       "link": "https://www.sciencedaily.com/releases/2026/05/260524021151.htm",
       "summary": "A massive international study could upend 40 years of heart attack treatment. Researchers found that beta blockers\u2014routinely prescribed after uncomplicated heart attacks\u2014offered no real benefit for patients whose heart function remained normal, despite being given to millions\u2026",
       "date": "Mon, 25 May 2026 08:36:20 EDT",
-      "source": "ScienceDaily \u2014 immune system",
-      "score": 1.05,
-      "category": "drug-news"
-    },
-    {
-      "title": "A common nutrient could supercharge cancer treatment",
-      "link": "https://www.sciencedaily.com/releases/2026/04/260410083114.htm",
-      "summary": "A common eye-health nutrient, zeaxanthin, may also help the body fight cancer more effectively. Scientists discovered it strengthens T cells and enhances the impact of immunotherapy treatments. Found in everyday vegetables and supplements, it\u2019s safe, accessible, and shows strong\u2026",
-      "date": "Fri, 10 Apr 2026 09:55:45 EDT",
-      "source": "ScienceDaily \u2014 immune system",
-      "score": 1.05,
-      "category": "general-oncology"
-    },
-    {
-      "title": "Scientists discover the switch that revives exhausted cancer-fighting T cells",
-      "link": "https://www.sciencedaily.com/releases/2026/03/260304184235.htm",
-      "summary": "Scientists have uncovered new genetic rules that determine whether the immune system\u2019s \u201ckiller\u201d T cells remain powerful long-term defenders or become worn out and ineffective. By building a detailed genetic atlas of CD8 T cell states, researchers identified key molecular\u2026",
-      "date": "Thu, 05 Mar 2026 22:19:10 EST",
       "source": "ScienceDaily \u2014 immune system",
       "score": 1.05,
       "category": "drug-news"
