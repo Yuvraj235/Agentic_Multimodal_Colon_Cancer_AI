@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-28T09:37:58.733054+00:00",
+  "generated_at": "2026-05-29T08:59:24.733705+00:00",
   "n_items": 40,
   "feed_status": [
     {
@@ -167,6 +167,15 @@
       "date": "Mon, 03 Mar 2025 14:13:08 EST",
       "source": "ScienceDaily \u2014 colorectal cancer",
       "score": 5.0,
+      "category": "colorectal"
+    },
+    {
+      "title": "Recommendations developed for assessing postoperative Crohn disease recurrence",
+      "link": "https://medicalxpress.com/news/2026-05-postoperative-crohn-disease-recurrence.html",
+      "summary": "Multidisciplinary recommendations are presented to standardize intestinal ultrasound application for assessing postoperative recurrence of Crohn disease in an article published online May 20 in The Lancet Gastroenterology & Hepatology.",
+      "date": "Thu, 28 May 2026 22:40:03 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 4.95,
       "category": "colorectal"
     },
     {
@@ -377,22 +386,13 @@
       "category": "drug-news"
     },
     {
-      "title": "How philanthropy is helping promising cancer treatments reach clinical trials sooner",
-      "link": "https://news.cancerresearchuk.org/2026/05/20/how-philanthropy-is-helping-promising-cancer-treatments-reach-clinical-trials-sooner/",
-      "summary": "On International Clinical Trials Day, we\u2019re spotlighting how philanthropy-backed clinical trials at Cancer Research UK are helping promising treatments reach people affected by rare and hard-to-treat cancers. The post How philanthropy is helping promising cancer treatments reach\u2026",
-      "date": "Wed, 20 May 2026 08:28:01 +0000",
+      "title": "UK NSC recommends targeted prostate cancer screening",
+      "link": "https://news.cancerresearchuk.org/2026/05/28/uk-nsc-recommends-prostate-cancer-screening-for-men-with-a-brca2-gene-change-and-family-history-of-cancer/",
+      "summary": "The UK NSC has recommended targeted prostate cancer screening for men with a BRCA2 gene change and a family history of linked cancers. It's an important step towards more personalised, risk\u2011based screening, and could help detect prostate cancer earlier in the people with the\u2026",
+      "date": "Thu, 28 May 2026 12:18:23 +0000",
       "source": "Cancer Research UK news",
       "score": 1.2,
-      "category": "clinical-trial"
-    },
-    {
-      "title": "New study looks for better ways to prevent skin cancer in the people most at risk",
-      "link": "https://news.cancerresearchuk.org/2026/05/11/new-study-looks-for-better-ways-to-stop-skin-cancer-in-the-people-most-at-risk/",
-      "summary": "A new clinical trial is looking at how we can prevent a type of non-melanoma skin cancer for people with weakened immune systems. The post New study looks for better ways to prevent skin cancer in the people most at risk appeared first on Cancer Research UK - Cancer News .",
-      "date": "Mon, 11 May 2026 16:32:59 +0000",
-      "source": "Cancer Research UK news",
-      "score": 1.2,
-      "category": "clinical-trial"
+      "category": "general-oncology"
     }
   ]
 }
