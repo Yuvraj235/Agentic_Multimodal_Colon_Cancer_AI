@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-29T08:59:24.733705+00:00",
+  "generated_at": "2026-05-30T08:11:35.827477+00:00",
   "n_items": 40,
   "feed_status": [
     {
@@ -95,6 +95,15 @@
       "date": "Wed, 06 May 2026 02:20:17 EDT",
       "source": "ScienceDaily \u2014 cancer",
       "score": 7.7,
+      "category": "colorectal"
+    },
+    {
+      "title": "Health coaching app helpful for inflammatory bowel disease management",
+      "link": "https://medicalxpress.com/news/2026-05-health-app-inflammatory-bowel-disease.html",
+      "summary": "Integrating a mobile app with online health coaching into usual care boosts outcomes for inflammatory bowel disease (IBD), according to a study published online April 26 in Crohn's & Colitis 360.",
+      "date": "Fri, 29 May 2026 14:00:04 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 6.95,
       "category": "colorectal"
     },
     {
@@ -332,6 +341,24 @@
       "category": "general-oncology"
     },
     {
+      "title": "One in five patients achieve functional hepatitis B cure after 24 weeks of bepirovirsen",
+      "link": "https://medicalxpress.com/news/2026-05-patients-functional-hepatitis-weeks-bepirovirsen.html",
+      "summary": "In an editorial published in the New England Journal of Medicine, University of Michigan Health hepatologist Anna S. Lok, M.D., hails newly announced results of the B-Well clinical trials as \"a major step toward a functional cure for hepatitis B virus infection.\"",
+      "date": "Fri, 29 May 2026 14:40:09 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 1.45,
+      "category": "clinical-trial"
+    },
+    {
+      "title": "Celiac disease may raise risk of heart attack, stroke and early death",
+      "link": "https://medicalxpress.com/news/2026-05-celiac-disease-heart-early-death.html",
+      "summary": "People with celiac disease and dermatitis herpetiformis have a slightly increased risk of cardiovascular disease, certain types of blood cancer, and premature death. This is shown by a large U.S. registry study led by researchers at Karolinska Institutet. The results are\u2026",
+      "date": "Fri, 29 May 2026 14:00:03 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 1.45,
+      "category": "drug-news"
+    },
+    {
       "title": "How an aging immune system loses control over the gut microbiome",
       "link": "https://medicalxpress.com/news/2026-05-aging-immune-gut-microbiome.html",
       "summary": "Trillions of microorganisms live in the human gut, collectively forming the gut microbiome. They support important bodily functions, including digestion, metabolism, and the immune system. While this microbial community remains stable for many years, it often becomes unbalanced\u2026",
@@ -366,33 +393,6 @@
       "source": "Medical Xpress \u2014 gastroenterology",
       "score": 1.45,
       "category": "clinical-trial"
-    },
-    {
-      "title": "Molecular pathways behind inflammation in alcohol-associated liver disease mapped",
-      "link": "https://medicalxpress.com/news/2026-05-molecular-pathways-inflammation-alcohol-liver.html",
-      "summary": "Cedars-Sinai Health Sciences University investigators have identified molecular mechanisms that drive inflammation in alcohol-associated liver disease. Their preclinical discoveries could one day provide targets for therapies to treat the potentially fatal condition.",
-      "date": "Thu, 21 May 2026 19:20:03 EDT",
-      "source": "Medical Xpress \u2014 gastroenterology",
-      "score": 1.45,
-      "category": "general-oncology"
-    },
-    {
-      "title": "Vitamin C may help prevent cancer, according to study of dietary patterns and water quality",
-      "link": "https://medicalxpress.com/news/2026-05-vitamin-cancer-dietary-patterns-quality.html",
-      "summary": "A new study from the University of Waterloo uses mathematical modeling to examine how Vitamin C affects chemical reactions in the digestive system that are linked to cancer development. Over the last several decades, North American diets have seen a steady increase in exposure\u2026",
-      "date": "Wed, 20 May 2026 13:20:04 EDT",
-      "source": "Medical Xpress \u2014 gastroenterology",
-      "score": 1.45,
-      "category": "drug-news"
-    },
-    {
-      "title": "UK NSC recommends targeted prostate cancer screening",
-      "link": "https://news.cancerresearchuk.org/2026/05/28/uk-nsc-recommends-prostate-cancer-screening-for-men-with-a-brca2-gene-change-and-family-history-of-cancer/",
-      "summary": "The UK NSC has recommended targeted prostate cancer screening for men with a BRCA2 gene change and a family history of linked cancers. It's an important step towards more personalised, risk\u2011based screening, and could help detect prostate cancer earlier in the people with the\u2026",
-      "date": "Thu, 28 May 2026 12:18:23 +0000",
-      "source": "Cancer Research UK news",
-      "score": 1.2,
-      "category": "general-oncology"
     }
   ]
 }
