@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-30T08:11:35.827477+00:00",
+  "generated_at": "2026-05-31T08:30:44.254567+00:00",
   "n_items": 40,
   "feed_status": [
     {
@@ -68,15 +68,6 @@
       "date": "Thu, 21 May 2026 14:20:07 EDT",
       "source": "Medical Xpress \u2014 gastroenterology",
       "score": 8.95,
-      "category": "colorectal"
-    },
-    {
-      "title": "Why chronic gut inflammation can turn into colon cancer",
-      "link": "https://www.sciencedaily.com/releases/2026/01/260125083401.htm",
-      "summary": "A newly uncovered immune chain reaction in the gut may explain why people with inflammatory bowel disease face a much higher risk of colorectal cancer. Researchers found that a powerful inflammatory signal flips on specialized gut immune cells, which then call in waves of white\u2026",
-      "date": "Sun, 25 Jan 2026 10:15:11 EST",
-      "source": "ScienceDaily \u2014 immune system",
-      "score": 8.55,
       "category": "colorectal"
     },
     {
@@ -393,6 +384,15 @@
       "source": "Medical Xpress \u2014 gastroenterology",
       "score": 1.45,
       "category": "clinical-trial"
+    },
+    {
+      "title": "Molecular pathways behind inflammation in alcohol-associated liver disease mapped",
+      "link": "https://medicalxpress.com/news/2026-05-molecular-pathways-inflammation-alcohol-liver.html",
+      "summary": "Cedars-Sinai Health Sciences University investigators have identified molecular mechanisms that drive inflammation in alcohol-associated liver disease. Their preclinical discoveries could one day provide targets for therapies to treat the potentially fatal condition.",
+      "date": "Thu, 21 May 2026 19:20:03 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 1.45,
+      "category": "general-oncology"
     }
   ]
 }
