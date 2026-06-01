@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-31T08:30:44.254567+00:00",
+  "generated_at": "2026-06-01T11:01:23.749101+00:00",
   "n_items": 40,
   "feed_status": [
     {
@@ -179,15 +179,6 @@
       "category": "colorectal"
     },
     {
-      "title": "Spatial transcriptomics guides inflammatory bowel disease research",
-      "link": "https://medicalxpress.com/news/2026-05-spatial-transcriptomics-inflammatory-bowel-disease.html",
-      "summary": "A novel spatial transcriptomics atlas developed by Northwestern Medicine scientists may improve the understanding of niche cellular interactions in the gastrointestinal tract that promote the development of inflammatory bowel diseases, as detailed in a recent study published in\u2026",
-      "date": "Wed, 20 May 2026 13:41:12 EDT",
-      "source": "Medical Xpress \u2014 gastroenterology",
-      "score": 4.95,
-      "category": "colorectal"
-    },
-    {
       "title": "This 5-day diet helped Crohn\u2019s patients feel better fast",
       "link": "https://www.sciencedaily.com/releases/2026/04/260402042751.htm",
       "summary": "A new clinical trial suggests that what people eat could finally offer real relief for Crohn\u2019s disease, a condition that has long lacked clear dietary guidance. Researchers found that a \u201cfasting-mimicking diet\u201d \u2014 involving just five days a month of very low-calorie, plant-based\u2026",
@@ -282,15 +273,6 @@
       "link": "https://medicalxpress.com/news/2026-05-substandard-bowel-cancer-people-disability.html",
       "summary": "People with a learning disability are at higher risk of developing bowel cancer, yet face significant barriers at nearly every stage of the care pathway, University of Manchester and Christie NHS Foundation Trust have found. The population-based study of more than 2 million\u2026",
       "date": "Wed, 20 May 2026 20:00:03 EDT",
-      "source": "Medical Xpress \u2014 gastroenterology",
-      "score": 2.95,
-      "category": "colorectal"
-    },
-    {
-      "title": "New study traces network of nerves that disrupt digestion, pointing to potential IBS treatment",
-      "link": "https://medicalxpress.com/news/2026-05-network-nerves-disrupt-digestion-potential.html",
-      "summary": "When stress affects the gut, the stomach tightens, digestion slows. For some, these symptoms resolve quickly. For others\u2014particularly people with constipation-predominant irritable bowel syndrome (IBS-C) and related conditions\u2014they don't. In a new study, investigators at Beth\u2026",
-      "date": "Wed, 20 May 2026 14:20:04 EDT",
       "source": "Medical Xpress \u2014 gastroenterology",
       "score": 2.95,
       "category": "colorectal"
@@ -393,6 +375,24 @@
       "source": "Medical Xpress \u2014 gastroenterology",
       "score": 1.45,
       "category": "general-oncology"
+    },
+    {
+      "title": "UK NSC recommends targeted prostate cancer screening",
+      "link": "https://news.cancerresearchuk.org/2026/05/28/uk-nsc-recommends-prostate-cancer-screening-for-men-with-a-brca2-gene-change-and-family-history-of-cancer/",
+      "summary": "The UK NSC has recommended targeted prostate cancer screening for men with a BRCA2 gene change and a family history of linked cancers. It's an important step towards more personalised, risk\u2011based screening, and could help detect prostate cancer earlier in the people with the\u2026",
+      "date": "Thu, 28 May 2026 12:18:23 +0000",
+      "source": "Cancer Research UK news",
+      "score": 1.2,
+      "category": "general-oncology"
+    },
+    {
+      "title": "How philanthropy is helping promising cancer treatments reach clinical trials sooner",
+      "link": "https://news.cancerresearchuk.org/2026/05/20/how-philanthropy-is-helping-promising-cancer-treatments-reach-clinical-trials-sooner/",
+      "summary": "On International Clinical Trials Day, we\u2019re spotlighting how philanthropy-backed clinical trials at Cancer Research UK are helping promising treatments reach people affected by rare and hard-to-treat cancers. The post How philanthropy is helping promising cancer treatments reach\u2026",
+      "date": "Wed, 20 May 2026 08:28:01 +0000",
+      "source": "Cancer Research UK news",
+      "score": 1.2,
+      "category": "clinical-trial"
     }
   ]
 }
