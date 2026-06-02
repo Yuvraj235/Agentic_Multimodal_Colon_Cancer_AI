@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-01T11:01:23.749101+00:00",
+  "generated_at": "2026-06-02T09:55:18.933416+00:00",
   "n_items": 40,
   "feed_status": [
     {
@@ -62,6 +62,15 @@
       "category": "colorectal"
     },
     {
+      "title": "Poop tests and blood tests join colonoscopy as options for colorectal cancer screening",
+      "link": "https://medicalxpress.com/news/2026-06-poop-blood-colonoscopy-options-colorectal.html",
+      "summary": "It's increasingly common to see headlines and social media conversations about the rise in colorectal cancer among younger adults. In fact, the growing incidence of colorectal cancer in people under age 50 helped drive the American Cancer Society's 2018 decision to recommend\u2026",
+      "date": "Mon, 01 Jun 2026 14:40:09 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 9.45,
+      "category": "colorectal"
+    },
+    {
       "title": "Decoding inflammatory bowel disease\u2014on a chip",
       "link": "https://medicalxpress.com/news/2026-05-decoding-inflammatory-bowel-disease-chip.html",
       "summary": "Inflammatory bowel disease (IBD), which comprises the inflammatory conditions Crohn's disease and ulcerative colitis, affects about 1.6 million Americans, many of whom cannot be effectively treated. This is mostly due to a lack of understanding of what exactly causes the\u2026",
@@ -89,6 +98,24 @@
       "category": "colorectal"
     },
     {
+      "title": "Colorectal cancer has a backup plan, and it begins when mature gut cells regain stem-like traits",
+      "link": "https://medicalxpress.com/news/2026-06-colorectal-cancer-backup-mature-gut.html",
+      "summary": "In a recent study, Stevens researchers have shown how colorectal cancers can evolve from mature intestinal cells that revert to stem cells. These findings explain why colorectal cancers are so resistant to treatment and can help inform the development of effective therapies for\u2026",
+      "date": "Mon, 01 Jun 2026 16:40:04 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 6.95,
+      "category": "colorectal"
+    },
+    {
+      "title": "A common food compound may hold the key to shutting down leaky gut damage",
+      "link": "https://medicalxpress.com/news/2026-06-common-food-compound-key-leaky.html",
+      "summary": "When the intestinal lining breaks down, harmful gut bacterial antigens can slip into the bloodstream alongside nutrients. This breach in the gut's protective barrier, known as \"leaky gut,\" is more than a digestive issue\u2014it's a sign of inflammatory bowel disease (IBD) and has\u2026",
+      "date": "Mon, 01 Jun 2026 14:00:04 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 6.95,
+      "category": "colorectal"
+    },
+    {
       "title": "Health coaching app helpful for inflammatory bowel disease management",
       "link": "https://medicalxpress.com/news/2026-05-health-app-inflammatory-bowel-disease.html",
       "summary": "Integrating a mobile app with online health coaching into usual care boosts outcomes for inflammatory bowel disease (IBD), according to a study published online April 26 in Crohn's & Colitis 360.",
@@ -102,15 +129,6 @@
       "link": "https://medicalxpress.com/news/2026-05-colorectal-cancer-guidelines-endorse-stool.html",
       "summary": "With colorectal cancer a growing concern among younger people, the American Cancer Society has endorsed two new types of stool tests to encourage people to get screened, while also recommending a limited role for new blood tests that many patients find appealing.",
       "date": "Wed, 27 May 2026 07:00:01 EDT",
-      "source": "Medical Xpress \u2014 gastroenterology",
-      "score": 6.95,
-      "category": "colorectal"
-    },
-    {
-      "title": "Targeting inflammation may help overcome drug resistance in colon cancer",
-      "link": "https://medicalxpress.com/news/2026-05-inflammation-drug-resistance-colon-cancer.html",
-      "summary": "Chemotherapy drugs that target a common mutation in colorectal cancer rapidly lose efficacy in patients, leading to relapse. According to a new preclinical study by Weill Cornell Medicine and MD Anderson Cancer Center investigators, colorectal tumors often find multiple ways to\u2026",
-      "date": "Thu, 21 May 2026 11:00:15 EDT",
       "source": "Medical Xpress \u2014 gastroenterology",
       "score": 6.95,
       "category": "colorectal"
@@ -269,15 +287,6 @@
       "category": "colorectal"
     },
     {
-      "title": "Study finds substandard bowel cancer care for people with learning disability",
-      "link": "https://medicalxpress.com/news/2026-05-substandard-bowel-cancer-people-disability.html",
-      "summary": "People with a learning disability are at higher risk of developing bowel cancer, yet face significant barriers at nearly every stage of the care pathway, University of Manchester and Christie NHS Foundation Trust have found. The population-based study of more than 2 million\u2026",
-      "date": "Wed, 20 May 2026 20:00:03 EDT",
-      "source": "Medical Xpress \u2014 gastroenterology",
-      "score": 2.95,
-      "category": "colorectal"
-    },
-    {
       "title": "The cell keeps the score: \u2018memory\u2019, inflammation and bowel cancer",
       "link": "https://news.cancerresearchuk.org/2026/05/18/the-cell-keeps-the-score-memory-inflammation-and-bowel-cancer/",
       "summary": "A new mouse study has shown that the way cells \u201cremember\u201d chronic inflammation could be a missing link between colitis and bowel cancer. If the same holds true in humans, it could lead to a new way to prevent cancer. The post The cell keeps the score: &#8216;memory&#8217;,\u2026",
@@ -312,6 +321,15 @@
       "source": "ScienceDaily \u2014 colorectal cancer",
       "score": 1.5,
       "category": "general-oncology"
+    },
+    {
+      "title": "RAS(ON) inhibitor doubles median overall survival in patients with metastatic pancreatic cancer",
+      "link": "https://medicalxpress.com/news/2026-06-rason-inhibitor-median-survival-patients.html",
+      "summary": "A shift in the way people think about and treat pancreatic cancer could be on the horizon based on positive results from the pivotal randomized Phase III RASolute 302 trial comparing daraxonrasib to chemotherapy as second-line therapy for patients with metastatic pancreatic\u2026",
+      "date": "Mon, 01 Jun 2026 08:00:02 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 1.45,
+      "category": "clinical-trial"
     },
     {
       "title": "One in five patients achieve functional hepatitis B cure after 24 weeks of bepirovirsen",
@@ -375,24 +393,6 @@
       "source": "Medical Xpress \u2014 gastroenterology",
       "score": 1.45,
       "category": "general-oncology"
-    },
-    {
-      "title": "UK NSC recommends targeted prostate cancer screening",
-      "link": "https://news.cancerresearchuk.org/2026/05/28/uk-nsc-recommends-prostate-cancer-screening-for-men-with-a-brca2-gene-change-and-family-history-of-cancer/",
-      "summary": "The UK NSC has recommended targeted prostate cancer screening for men with a BRCA2 gene change and a family history of linked cancers. It's an important step towards more personalised, risk\u2011based screening, and could help detect prostate cancer earlier in the people with the\u2026",
-      "date": "Thu, 28 May 2026 12:18:23 +0000",
-      "source": "Cancer Research UK news",
-      "score": 1.2,
-      "category": "general-oncology"
-    },
-    {
-      "title": "How philanthropy is helping promising cancer treatments reach clinical trials sooner",
-      "link": "https://news.cancerresearchuk.org/2026/05/20/how-philanthropy-is-helping-promising-cancer-treatments-reach-clinical-trials-sooner/",
-      "summary": "On International Clinical Trials Day, we\u2019re spotlighting how philanthropy-backed clinical trials at Cancer Research UK are helping promising treatments reach people affected by rare and hard-to-treat cancers. The post How philanthropy is helping promising cancer treatments reach\u2026",
-      "date": "Wed, 20 May 2026 08:28:01 +0000",
-      "source": "Cancer Research UK news",
-      "score": 1.2,
-      "category": "clinical-trial"
     }
   ]
 }
