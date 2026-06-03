@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-02T09:55:18.933416+00:00",
+  "generated_at": "2026-06-03T10:26:43.922948+00:00",
   "n_items": 40,
   "feed_status": [
     {
@@ -71,15 +71,6 @@
       "category": "colorectal"
     },
     {
-      "title": "Decoding inflammatory bowel disease\u2014on a chip",
-      "link": "https://medicalxpress.com/news/2026-05-decoding-inflammatory-bowel-disease-chip.html",
-      "summary": "Inflammatory bowel disease (IBD), which comprises the inflammatory conditions Crohn's disease and ulcerative colitis, affects about 1.6 million Americans, many of whom cannot be effectively treated. This is mostly due to a lack of understanding of what exactly causes the\u2026",
-      "date": "Thu, 21 May 2026 14:20:07 EDT",
-      "source": "Medical Xpress \u2014 gastroenterology",
-      "score": 8.95,
-      "category": "colorectal"
-    },
-    {
       "title": "Patients show strong response to at-home cancer test",
       "link": "https://medicalxpress.com/news/2026-05-patients-strong-response-home-cancer.html",
       "summary": "A new analysis of clinical trial data led by Anisha P. Ganguly, MD, MPH, a general internist at UNC Health and member of UNC Lineberger Comprehensive Cancer Center, has proven that mailed fecal immunochemical tests can drastically increase colorectal cancer screening by 18%\u2026",
@@ -143,15 +134,6 @@
       "category": "colorectal"
     },
     {
-      "title": "Hidden virus in your gut may be linked to colon cancer",
-      "link": "https://www.sciencedaily.com/releases/2026/04/260422044630.htm",
-      "summary": "A newly discovered virus hiding inside a common gut bacterium could help explain one of medicine\u2019s long-standing mysteries: why a microbe found in both healthy people and cancer patients is linked to colorectal cancer. The research suggests that the interaction between bacteria\u2026",
-      "date": "Wed, 22 Apr 2026 09:02:43 EDT",
-      "source": "ScienceDaily \u2014 cancer",
-      "score": 6.7,
-      "category": "colorectal"
-    },
-    {
       "title": "Three medical routines that older people may not need",
       "link": "https://medicalxpress.com/news/2026-05-medical-routines-older-people.html",
       "summary": "Enough time had passed since the patient's previous colonoscopy that she met the criteria to undergo another, said Dr. Steven Itzkowitz, a gastroenterologist at the Icahn School of Medicine at Mount Sinai in New York.",
@@ -195,6 +177,15 @@
       "source": "Medical Xpress \u2014 gastroenterology",
       "score": 4.95,
       "category": "colorectal"
+    },
+    {
+      "title": "Engineered gut bacteria match fecal transplants in small C. difficile trial",
+      "link": "https://medicalxpress.com/news/2026-06-gut-bacteria-fecal-transplants-small.html",
+      "summary": "Researchers at the Icahn School of Medicine at Mount Sinai have developed a new manufacturing platform for producing targeted mixtures of beneficial gut bacteria, an approach that could help expand access to microbiome-based therapies for patients with recurrent Clostridioides\u2026",
+      "date": "Tue, 02 Jun 2026 13:20:01 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 3.45,
+      "category": "clinical-trial"
     },
     {
       "title": "This 5-day diet helped Crohn\u2019s patients feel better fast",
@@ -260,6 +251,15 @@
       "category": "colorectal"
     },
     {
+      "title": "Study on circulating tumor DNA shows clear benefits",
+      "link": "https://medicalxpress.com/news/2026-06-circulating-tumor-dna-benefits.html",
+      "summary": "After surgery for colon cancer, many patients face the question of whether follow-up chemotherapy is necessary to prevent a possible relapse. The decision is particularly difficult in so-called Stage II, the intermediate-risk group. Although around one in five untreated patients\u2026",
+      "date": "Tue, 02 Jun 2026 15:20:01 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 2.95,
+      "category": "colorectal"
+    },
+    {
       "title": "Changing what's possible: First combined intestinal and kidney transplant",
       "link": "https://medicalxpress.com/news/2026-05-combined-intestinal-kidney-transplant.html",
       "summary": "After nearly two decades of life-threatening illness, repeated complications, and organ failure, 33-year-old Briana Dery of Twining, Mich., is looking ahead to a healthy future, after successfully undergoing one of the rarest and most complex procedures in modern medicine. On\u2026",
@@ -273,15 +273,6 @@
       "link": "https://medicalxpress.com/news/2026-05-probiotics-childcare-gastrointestinal-bugs.html",
       "summary": "New research suggests probiotics could help reduce \"gastro bugs\" in children attending childcare and kindergartens\u2014potentially easing the familiar cycle of gastro lurgies for parents and families.",
       "date": "Wed, 27 May 2026 10:20:01 EDT",
-      "source": "Medical Xpress \u2014 gastroenterology",
-      "score": 2.95,
-      "category": "colorectal"
-    },
-    {
-      "title": "Gut-lung microbe shifts may explain clozapine's severe bowel and lung side effects",
-      "link": "https://medicalxpress.com/news/2026-05-gut-lung-microbe-shifts-clozapine.html",
-      "summary": "Schizophrenia is a severe mental health disorder characterized by hallucinations, false and rigid beliefs (i.e., delusions), impaired mental functions, disorganized speech and, in some cases, repetitive body movements. This debilitating disorder is typically treated with\u2026",
-      "date": "Fri, 22 May 2026 08:50:01 EDT",
       "source": "Medical Xpress \u2014 gastroenterology",
       "score": 2.95,
       "category": "colorectal"
@@ -386,12 +377,21 @@
       "category": "clinical-trial"
     },
     {
-      "title": "Molecular pathways behind inflammation in alcohol-associated liver disease mapped",
-      "link": "https://medicalxpress.com/news/2026-05-molecular-pathways-inflammation-alcohol-liver.html",
-      "summary": "Cedars-Sinai Health Sciences University investigators have identified molecular mechanisms that drive inflammation in alcohol-associated liver disease. Their preclinical discoveries could one day provide targets for therapies to treat the potentially fatal condition.",
-      "date": "Thu, 21 May 2026 19:20:03 EDT",
-      "source": "Medical Xpress \u2014 gastroenterology",
-      "score": 1.45,
+      "title": "A single protein may be holding back CAR T cancer therapy",
+      "link": "https://www.sciencedaily.com/releases/2026/06/260602021641.htm",
+      "summary": "A newly identified protein may be one of the biggest obstacles holding CAR T-cell therapy back. Researchers found that NFIL3 causes these engineered immune cells to become exhausted and lose their cancer-fighting power over time. When NFIL3 was disabled, the cells remained\u2026",
+      "date": "Tue, 02 Jun 2026 10:54:02 EDT",
+      "source": "ScienceDaily \u2014 cancer",
+      "score": 1.2,
+      "category": "drug-news"
+    },
+    {
+      "title": "UK NSC recommends targeted prostate cancer screening",
+      "link": "https://news.cancerresearchuk.org/2026/05/28/uk-nsc-recommends-prostate-cancer-screening-for-men-with-a-brca2-gene-change-and-family-history-of-cancer/",
+      "summary": "The UK NSC has recommended targeted prostate cancer screening for men with a BRCA2 gene change and a family history of linked cancers. It's an important step towards more personalised, risk\u2011based screening, and could help detect prostate cancer earlier in the people with the\u2026",
+      "date": "Thu, 28 May 2026 12:18:23 +0000",
+      "source": "Cancer Research UK news",
+      "score": 1.2,
       "category": "general-oncology"
     }
   ]
