@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-03T10:26:43.922948+00:00",
+  "generated_at": "2026-06-04T09:37:18.936854+00:00",
   "n_items": 40,
   "feed_status": [
     {
@@ -170,6 +170,15 @@
       "category": "colorectal"
     },
     {
+      "title": "2.2 million-cell atlas reveals how genes drive inflammatory bowel disease risk",
+      "link": "https://medicalxpress.com/news/2026-06-million-cell-atlas-reveals-genes.html",
+      "summary": "Scientists have created the most detailed cell map to date showing how genetic variation influences inflammatory bowel disease (IBD), revealing the specific cells and genes that drive the disease. Published in Nature, the research carried out at the Wellcome Sanger Institute,\u2026",
+      "date": "Wed, 03 Jun 2026 11:00:06 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 4.95,
+      "category": "colorectal"
+    },
+    {
       "title": "Recommendations developed for assessing postoperative Crohn disease recurrence",
       "link": "https://medicalxpress.com/news/2026-05-postoperative-crohn-disease-recurrence.html",
       "summary": "Multidisciplinary recommendations are presented to standardize intestinal ultrasound application for assessing postoperative recurrence of Crohn disease in an article published online May 20 in The Lancet Gastroenterology & Hepatology.",
@@ -248,6 +257,15 @@
       "date": "Tue, 06 Aug 2024 13:13:36 EDT",
       "source": "ScienceDaily \u2014 colorectal cancer",
       "score": 3.0,
+      "category": "colorectal"
+    },
+    {
+      "title": "How culture, stress, and social life may shape gut health",
+      "link": "https://medicalxpress.com/news/2026-06-culture-stress-social-life-gut.html",
+      "summary": "Abdominal pain before an important exam, nausea during intense stress, or sudden intestinal problems following difficult life experiences\u2014many people regard such symptoms as a temporary bodily reaction. However, a growing body of evidence confirms that the relationship between\u2026",
+      "date": "Wed, 03 Jun 2026 21:00:01 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 2.95,
       "category": "colorectal"
     },
     {
@@ -368,15 +386,6 @@
       "category": "drug-news"
     },
     {
-      "title": "Macrophage cell therapy boosts four-year transplant-free survival in advanced cirrhosis",
-      "link": "https://medicalxpress.com/news/2026-05-macrophage-cell-therapy-boosts-year.html",
-      "summary": "A new type of cell therapy shows promise as the first treatment for advanced liver disease, following results from a clinical trial. Patients with the condition who were treated with the cell therapy had a significantly lower risk of death or need for a liver transplant after\u2026",
-      "date": "Mon, 25 May 2026 11:00:01 EDT",
-      "source": "Medical Xpress \u2014 gastroenterology",
-      "score": 1.45,
-      "category": "clinical-trial"
-    },
-    {
       "title": "A single protein may be holding back CAR T cancer therapy",
       "link": "https://www.sciencedaily.com/releases/2026/06/260602021641.htm",
       "summary": "A newly identified protein may be one of the biggest obstacles holding CAR T-cell therapy back. Researchers found that NFIL3 causes these engineered immune cells to become exhausted and lose their cancer-fighting power over time. When NFIL3 was disabled, the cells remained\u2026",
@@ -384,15 +393,6 @@
       "source": "ScienceDaily \u2014 cancer",
       "score": 1.2,
       "category": "drug-news"
-    },
-    {
-      "title": "UK NSC recommends targeted prostate cancer screening",
-      "link": "https://news.cancerresearchuk.org/2026/05/28/uk-nsc-recommends-prostate-cancer-screening-for-men-with-a-brca2-gene-change-and-family-history-of-cancer/",
-      "summary": "The UK NSC has recommended targeted prostate cancer screening for men with a BRCA2 gene change and a family history of linked cancers. It's an important step towards more personalised, risk\u2011based screening, and could help detect prostate cancer earlier in the people with the\u2026",
-      "date": "Thu, 28 May 2026 12:18:23 +0000",
-      "source": "Cancer Research UK news",
-      "score": 1.2,
-      "category": "general-oncology"
     }
   ]
 }
