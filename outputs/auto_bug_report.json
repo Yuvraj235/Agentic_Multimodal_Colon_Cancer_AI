@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-04T08:21:57.116847+00:00",
-  "overall_ok": false,
+  "generated_at": "2026-06-05T08:08:10.992887+00:00",
+  "overall_ok": true,
   "n_files_scanned": 58,
   "syntax_errors": [],
   "critical_issues": [],
@@ -122,8 +122,15 @@
     "url": "https://yuvraj2319-colonai.hf.space/",
     "ok": true,
     "http_code": 200,
-    "elapsed_ms": 149.0,
+    "elapsed_ms": 261.1,
     "error": null,
-    "streamlit_health": "ok"
+    "streamlit_health": "ok",
+    "space_stage": "RUNNING",
+    "space_hardware": {
+      "current": "cpu-basic",
+      "requested": "cpu-basic"
+    },
+    "space_sdk": "docker",
+    "space_modified": "2026-05-25T02:24:09.000Z"
   }
 }
