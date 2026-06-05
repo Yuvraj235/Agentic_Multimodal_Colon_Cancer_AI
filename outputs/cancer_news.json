@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-04T09:37:18.936854+00:00",
+  "generated_at": "2026-06-05T08:58:55.083196+00:00",
   "n_items": 40,
   "feed_status": [
     {
@@ -260,6 +260,15 @@
       "category": "colorectal"
     },
     {
+      "title": "Scientists recreate enterovirus infection in a new model of the human intestine",
+      "link": "https://medicalxpress.com/news/2026-06-scientists-recreate-enterovirus-infection-human.html",
+      "summary": "A miniaturized, biomimetic model of the human intestine has successfully reproduced long-term enterovirus A71 (EV-A71) infection, report researchers from Science Tokyo. Using this innovative platform, they shed light on how this virus grows in the intestine without triggering a\u2026",
+      "date": "Thu, 04 Jun 2026 19:40:03 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 2.95,
+      "category": "colorectal"
+    },
+    {
       "title": "How culture, stress, and social life may shape gut health",
       "link": "https://medicalxpress.com/news/2026-06-culture-stress-social-life-gut.html",
       "summary": "Abdominal pain before an important exam, nausea during intense stress, or sudden intestinal problems following difficult life experiences\u2014many people regard such symptoms as a temporary bodily reaction. However, a growing body of evidence confirms that the relationship between\u2026",
@@ -377,19 +386,10 @@
       "category": "clinical-trial"
     },
     {
-      "title": "Residual risks of liver cancer persist after hepatitis C cure, finds study",
-      "link": "https://medicalxpress.com/news/2026-05-residual-liver-cancer-persist-hepatitis.html",
-      "summary": "National Taiwan University Hospital (NTUH), in collaboration with multiple medical centers across Taiwan, has found that patients with hepatitis C remain at a significantly elevated risk of hepatocellular carcinoma (HCC) even after successful viral eradication with direct-acting\u2026",
-      "date": "Tue, 26 May 2026 13:00:03 EDT",
-      "source": "Medical Xpress \u2014 gastroenterology",
-      "score": 1.45,
-      "category": "drug-news"
-    },
-    {
-      "title": "A single protein may be holding back CAR T cancer therapy",
-      "link": "https://www.sciencedaily.com/releases/2026/06/260602021641.htm",
-      "summary": "A newly identified protein may be one of the biggest obstacles holding CAR T-cell therapy back. Researchers found that NFIL3 causes these engineered immune cells to become exhausted and lose their cancer-fighting power over time. When NFIL3 was disabled, the cells remained\u2026",
-      "date": "Tue, 02 Jun 2026 10:54:02 EDT",
+      "title": "Scientists finally crack an \u201cundruggable\u201d pancreatic cancer target and nearly double survival",
+      "link": "https://www.sciencedaily.com/releases/2026/06/260604044247.htm",
+      "summary": "For decades, pancreatic cancer has been one of the most lethal cancers, with few effective treatment options. A new drug, daraxonrasib, targets the KRAS mutation that fuels most pancreatic tumors\u2014something many scientists once thought couldn't be done. In a major clinical trial,\u2026",
+      "date": "Thu, 04 Jun 2026 09:18:44 EDT",
       "source": "ScienceDaily \u2014 cancer",
       "score": 1.2,
       "category": "drug-news"
