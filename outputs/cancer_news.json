@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-05T08:58:55.083196+00:00",
+  "generated_at": "2026-06-06T08:18:32.641914+00:00",
   "n_items": 40,
   "feed_status": [
     {
@@ -305,15 +305,6 @@
       "category": "colorectal"
     },
     {
-      "title": "The cell keeps the score: \u2018memory\u2019, inflammation and bowel cancer",
-      "link": "https://news.cancerresearchuk.org/2026/05/18/the-cell-keeps-the-score-memory-inflammation-and-bowel-cancer/",
-      "summary": "A new mouse study has shown that the way cells \u201cremember\u201d chronic inflammation could be a missing link between colitis and bowel cancer. If the same holds true in humans, it could lead to a new way to prevent cancer. The post The cell keeps the score: &#8216;memory&#8217;,\u2026",
-      "date": "Mon, 18 May 2026 13:21:42 +0000",
-      "source": "Cancer Research UK news",
-      "score": 2.7,
-      "category": "colorectal"
-    },
-    {
       "title": "MIT scientists discover amino acid that helps the gut heal itself",
       "link": "https://www.sciencedaily.com/releases/2026/05/260520233223.htm",
       "summary": "MIT scientists have identified cysteine \u2014 an amino acid found in foods like meat, dairy, beans, and nuts \u2014 as a potent trigger for intestinal repair. In mice, a cysteine-rich diet activated immune cells that released healing signals, helping stem cells rebuild damaged intestinal\u2026",
@@ -339,6 +330,15 @@
       "source": "ScienceDaily \u2014 colorectal cancer",
       "score": 1.5,
       "category": "general-oncology"
+    },
+    {
+      "title": "FDA approves first treatment for chronic hepatitis delta virus infection",
+      "link": "https://medicalxpress.com/news/2026-06-fda-treatment-chronic-hepatitis-delta.html",
+      "summary": "The U.S. Food and Drug Administration has approved Hepcludex (bulevirtide\u2010gmod) injection to treat chronic hepatitis delta virus (HDV) infection in adults without cirrhosis or compensated cirrhosis. Approval of Hepcludex was granted to Gilead Sciences.",
+      "date": "Fri, 05 Jun 2026 20:20:01 EDT",
+      "source": "Medical Xpress \u2014 gastroenterology",
+      "score": 1.45,
+      "category": "drug-news"
     },
     {
       "title": "RAS(ON) inhibitor doubles median overall survival in patients with metastatic pancreatic cancer",
@@ -377,19 +377,19 @@
       "category": "drug-news"
     },
     {
-      "title": "Vitamin D analog shuts down pancreatic cancer's shield in a clinical trial",
-      "link": "https://medicalxpress.com/news/2026-05-vitamin-d-analog-pancreatic-cancer.html",
-      "summary": "A small clinical trial led by Dana-Farber Cancer Institute researchers has put a Salk Institute idea to the test in patients: that activating the vitamin D receptor can help reshape the protective environment surrounding pancreatic tumors in ways that could make the notoriously\u2026",
-      "date": "Tue, 26 May 2026 15:52:42 EDT",
-      "source": "Medical Xpress \u2014 gastroenterology",
-      "score": 1.45,
-      "category": "clinical-trial"
-    },
-    {
       "title": "Scientists finally crack an \u201cundruggable\u201d pancreatic cancer target and nearly double survival",
       "link": "https://www.sciencedaily.com/releases/2026/06/260604044247.htm",
       "summary": "For decades, pancreatic cancer has been one of the most lethal cancers, with few effective treatment options. A new drug, daraxonrasib, targets the KRAS mutation that fuels most pancreatic tumors\u2014something many scientists once thought couldn't be done. In a major clinical trial,\u2026",
       "date": "Thu, 04 Jun 2026 09:18:44 EDT",
+      "source": "ScienceDaily \u2014 cancer",
+      "score": 1.2,
+      "category": "drug-news"
+    },
+    {
+      "title": "A single protein may be holding back CAR T cancer therapy",
+      "link": "https://www.sciencedaily.com/releases/2026/06/260602021641.htm",
+      "summary": "A newly identified protein may be one of the biggest obstacles holding CAR T-cell therapy back. Researchers found that NFIL3 causes these engineered immune cells to become exhausted and lose their cancer-fighting power over time. When NFIL3 was disabled, the cells remained\u2026",
+      "date": "Tue, 02 Jun 2026 10:54:02 EDT",
       "source": "ScienceDaily \u2014 cancer",
       "score": 1.2,
       "category": "drug-news"
