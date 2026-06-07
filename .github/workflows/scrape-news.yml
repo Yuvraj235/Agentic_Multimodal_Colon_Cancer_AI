@@ -1,10 +1,12 @@
 name: Daily cancer-news scrape
 
 on:
-  # Run every day at 06:00 UTC (~11:30 IST, ~07:00 UK, ~02:00 EST)
-  schedule:
-    - cron: "0 6 * * *"
-  # Allow manual triggers
+  # PAUSED 2026-06-08 for medical-grade pilot hardening: no unsupervised
+  # auto-commits of external content into a clinical repo. Re-enable by
+  # uncommenting the cron below after a human-review gate is in place.
+  # schedule:
+  #   - cron: "0 6 * * *"   # daily 06:00 UTC
+  # Manual trigger still allowed:
   workflow_dispatch:
 
 permissions:

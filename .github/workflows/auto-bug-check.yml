@@ -1,11 +1,13 @@
 name: Daily auto-bug-check
 
 on:
-  # Run every day at 04:00 UTC (offset from news scraper at 06:00 so
-  # the two cron jobs don't fight over the same commit).
-  schedule:
-    - cron: "0 4 * * *"
-  # Allow manual triggers from the GitHub UI
+  # PAUSED 2026-06-08 for medical-grade pilot hardening: an unsupervised job
+  # with contents:write that auto-commits "stale file" deletions must not run
+  # on a clinical repo without a human-review gate. Re-enable by uncommenting
+  # the cron below once changes go through PR review.
+  # schedule:
+  #   - cron: "0 4 * * *"   # daily 04:00 UTC
+  # Manual trigger still allowed:
   workflow_dispatch:
 
 permissions:
