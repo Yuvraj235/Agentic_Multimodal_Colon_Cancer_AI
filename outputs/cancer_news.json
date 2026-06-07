@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-06T08:18:32.641914+00:00",
+  "generated_at": "2026-06-07T08:40:49.719974+00:00",
   "n_items": 40,
   "feed_status": [
     {
@@ -80,15 +80,6 @@
       "category": "colorectal"
     },
     {
-      "title": "Colon cancer breakthrough keeps patients cancer-free for nearly 3 years",
-      "link": "https://www.sciencedaily.com/releases/2026/05/260505234618.htm",
-      "summary": "A short burst of immunotherapy before surgery is delivering surprisingly powerful results for a specific type of colorectal cancer. Patients in a UK-led trial who received just nine weeks of pembrolizumab prior to surgery have remained cancer-free nearly three years later\u2014an\u2026",
-      "date": "Wed, 06 May 2026 02:20:17 EDT",
-      "source": "ScienceDaily \u2014 cancer",
-      "score": 7.7,
-      "category": "colorectal"
-    },
-    {
       "title": "Colorectal cancer has a backup plan, and it begins when mature gut cells regain stem-like traits",
       "link": "https://medicalxpress.com/news/2026-06-colorectal-cancer-backup-mature-gut.html",
       "summary": "In a recent study, Stevens researchers have shown how colorectal cancers can evolve from mature intestinal cells that revert to stem cells. These findings explain why colorectal cancers are so resistant to treatment and can help inform the development of effective therapies for\u2026",
@@ -116,30 +107,12 @@
       "category": "colorectal"
     },
     {
-      "title": "Updated colorectal cancer guidelines endorse new stool tests, recommend limited use of blood tests",
-      "link": "https://medicalxpress.com/news/2026-05-colorectal-cancer-guidelines-endorse-stool.html",
-      "summary": "With colorectal cancer a growing concern among younger people, the American Cancer Society has endorsed two new types of stool tests to encourage people to get screened, while also recommending a limited role for new blood tests that many patients find appealing.",
-      "date": "Wed, 27 May 2026 07:00:01 EDT",
-      "source": "Medical Xpress \u2014 gastroenterology",
-      "score": 6.95,
-      "category": "colorectal"
-    },
-    {
       "title": "Colon cancer is rising in young adults and doctors don\u2019t fully know why",
       "link": "https://www.sciencedaily.com/releases/2026/05/260513221805.htm",
       "summary": "Colorectal cancer is increasingly showing up in younger adults, with cases now appearing in people as young as their thirties \u2014 often with no family history or warning signs. A major Swiss study analyzing nearly 100,000 cases over four decades found that diagnoses in people\u2026",
       "date": "Thu, 14 May 2026 20:50:57 EDT",
       "source": "ScienceDaily \u2014 cancer",
       "score": 6.7,
-      "category": "colorectal"
-    },
-    {
-      "title": "Three medical routines that older people may not need",
-      "link": "https://medicalxpress.com/news/2026-05-medical-routines-older-people.html",
-      "summary": "Enough time had passed since the patient's previous colonoscopy that she met the criteria to undergo another, said Dr. Steven Itzkowitz, a gastroenterologist at the Icahn School of Medicine at Mount Sinai in New York.",
-      "date": "Tue, 26 May 2026 21:20:01 EDT",
-      "source": "Medical Xpress \u2014 gastroenterology",
-      "score": 5.45,
       "category": "colorectal"
     },
     {
@@ -296,15 +269,6 @@
       "category": "colorectal"
     },
     {
-      "title": "Probiotics may help prevent childcare gastrointestinal bugs",
-      "link": "https://medicalxpress.com/news/2026-05-probiotics-childcare-gastrointestinal-bugs.html",
-      "summary": "New research suggests probiotics could help reduce \"gastro bugs\" in children attending childcare and kindergartens\u2014potentially easing the familiar cycle of gastro lurgies for parents and families.",
-      "date": "Wed, 27 May 2026 10:20:01 EDT",
-      "source": "Medical Xpress \u2014 gastroenterology",
-      "score": 2.95,
-      "category": "colorectal"
-    },
-    {
       "title": "MIT scientists discover amino acid that helps the gut heal itself",
       "link": "https://www.sciencedaily.com/releases/2026/05/260520233223.htm",
       "summary": "MIT scientists have identified cysteine \u2014 an amino acid found in foods like meat, dairy, beans, and nuts \u2014 as a potent trigger for intestinal repair. In mice, a cysteine-rich diet activated immune cells that released healing signals, helping stem cells rebuild damaged intestinal\u2026",
@@ -377,6 +341,24 @@
       "category": "drug-news"
     },
     {
+      "title": "Scientists discover why ozempic may not work for some people",
+      "link": "https://www.sciencedaily.com/releases/2026/06/260605023417.htm",
+      "summary": "Scientists have identified genetic variants that may make some people less responsive to GLP-1 drugs used to treat Type 2 diabetes. Roughly 10% of the population carries these variants, which appear to cause a mysterious form of \"GLP-1 resistance.\" In several clinical trials,\u2026",
+      "date": "Fri, 05 Jun 2026 11:13:02 EDT",
+      "source": "ScienceDaily \u2014 cancer",
+      "score": 1.2,
+      "category": "drug-news"
+    },
+    {
+      "title": "Ozempic and similar weight-loss drugs linked to 30% lower breast cancer risk",
+      "link": "https://www.sciencedaily.com/releases/2026/06/260605023400.htm",
+      "summary": "A large study found that women taking GLP-1 drugs, the medication class behind Ozempic, Wegovy, Mounjaro, and Zepbound, were about 30% less likely to develop breast cancer. Researchers say the findings are promising but not yet proof, and clinical trials are now being planned to\u2026",
+      "date": "Sat, 06 Jun 2026 09:28:24 EDT",
+      "source": "ScienceDaily \u2014 cancer",
+      "score": 1.2,
+      "category": "drug-news"
+    },
+    {
       "title": "Scientists finally crack an \u201cundruggable\u201d pancreatic cancer target and nearly double survival",
       "link": "https://www.sciencedaily.com/releases/2026/06/260604044247.htm",
       "summary": "For decades, pancreatic cancer has been one of the most lethal cancers, with few effective treatment options. A new drug, daraxonrasib, targets the KRAS mutation that fuels most pancreatic tumors\u2014something many scientists once thought couldn't be done. In a major clinical trial,\u2026",
@@ -393,6 +375,24 @@
       "source": "ScienceDaily \u2014 cancer",
       "score": 1.2,
       "category": "drug-news"
+    },
+    {
+      "title": "UK NSC recommends targeted prostate cancer screening",
+      "link": "https://news.cancerresearchuk.org/2026/05/28/uk-nsc-recommends-prostate-cancer-screening-for-men-with-a-brca2-gene-change-and-family-history-of-cancer/",
+      "summary": "The UK NSC has recommended targeted prostate cancer screening for men with a BRCA2 gene change and a family history of linked cancers. It's an important step towards more personalised, risk\u2011based screening, and could help detect prostate cancer earlier in the people with the\u2026",
+      "date": "Thu, 28 May 2026 12:18:23 +0000",
+      "source": "Cancer Research UK news",
+      "score": 1.2,
+      "category": "general-oncology"
+    },
+    {
+      "title": "How philanthropy is helping promising cancer treatments reach clinical trials sooner",
+      "link": "https://news.cancerresearchuk.org/2026/05/20/how-philanthropy-is-helping-promising-cancer-treatments-reach-clinical-trials-sooner/",
+      "summary": "On International Clinical Trials Day, we\u2019re spotlighting how philanthropy-backed clinical trials at Cancer Research UK are helping promising treatments reach people affected by rare and hard-to-treat cancers. The post How philanthropy is helping promising cancer treatments reach\u2026",
+      "date": "Wed, 20 May 2026 08:28:01 +0000",
+      "source": "Cancer Research UK news",
+      "score": 1.2,
+      "category": "clinical-trial"
     }
   ]
 }
