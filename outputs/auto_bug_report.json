@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-06T06:53:33.858115+00:00",
-  "overall_ok": true,
+  "generated_at": "2026-06-07T07:56:32.009954+00:00",
+  "overall_ok": false,
   "n_files_scanned": 58,
   "syntax_errors": [],
   "critical_issues": [],
@@ -120,14 +120,13 @@
   "whitespace_rewrote": [],
   "hf_space": {
     "url": "https://yuvraj2319-colonai.hf.space/",
-    "ok": true,
-    "http_code": 200,
-    "elapsed_ms": 184.4,
-    "error": null,
-    "streamlit_health": "ok",
-    "space_stage": "RUNNING",
+    "ok": false,
+    "http_code": null,
+    "elapsed_ms": null,
+    "error": "TimeoutError: The read operation timed out",
+    "space_stage": "APP_STARTING",
     "space_hardware": {
-      "current": "cpu-basic",
+      "current": null,
       "requested": "cpu-basic"
     },
     "space_sdk": "docker",

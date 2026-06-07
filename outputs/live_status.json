@@ -1,9 +1,8 @@
 {
   "url": "https://yuvraj2319-colonai.hf.space/",
-  "checked_at": "2026-06-06T06:53:33.986053+00:00",
-  "status": "READY",
-  "reason": "",
+  "checked_at": "2026-06-07T07:56:32.143281+00:00",
+  "status": "UNKNOWN",
+  "reason": "sidebar never appeared",
   "diagnostic": {},
-  "screenshot": "outputs/live_status_1780728825.png",
-  "sidebar_screenshot": "outputs/live_status_sidebar_1780728825.png"
+  "screenshot": "outputs/live_status_1780819054.png"
 }
