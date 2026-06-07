@@ -188,9 +188,13 @@ def render_agent_timeline(progress: float):
 # 4) 3D colon viewer (Plotly mesh tube with lesion marker)
 # ─────────────────────────────────────────────────────────────────────────
 
+@st.cache_data(show_spinner=False)
 def colon_3d_figure(highlight_class: str = "polyps"):
     """Build a stylised 3D colon (twisted-tube parametric mesh) with a glowing
-    marker at a class-appropriate region. Returns a plotly Figure."""
+    marker at a class-appropriate region. Returns a plotly Figure.
+
+    Cached on ``highlight_class`` — the mesh is deterministic, so it only needs
+    to be built once per class instead of on every Streamlit rerun."""
     import plotly.graph_objects as go
 
     # Parametric tube along a winding path

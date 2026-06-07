@@ -2849,7 +2849,7 @@ def page_analysis():
 
     if st.session_state.get("analysis_done"):
         st.success("Analysis complete! Proceeding to results...")
-        time.sleep(0.5)
+        time.sleep(0.15)
         st.session_state["step"] = 3
         st.rerun()
         return
@@ -2981,7 +2981,7 @@ def page_analysis():
                     with cols[j]:
                         st.caption(nm)
         progress_bar.progress(prog)
-        time.sleep(0.25)
+        time.sleep(0.05)
 
     # Run actual analysis
     try:
@@ -2999,7 +2999,7 @@ def page_analysis():
         st.session_state["analysis_done"] = True
         progress_bar.progress(1.0)
         step_placeholder.success("All 6 agents complete!")
-        time.sleep(0.8)
+        time.sleep(0.2)
         st.session_state["step"] = 3
         st.rerun()
 
