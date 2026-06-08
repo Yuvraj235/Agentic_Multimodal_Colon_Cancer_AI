@@ -22,10 +22,11 @@ staging and risk logits must stay close to the teacher's (KL divergence).
 The student's pathology + spatial attention are free to improve. This way
 NOTHING DRIFTS that was already good.
 
-Multi-vendor polyp pool (2,348 masks): Kvasir-SEG, CVC-ClinicDB,
-CVC-ColonDB, CVC-300, ETIS-Larib (Pentax), Kvasir-test
+Multi-vendor polyp pool (~2,152 masks): Kvasir-SEG, CVC-ClinicDB,
+CVC-ColonDB, CVC-300, Kvasir-test. ETIS-Larib (Pentax) is HELD OUT for honest
+cross-vendor testing — it is NOT in training (removed to fix a data leak).
 HyperKvasir+CVC pool (4,082): full 5-class pathology coverage.
-TOTAL: 6,430 training images.
+TOTAL: ~6,234 training images.
 
 Run from project root:
     python3 scripts/retrain_deploy_grade.py --epochs 2 --batch_size 16
@@ -66,13 +67,17 @@ LOG_OUT  = "outputs/unified_multimodal_v2/train_log.json"
 TEMP_OUT = "outputs/unified_multimodal_v2/temperature.json"
 BERT     = "dmis-lab/biobert-base-cased-v1.2"
 
+# NOTE: ETIS-LaribPolypDB (Pentax) is DELIBERATELY NOT in this training list. It is
+# kept as a TRUE held-out cross-vendor (Pentax) TEST set. Including it here previously
+# caused data leakage — the "cross-vendor Pentax" metrics were inflated because the
+# model had already seen those images. Eval scripts still reference ETIS for testing.
 POLYP_MASK_DATASETS = [
     ("Kvasir-SEG",        "data/raw/kvasir-seg/Kvasir-SEG/images",                            "data/raw/kvasir-seg/Kvasir-SEG/masks",                          "Olympus"),
     ("CVC-ClinicDB",      "data/raw/CVC-ClinicDB/PNG/Original",                               "data/raw/CVC-ClinicDB/PNG/Ground Truth",                        "Olympus"),
     ("CVC-ColonDB",       "data/raw/test_polyp_datasets/TestDataset/CVC-ColonDB/images",      "data/raw/test_polyp_datasets/TestDataset/CVC-ColonDB/masks",    "Olympus"),
     ("CVC-300",           "data/raw/test_polyp_datasets/TestDataset/CVC-300/images",          "data/raw/test_polyp_datasets/TestDataset/CVC-300/masks",        "Olympus"),
-    ("ETIS-LaribPolypDB", "data/raw/test_polyp_datasets/TestDataset/ETIS-LaribPolypDB/images","data/raw/test_polyp_datasets/TestDataset/ETIS-LaribPolypDB/masks","Pentax"),
     ("Kvasir-test",       "data/raw/test_polyp_datasets/TestDataset/Kvasir/images",           "data/raw/test_polyp_datasets/TestDataset/Kvasir/masks",         "Olympus"),
+    # ("ETIS-LaribPolypDB", ...) — HELD OUT for honest cross-vendor (Pentax) evaluation.
 ]
 
 
