@@ -4058,6 +4058,44 @@ def page_results():
             </div>
             """, unsafe_allow_html=True)
 
+    # ── Clinician EXACT staging (real AJCC from entered findings) ──────
+    # The honest path to accurate staging: a colonoscopy image can't determine
+    # the stage, but once a clinician has the biopsy (depth) + scan (spread)
+    # findings, the stage is a fixed rulebook — applied exactly here.
+    with st.expander("🩺 Clinician: enter biopsy / scan findings for the EXACT stage"):
+        from src.app.staging import (ajcc_colorectal_stage, T_OPTIONS, N_OPTIONS,
+                                     M_OPTIONS, T_HELP, N_HELP, M_HELP)
+        st.caption("A colonoscopy image cannot determine the true stage. Once a biopsy "
+                   "(tumour depth) and scans (spread) are available, enter the findings below "
+                   "for the exact AJCC stage — a fixed rulebook, 100% correct for the values "
+                   "you provide.")
+        _cT, _cN, _cM = st.columns(3)
+        with _cT:
+            _t = st.selectbox("Tumour depth (T)", T_OPTIONS, index=2, key="stg_t")
+            st.caption(T_HELP[_t])
+        with _cN:
+            _n = st.selectbox("Lymph nodes (N)", N_OPTIONS, index=0, key="stg_n")
+            st.caption(N_HELP[_n])
+        with _cM:
+            _m = st.selectbox("Distant spread (M)", M_OPTIONS, index=0, key="stg_m")
+            st.caption(M_HELP[_m])
+        _stg = ajcc_colorectal_stage(_t, _n, _m)
+        if _stg["exact"]:
+            st.markdown(
+                f"""<div style="background:#EEF2FF;border:2px solid #4F46E5;border-radius:12px;
+                     padding:14px 18px;margin-top:8px;">
+                  <div style="font-size:0.74rem;text-transform:uppercase;letter-spacing:.6px;
+                       color:#4F46E5;font-weight:800;">Exact AJCC stage — from entered findings</div>
+                  <div style="font-size:1.7rem;font-weight:800;color:#312E81;margin:2px 0;">
+                       Stage {_stg['stage_group']}</div>
+                  <div style="font-size:0.86rem;color:#475569;">{_stg['rationale']}</div>
+                </div>""", unsafe_allow_html=True)
+        else:
+            st.warning(_stg["rationale"])
+        st.caption("AJCC Cancer Staging Manual, 8th edition. The clinician supplies T/N/M from "
+                   "real pathology and imaging; ColonAI only applies the rulebook (it does not "
+                   "infer depth or spread from the image).")
+
     # ── Hierarchical-UC hedge banner (only fires when needed) ─────────
     sp = analysis.get("smart_prediction") or {}
     if isinstance(sp, dict) and sp.get("is_hedged") and sp.get("hedge_reason"):

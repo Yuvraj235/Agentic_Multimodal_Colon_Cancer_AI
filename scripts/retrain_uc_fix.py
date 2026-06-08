@@ -146,15 +146,17 @@ def limuc_patient_split(val_frac=0.15, seed=42):
     return usable[n_val:], usable[:n_val]
 
 
-def uc_aux_loss(logits, target, device):
-    """Train the mild<->mod-sev boundary directly on the two UC logits, with
-    mod-sev weighted 2x (asymmetric — missing severity is the dangerous error)."""
+def uc_aux_loss(logits, target, device, modsev_w=1.3):
+    """Train the mild<->mod-sev boundary directly on the two UC logits. mod-sev is
+    weighted slightly higher (missing severity is the more dangerous error), but
+    NOT so high that the model collapses everything into mod-sev — the goal is to
+    DISTINGUISH the two grades, not flip the bias."""
     uc = (target == UC_MILD) | (target == UC_MODSEV)
     if uc.sum() == 0:
         return torch.tensor(0.0, device=device)
     uc_logits = logits[uc][:, [UC_MILD, UC_MODSEV]]
     uc_target = (target[uc] == UC_MODSEV).long()
-    w = torch.tensor([1.0, 2.0], device=device)
+    w = torch.tensor([1.0, modsev_w], device=device)
     return F.cross_entropy(uc_logits, uc_target, weight=w)
 
 
@@ -205,8 +207,9 @@ def main():
     ap.add_argument("--bert_lr", type=float, default=2e-6)
     ap.add_argument("--weight_decay", type=float, default=0.12)
     ap.add_argument("--gamma", type=float, default=3.0)
-    ap.add_argument("--modsev_weight", type=float, default=1.5)
-    ap.add_argument("--aux_w", type=float, default=1.0)
+    ap.add_argument("--modsev_weight", type=float, default=1.0)
+    ap.add_argument("--aux_w", type=float, default=0.5)
+    ap.add_argument("--aux_modsev_w", type=float, default=1.3)
     ap.add_argument("--mask_loss_w", type=float, default=0.6)
     ap.add_argument("--distill_w", type=float, default=0.5)
     ap.add_argument("--distill_T", type=float, default=2.0)
@@ -306,7 +309,7 @@ def main():
                 t_out = teacher(img, ids, msk, tab)
             s_out = student(img, ids, msk, tab)
             l_cls = focal(s_out["pathology"], lbl)
-            l_aux = uc_aux_loss(s_out["pathology"], lbl, device)
+            l_aux = uc_aux_loss(s_out["pathology"], lbl, device, args.aux_modsev_w)
             l_stg = distill_kl(s_out["staging"], t_out["staging"], args.distill_T)
             l_rsk = distill_kl(s_out["risk"], t_out["risk"], args.distill_T)
             l_attn = attn_loss(pmsk, hmsk) if hmsk.sum() > 0 else torch.tensor(0.0, device=device)
