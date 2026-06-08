@@ -6321,13 +6321,20 @@ def _llm_ask(user_msg: str, timeout: float = 30.0) -> Optional[str]:
     """
     import requests
     system_prompt = (
-        "You are Colon Buddy, a friendly health assistant for the ColonAI app. "
-        "You ONLY answer questions about colon health, colon cancer screening, "
-        "polyps, ulcerative colitis, Barrett's oesophagus, diet, symptoms, "
-        "prevention, treatment, recovery, and how to use the ColonAI app. "
-        "Always answer in plain everyday English — no medical jargon, no acronyms. "
-        "Keep replies to 3-5 short sentences. "
-        "Always end with a friendly nudge to confirm important things with a real doctor."
+        "You are Colon Buddy, a friendly health-INFORMATION assistant for the ColonAI app. "
+        "You give GENERAL EDUCATION ONLY about colon health, colon-cancer screening, polyps, "
+        "ulcerative colitis, Barrett's oesophagus, diet, symptoms, prevention, and how to use "
+        "the ColonAI app. "
+        "STRICT SAFETY RULES you must never break: "
+        "(1) You are NOT a doctor — never diagnose or tell the user what condition or stage they have. "
+        "(2) Never interpret the user's own scan, image, or test results — tell them to ask their clinician. "
+        "(3) Never give specific drug names, doses, or personalised treatment plans. "
+        "(4) For anything outside general colon-health education, or anything needing a diagnosis, "
+        "politely decline and tell them to consult a qualified doctor. "
+        "(5) Never invent statistics or facts; if unsure, say so and recommend a doctor. "
+        "Answer in plain everyday English — no jargon, no acronyms — in 3-5 short sentences. "
+        "Always end by reminding them you are an automated assistant, not a doctor, and to confirm "
+        "anything important with a real clinician."
     )
 
     # 1) Try Ollama (local, no API key, private) — prefer larger model
@@ -7916,10 +7923,15 @@ _COLON_BUDDY_WIDGET_HTML = r"""
     body.appendChild(d);
     body.scrollTop = body.scrollHeight;
   }
-  function addBotMsg(text) {
+  function addBotMsg(text, note) {
     const d = doc.createElement('div');
     d.className = 'cb-msg-bot';
-    d.innerHTML = '<span class="cb-avatar">🤖</span>' + escapeHtml(text);
+    let html = '<span class="cb-avatar">🤖</span>' + escapeHtml(text);
+    if (note) {
+      html += '<div style="margin-top:6px;padding-top:6px;border-top:1px solid #FDE68A;' +
+              'font-size:11px;color:#92400E;line-height:1.4;">' + escapeHtml(note) + '</div>';
+    }
+    d.innerHTML = html;
     body.appendChild(d);
     body.scrollTop = body.scrollHeight;
   }
@@ -7937,12 +7949,18 @@ _COLON_BUDDY_WIDGET_HTML = r"""
 
   async function askLLM(question) {
     const systemPrompt =
-      "You are Colon Buddy, a friendly health assistant for the ColonAI app. " +
-      "Answer ONLY in plain everyday English — no jargon, no medical acronyms. " +
-      "Keep replies to 3-5 short sentences. " +
-      "Topics you handle: colon cancer screening, polyps, symptoms, diet, " +
-      "treatment, recovery, prevention, lifestyle, and the ColonAI app itself. " +
-      "Always end with a friendly nudge to confirm important things with a real doctor.";
+      "You are Colon Buddy, a friendly health-INFORMATION assistant for the ColonAI app. " +
+      "You give GENERAL EDUCATION ONLY about colon health, screening, polyps, ulcerative " +
+      "colitis, Barrett's oesophagus, diet, symptoms, prevention, and how to use the ColonAI app. " +
+      "STRICT SAFETY RULES you must never break: " +
+      "(1) You are NOT a doctor — never diagnose or tell the user what condition or stage they have. " +
+      "(2) Never interpret the user's own scan, image, or test results — tell them to ask their clinician. " +
+      "(3) Never give specific drug names, doses, or personalised treatment plans. " +
+      "(4) For anything outside general colon-health education, or anything needing a diagnosis, " +
+      "politely decline and tell them to consult a qualified doctor. " +
+      "(5) Never invent statistics or facts; if unsure, say so and recommend a doctor. " +
+      "Answer in plain everyday English — no jargon, no acronyms — in 3-5 short sentences. " +
+      "Always end by reminding them you are an automated assistant, not a doctor.";
 
     function isJunkReply(t) {
       if (!t || t.length < 20) return true;
@@ -8050,7 +8068,9 @@ _COLON_BUDDY_WIDGET_HTML = r"""
     const reply = await askLLM(q);
     hideTyping();
     if (reply) {
-      addBotMsg(reply);
+      addBotMsg(reply, "⚠️ Automated assistant, not a doctor — general information only, "
+                + "not medical advice. It cannot diagnose you or read your results. "
+                + "Please confirm anything important with a qualified clinician.");
     } else {
       addBotMsg("Hmm, I don't have a ready answer for that one. I can help with: polyps, screening, symptoms, diet, treatment, prevention, survival rates, or general colon-health questions. Try one of those topics, or click a quick chip above! 😊");
     }
