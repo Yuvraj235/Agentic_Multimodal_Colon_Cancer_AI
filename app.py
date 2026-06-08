@@ -181,14 +181,20 @@ CHECKPOINT = _CHECKPOINT_V2 if _CHECKPOINT_V2.exists() else _CHECKPOINT_V1
 
 # Optional post-train temperature for confidence calibration (1.0 = no scaling)
 import json as _json
+# Prefer a per-site recalibrated temperature (set via the clinician tool) over the
+# public-data default, so confidence is honest for the deploying hospital.
+_TEMP_SITE = ROOT / "outputs/unified_multimodal_v2/temperature_site.json"
 _TEMP_PATH = ROOT / "outputs/unified_multimodal_v2/temperature.json"
 try:
-    TEMPERATURE = float(_json.loads(_TEMP_PATH.read_text()).get("temperature", 1.0)) \
-                  if _TEMP_PATH.exists() else 1.0
+    _temp_file = _TEMP_SITE if _TEMP_SITE.exists() else _TEMP_PATH
+    TEMPERATURE = float(_json.loads(_temp_file.read_text()).get("temperature", 1.0)) \
+                  if _temp_file.exists() else 1.0
     if TEMPERATURE < 0.05 or TEMPERATURE > 10.0:   # guard
         TEMPERATURE = 1.0
+    TEMPERATURE_SOURCE = ("per-site" if _temp_file == _TEMP_SITE else "default")
 except Exception:
     TEMPERATURE = 1.0
+    TEMPERATURE_SOURCE = "default"
 BERT_MODEL  = "dmis-lab/biobert-base-cased-v1.2"
 N_CLASSES   = 5
 D_MODEL     = 256
@@ -8242,6 +8248,111 @@ def page_latest_research():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+def page_recalibration():
+    """Clinician/admin tool — re-fit confidence calibration on a hospital's own
+    labelled images so confidence is honest for THAT site (handover P-4).
+    Only rescales confidence (temperature); never changes the model or diagnosis."""
+    from src.app.recalibration import (load_labeled_zip, fit_temperature,
+                                       save_site_temperature, load_site_temperature,
+                                       CLASS_NAMES)
+    render_hero(
+        "Site calibration · clinician tool",
+        "Re-fit ColonAI's confidence to your hospital's own data",
+        badges=["Clinician / admin", "Improves confidence honesty", "Does not change diagnoses"],
+    )
+    if st.button("← Back", key="recal_back"):
+        st.session_state["show_recalibration"] = False
+        st.rerun()
+
+    st.markdown(
+        "ColonAI's confidence was calibrated on public research data. Real sites differ "
+        "(scope brands, lighting, case mix), so confidence may not transfer. Upload **labelled "
+        "colonoscopy images from your site** (a ZIP with one sub-folder per finding) and we re-fit "
+        "a single *temperature* so the confidence numbers are honest for your data. "
+        "**This only rescales confidence — it never changes the diagnosis or the model weights.**")
+    st.markdown("**ZIP layout** — folder names must match exactly:")
+    st.code("\n".join(f"{c}/    image1.jpg  image2.png  ..." for c in CLASS_NAMES))
+
+    active = load_site_temperature()
+    if active:
+        st.info(f"Active site calibration: T={active.get('temperature')} · "
+                f"ECE {active.get('ece_calibrated')} · n={active.get('n_samples')} · "
+                f"site '{active.get('site_name','')}'")
+
+    site_name = st.text_input("Site name (optional)", value="", key="recal_site")
+    up = st.file_uploader("Upload labelled ZIP", type=["zip"], key="recal_zip")
+    if up is None:
+        return
+
+    system = st.session_state.get("_system")
+    if not system or not system.get("ready"):
+        st.error("The AI model isn't loaded yet, so calibration can't run. Open the main "
+                 "assessment flow once to load it, then come back.")
+        return
+
+    if st.button("Run recalibration", type="primary", key="recal_run"):
+        with st.spinner("Loading images and running the model…"):
+            try:
+                samples, summary = load_labeled_zip(up.getvalue())
+            except Exception as e:
+                st.error(f"Could not read ZIP: {e}")
+                return
+            st.caption(f"Loaded {summary['loaded']} images · skipped {summary['skipped']} · "
+                       f"per class: {summary['per_class']}")
+            if len(samples) == 0:
+                st.error("No labelled images found. Check the folder names match the classes above.")
+                return
+            if len(samples) < 20:
+                st.warning(f"Only {len(samples)} images — results will be noisy (≥50 recommended).")
+
+            import numpy as _np, torch as _torch
+            model = system["model"]; tokenizer = system["tokenizer"]; device = system["device"]
+            tcga_df_v, extract_fn, n_feat = get_tcga_pool_cached()
+            input_ids, attn = tokenize_text(tokenizer,
+                "Patient undergoing screening colonoscopy; calibration sample.")
+            input_ids = input_ids.to(device); attn = attn.to(device)
+            try:
+                tab = build_tabular_vector({}, tcga_df_v, extract_fn, n_feat).to(device)
+            except Exception:
+                tab = _torch.zeros(1, n_feat).to(device)
+            logits_list, labels_list = [], []
+            prog = st.progress(0.0)
+            with _torch.no_grad():
+                for i, (img, label) in enumerate(samples):
+                    try:
+                        img_t, _ = preprocess_image(img)
+                        out = model(img_t.to(device), input_ids, attn, tab)
+                        logits_list.append(out["pathology"].cpu().numpy()[0])
+                        labels_list.append(label)
+                    except Exception:
+                        continue
+                    if i % 10 == 0:
+                        prog.progress(min(1.0, (i + 1) / len(samples)))
+            prog.progress(1.0)
+            if len(logits_list) < 5:
+                st.error("Too few images ran successfully to calibrate.")
+                return
+            res = fit_temperature(_np.array(logits_list), _np.array(labels_list))
+            st.session_state["_recal_result"] = res
+
+        res = st.session_state["_recal_result"]
+        st.success("Recalibration complete.")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("New temperature", res["temperature"])
+        c2.metric("ECE before", res["ece_raw"])
+        c3.metric("ECE after", res["ece_calibrated"],
+                  delta=round(res["ece_calibrated"] - res["ece_raw"], 4), delta_color="inverse")
+        st.caption(f"Fitted on {res['n_samples']} samples · accuracy on them {res['accuracy']:.1%}. "
+                   "Lower ECE = better-calibrated confidence. (Image-only context: neutral "
+                   "text/tabular were used, matching image-first inference.)")
+
+    res = st.session_state.get("_recal_result")
+    if res and st.button("✓ Apply this calibration for my site", type="primary", key="recal_apply"):
+        save_site_temperature(res, site_name=st.session_state.get("recal_site", ""))
+        st.success(f"Saved. ColonAI will use T={res['temperature']} for confidence at your site.")
+        st.session_state.pop("_recal_result", None)
+
+
 def main():
     render_css()
     # Dark-mode overlay (applied conditionally over the base CSS)
@@ -8291,6 +8402,12 @@ def main():
             st.session_state["show_guide"] = True
             st.rerun()
 
+        # Clinician tool: per-site confidence recalibration
+        if st.sidebar.button("🩺 Site calibration (clinician)",
+                             use_container_width=True, key="sidebar_recal_btn"):
+            st.session_state["show_recalibration"] = True
+            st.rerun()
+
         # Dark-mode toggle + Compare-mode toggle + Tip-bubble toggle
         try:
             from src.app.ui_extras import (
@@ -8322,9 +8439,12 @@ def main():
             and st.session_state.get("_system") is None):
         st.session_state["_system"] = load_ai_system()
 
-    # Route to current step (guide overrides everything)
+    # Route to current step (guide / clinician tools override everything)
     if st.session_state.get("show_guide"):
         page_guide()
+        return
+    if st.session_state.get("show_recalibration"):
+        page_recalibration()
         return
 
     step = st.session_state.get("step", 0)
