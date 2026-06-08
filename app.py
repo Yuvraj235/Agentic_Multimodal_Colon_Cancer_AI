@@ -1783,6 +1783,17 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
         except Exception as _ood_exc:
             out["ood_gate_error"] = f"{type(_ood_exc).__name__}: {_ood_exc}"
 
+        # ── View-quality advisory (poor bowel-prep / obscured view) ─────────
+        # Advisory only — warns the finding may be unreliable; does not block.
+        try:
+            from src.app.view_quality import view_quality_check
+            _fe_vq = getattr(fd, "fused_embedding", None)
+            _emb_vq = (_fe_vq.detach().cpu().numpy() if hasattr(_fe_vq, "detach")
+                       else (np.asarray(_fe_vq) if _fe_vq is not None else None))
+            out["view_quality"] = view_quality_check(_emb_vq)
+        except Exception as _vq_exc:
+            out["view_quality_error"] = f"{type(_vq_exc).__name__}: {_vq_exc}"
+
         # Audit log — every prediction recorded for post-hoc review
         try:
             _audit = AuditLog()
@@ -3958,6 +3969,13 @@ def page_results():
         badges=["Step 4 of 6", "Reviewed against international guidelines",
                 "Always confirm with a clinician"],
     )
+
+    # ── View-quality advisory (poor bowel-prep / obscured view) ────────
+    _vq = analysis.get("view_quality") or {}
+    if _vq.get("is_poor"):
+        st.warning("⚠️ **View quality looks poor** (inadequate bowel prep or an obscured "
+                   "view). Any finding below may be **unreliable** — consider repositioning, "
+                   "cleaning/suctioning, or a repeat exam with better preparation.")
 
     # ── PATIENT-SAFETY BANNER + cross-check rationale ──────────────────
     # The verdict card is the first thing the user sees. It explains the
