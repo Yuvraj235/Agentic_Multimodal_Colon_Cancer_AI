@@ -322,13 +322,15 @@ FAQ_BY_STEP = {
 
 
 def _tips_hidden_now() -> bool:
-    """True iff the user has dismissed tips via either session_state or the URL."""
-    if st.session_state.get("faq_dismissed"):
-        return True
-    try:
-        return st.query_params.get("hide_tips") in ("1", "true", "yes")
-    except Exception:
+    """Tips are OFF by default for a clean, medical-grade UI (a fixed bubble over
+    page content reads as clutter / overlap). Shown only when the user opts in via
+    the sidebar toggle (session flag or ?show_tips=1)."""
+    if st.session_state.get("faq_show"):
         return False
+    try:
+        return st.query_params.get("show_tips") not in ("1", "true", "yes")
+    except Exception:
+        return True
 
 
 def render_floating_faq(step: int):
@@ -428,15 +430,17 @@ def faq_toggle_button():
     """Sidebar button to show / hide the tip bubble for the rest of the session.
     Implemented by toggling the URL query parameter `hide_tips`."""
     hidden = _tips_hidden_now()
-    label = "💡 Show tips again" if hidden else "🔕 Hide tips"
+    label = "💡 Show tips" if hidden else "🔕 Hide tips"
     if st.sidebar.button(label, key="faq_toggle_btn", use_container_width=True):
         try:
             if hidden:
-                st.query_params.pop("hide_tips", None)
+                st.query_params["show_tips"] = "1"
+                st.session_state["faq_show"] = True
             else:
-                st.query_params["hide_tips"] = "1"
+                st.query_params.pop("show_tips", None)
+                st.session_state["faq_show"] = False
         except Exception:
-            st.session_state["faq_dismissed"] = not hidden
+            st.session_state["faq_show"] = hidden
         st.rerun()
 
 
