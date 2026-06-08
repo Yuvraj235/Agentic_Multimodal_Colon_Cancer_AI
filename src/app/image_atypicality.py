@@ -132,49 +132,122 @@ def _endoscopy_score(rgb: np.ndarray) -> Dict[str, float]:
     }
 
 
+def _modality_label(rgb: np.ndarray) -> Dict:
+    """Best-effort image-modality classification from pixel statistics.
+
+    Heuristic (NOT a learned classifier) used to (a) give an HONEST message about
+    what kind of image was uploaded and (b) avoid wrongly rejecting narrow-band
+    imaging (NBI) colonoscopy, which is green/teal and would fail a red-dominance
+    gate. The robust replacement is a learned modality classifier trained on real
+    CT/MRI/NBI samples (see plan Part 1b). Returns {modality, detail, stats}.
+
+    Categories:
+      colonoscopy_wl       white-light colonoscopy (red/pink, textured)
+      colonoscopy_nbi      narrow-band imaging (dark, green/teal dominant, textured)
+      radiology_grayscale  X-ray / CT / MRI (near-grayscale)
+      photo_or_screenshot  bright / blue-heavy / flat or noisy (not internal tissue)
+      unknown              matches none of the colonoscopy signatures confidently
+    """
+    rgb_f = rgb.astype(np.float32) / 255.0
+    r, g, b = rgb_f[..., 0], rgb_f[..., 1], rgb_f[..., 2]
+    mean_val   = float(rgb_f.mean())
+    chan_diff  = float((np.abs(r - g) + np.abs(g - b) + np.abs(r - b)).mean() / 3.0)
+    red_dom    = float(((r > g + 0.04) & (r > b + 0.04)).mean())
+    green_dom  = float(((g > r + 0.04) & (g >= b - 0.02)).mean())   # NBI: green/teal over red
+    blue_bright = float(((b > 0.55) & (b > r)).mean())              # sky / UI chrome
+    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY).astype(np.float32) / 255.0
+    gx = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
+    gy = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
+    tex = float(np.sqrt(gx * gx + gy * gy).std())
+    stats = {"mean_val": round(mean_val, 3), "chan_diff": round(chan_diff, 3),
+             "red_dom": round(red_dom, 3), "green_dom": round(green_dom, 3),
+             "blue_bright": round(blue_bright, 3), "texture": round(tex, 3)}
+
+    # 1. Near-grayscale → radiology (X-ray / CT / MRI). 0.06 tolerates the slight
+    #    channel drift from JPEG compression of a genuinely grayscale scan, while
+    #    colour endoscopy sits well above (chan_diff ~0.15+).
+    if chan_diff < 0.06:
+        return {"modality": "radiology_grayscale", "stats": stats,
+                "detail": "near-grayscale image — looks like a radiology scan "
+                          "(X-ray / CT / MRI), not a colour endoscopy frame"}
+    # 2. NBI colonoscopy — dark, green/teal-dominant over red, with real texture
+    if mean_val < 0.50 and green_dom > 0.45 and red_dom < 0.30 and 0.03 <= tex <= 0.30:
+        return {"modality": "colonoscopy_nbi", "stats": stats,
+                "detail": "dark, green/teal-dominant, textured frame — consistent "
+                          "with narrow-band imaging (NBI) colonoscopy"}
+    # 3. White-light colonoscopy — red/pink-dominant, naturally textured
+    if red_dom > 0.45 and 0.03 <= tex <= 0.30:
+        return {"modality": "colonoscopy_wl", "stats": stats,
+                "detail": "red/pink, textured frame — consistent with white-light colonoscopy"}
+    # 4. Bright / blue-heavy / flat or noisy → photo, drawing, or screenshot
+    if blue_bright > 0.20 or mean_val > 0.78 or tex < 0.02 or tex > 0.35:
+        return {"modality": "photo_or_screenshot", "stats": stats,
+                "detail": "bright / blue-heavy / flat or noisy image — looks like a "
+                          "regular photo, drawing, or screenshot, not internal tissue"}
+    return {"modality": "unknown", "stats": stats,
+            "detail": "does not confidently match colonoscopy (white-light or NBI) signatures"}
+
+
 def is_endoscopy_image(arr: np.ndarray, threshold: float = 0.55) -> Dict:
     """Hard gate that decides if an uploaded image is a colonoscopy frame.
 
     Returns a dict with:
-       is_endoscopy : bool
-       score        : float in [0..1]
-       signals      : dict of the 6 sub-signals
-       reasons      : human-readable bullets explaining the decision
+       is_endoscopy    : bool   — accepts white-light AND NBI colonoscopy
+       score           : float in [0..1]  (red-based endoscopy-ness)
+       modality        : str    — best-effort modality label (see _modality_label)
+       modality_detail : str    — human-readable explanation of the modality
+       signals         : dict of the 6 sub-signals
+       reasons         : human-readable bullets explaining the decision
 
     Use BEFORE calling compute_image_readout().  If is_endoscopy is False,
     the caller should refuse to run the trained classifier on this image.
     """
     rgb = _to_uint8_rgb(arr)
     if rgb is None or rgb.size < 100:
-        return {"is_endoscopy": False, "score": 0.0,
+        return {"is_endoscopy": False, "score": 0.0, "modality": "invalid",
+                "modality_detail": "no valid image data",
                 "signals": {}, "reasons": ["No valid image data."]}
 
     sig = _endoscopy_score(rgb)
     score = float(np.mean(list(sig.values())))
+    mod = _modality_label(rgb)
+    modality = mod["modality"]
+
+    # Accept white-light OR NBI colonoscopy. White-light is also accepted via the
+    # red-based score gate (covers atypical frames the modality heuristic misses).
+    is_endo = (modality in ("colonoscopy_wl", "colonoscopy_nbi")) or (score >= threshold)
 
     # Build human-readable reasons
-    reasons = []
-    if sig["red_dominance"] < 0.30:
-        reasons.append("Image is not red-dominant — colonoscopy frames are almost always reddish/pink.")
-    if sig["low_blue"] < 0.30:
-        reasons.append("Image has substantial bright-blue pixels — not typical of internal tissue.")
-    if sig["tissue_hue"] < 0.25:
-        reasons.append("Very few pixels in the tissue-colour band (red/pink/orange).")
-    if sig["moderate_satur"] < 0.50:
-        reasons.append("Saturation is outside the tissue range — looks like a drawing, screenshot or washed-out image.")
-    if sig["natural_texture"] < 0.40:
-        reasons.append("Texture pattern is unusual — too flat or too noisy for endoscopy.")
-    if sig["not_grayscale"] < 0.30:
-        reasons.append("Image appears nearly grayscale — endoscopy is always in colour.")
-
-    if not reasons:
-        reasons.append("All six endoscopy signatures present — input looks like a real colonoscopy frame.")
+    reasons = [mod["detail"]]
+    if is_endo:
+        if modality == "colonoscopy_nbi":
+            reasons.append("Accepted as narrow-band imaging (NBI) colonoscopy.")
+        else:
+            reasons.append("Input looks like a colonoscopy frame.")
+    else:
+        # Explain, by modality, why it was not accepted (honest, not just 'rejected')
+        if modality == "radiology_grayscale":
+            reasons.append("ColonAI analyses colonoscopy images, not radiology scans — "
+                           "an X-ray/CT/MRI cannot be assessed for polyps here.")
+        elif modality == "photo_or_screenshot":
+            reasons.append("This does not look like internal tissue — please upload a "
+                           "real colonoscopy/endoscopy frame.")
+        else:
+            if sig["red_dominance"] < 0.30:
+                reasons.append("Not red-dominant — colonoscopy frames are usually reddish/pink.")
+            if sig["not_grayscale"] < 0.30:
+                reasons.append("Image appears nearly grayscale — endoscopy is in colour.")
+            if sig["natural_texture"] < 0.40:
+                reasons.append("Texture is too flat or too noisy for endoscopy.")
 
     return {
-        "is_endoscopy": score >= threshold,
-        "score":        score,
-        "signals":      sig,
-        "reasons":      reasons,
+        "is_endoscopy":    is_endo,
+        "score":           score,
+        "modality":        modality,
+        "modality_detail": mod["detail"],
+        "stats":           mod["stats"],
+        "signals":         sig,
+        "reasons":         reasons,
     }
 
 
