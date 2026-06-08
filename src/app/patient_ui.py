@@ -54,9 +54,20 @@ def plain_english_diagnosis(pathology_class: str, confidence: float) -> Dict[str
 
     Never returns medical jargon a layperson would not recognise.
     """
-    name = PLAIN_NAMES.get(pathology_class, "something the AI was uncertain about")
+    known = pathology_class in PLAIN_NAMES
+    if not known:
+        # Out-of-distribution / unrecognised class — NEVER claim confidence in a
+        # label we don't have. The caller drops the confidence sentence entirely.
+        return {
+            "name":              "a finding outside its trained categories",
+            "next_steps":        "Please have a clinician review this directly.",
+            "confidence_phrase": "could not confidently classify",
+            "confidence_pct":    f"{confidence * 100:.0f}%",
+            "known":             False,
+        }
+    name = PLAIN_NAMES[pathology_class]
     if confidence >= 0.85:
-        conf_phrase = "is quite sure"
+        conf_phrase = "is quite sure it sees"
     elif confidence >= 0.70:
         conf_phrase = "thinks it most likely sees"
     else:
@@ -67,6 +78,7 @@ def plain_english_diagnosis(pathology_class: str, confidence: float) -> Dict[str
                                                    "Please discuss with your doctor."),
         "confidence_phrase": conf_phrase,
         "confidence_pct":    f"{confidence * 100:.0f}%",
+        "known":             True,
     }
 
 
@@ -158,9 +170,14 @@ def verdict_card_html(safety_verdict: Dict, plain_dx: Optional[Dict] = None) -> 
         title  = "AI analysis complete"
         body   = "All our internal safety checks passed."
         if plain_dx:
-            body += (f" The AI {_esc(plain_dx['confidence_phrase'])} "
-                     f"<b>{_esc(plain_dx['name'])}</b> "
-                     f"({_esc(plain_dx['confidence_pct'])} confidence).")
+            if plain_dx.get("known", True):
+                body += (f" The AI {_esc(plain_dx['confidence_phrase'])} "
+                         f"<b>{_esc(plain_dx['name'])}</b> "
+                         f"({_esc(plain_dx['confidence_pct'])} confidence).")
+            else:
+                # Unknown/out-of-distribution class — no fake confidence claim.
+                body += (" The AI <b>could not confidently classify</b> this finding, "
+                         "so it is flagging it for a clinician to review directly.")
 
     return f"""
     <div role="alert" aria-live="polite"
