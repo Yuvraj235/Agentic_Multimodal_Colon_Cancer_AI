@@ -1195,6 +1195,33 @@ def overlay_gradcam(original_np: np.ndarray, heatmap: np.ndarray,
         return original_np
 
 
+def overlay_seg(original_np: np.ndarray, mask: np.ndarray,
+                alpha: float = 0.40) -> np.ndarray:
+    """Overlay a segmentation mask (HxW, [0,1]) as a green region + contour.
+
+    This is the PRIMARY localization shown to the user — the segmentation decoder
+    outlines the actual lesion (cross-vendor IoU ~0.61), unlike the coarse 7x7
+    GradCAM attention map. Returns a uint8 RGB image."""
+    if mask is None:
+        return original_np
+    try:
+        img = (original_np * 255).astype(np.uint8) if original_np.max() <= 1 else original_np.astype(np.uint8)
+        img = np.ascontiguousarray(img[..., :3])
+        H, W = img.shape[:2]
+        m = cv2.resize(np.asarray(mask, dtype=np.float32), (W, H), interpolation=cv2.INTER_LINEAR)
+        binm = (m >= 0.5).astype(np.uint8)
+        if binm.sum() == 0:
+            return img
+        green = np.zeros_like(img); green[..., 1] = 255
+        out = np.where(binm[..., None] == 1,
+                       (alpha * green + (1 - alpha) * img).astype(np.uint8), img)
+        contours, _ = cv2.findContours(binm, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cv2.drawContours(out, contours, -1, (0, 255, 0), 2)
+        return out
+    except Exception:
+        return original_np
+
+
 def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
                  symptoms: List[str], symptom_text: str,
                  pain_scale: int = 0,
@@ -5165,7 +5192,7 @@ def page_results():
 
     # ── Tabs ───────────────────────────────────────────────────────────
     tab1, tab_why, tab2, tab3, tab4 = st.tabs([
-        "Diagnosis", "Why this result?", "GradCAM View", "Risk Charts", "Recommendations"
+        "Diagnosis", "Why this result?", "Where the polyp is", "Risk Charts", "Recommendations"
     ])
 
     # ── Tab 1: Diagnosis ───────────────────────────────────────────────
@@ -5321,56 +5348,75 @@ def page_results():
         orig  = analysis.get("original_image")
         cam   = analysis.get("gradcam_overlay")
         heat  = analysis.get("gradcam_heatmap")
+        seg   = analysis.get("seg_mask")
 
-        if cam is not None or orig is not None:
-            col_orig, col_cam = st.columns(2)
-            with col_orig:
-                st.markdown('<div class="section-header">Original Image</div>',
-                            unsafe_allow_html=True)
-                if orig is not None:
-                    disp = (orig * 255).astype(np.uint8) if orig.max() <= 1 else orig
-                    st.image(disp, caption="Input endoscopy image", use_container_width=True)
-                else:
-                    pil_in = st.session_state.get("uploaded_image")
-                    if pil_in:
-                        st.image(pil_in, caption="Input image", use_container_width=True)
+        # Resolve a display copy of the input image
+        disp_orig = None
+        if orig is not None:
+            disp_orig = (orig * 255).astype(np.uint8) if orig.max() <= 1 else orig
+        else:
+            _pil_in = st.session_state.get("uploaded_image")
+            if _pil_in is not None:
+                disp_orig = np.array(_pil_in.convert("RGB"))
 
-            with col_cam:
-                st.markdown('<div class="section-header">GradCAM++ Attention Map</div>',
-                            unsafe_allow_html=True)
-                if cam is not None:
-                    disp_cam = (cam * 255).astype(np.uint8) if cam.max() <= 1 else cam.astype(np.uint8)
-                    st.image(disp_cam,
-                             caption="Red = High AI attention | Blue = Low attention",
+        if disp_orig is not None or cam is not None:
+            # ── PRIMARY: segmentation-based localization (the lesion outline) ──
+            st.markdown('<div class="section-header">Where the polyp is — segmentation</div>',
+                        unsafe_allow_html=True)
+            col_a, col_b = st.columns(2)
+            with col_a:
+                if disp_orig is not None:
+                    st.image(disp_orig, caption="Input image", use_container_width=True)
+            with col_b:
+                if seg is not None and disp_orig is not None:
+                    seg_disp = overlay_seg(disp_orig, seg)
+                    st.image(seg_disp,
+                             caption="Polyp outline (segmentation decoder — the actual lesion location)",
                              use_container_width=True)
                 else:
-                    st.info("GradCAM heatmap not available for this analysis.")
-
-            if heat is not None:
-                st.markdown('<div class="section-header">Raw Heatmap Intensity</div>',
-                            unsafe_allow_html=True)
-                import matplotlib.pyplot as plt
-                fig_hm, ax = plt.subplots(figsize=(8, 2.5))
-                im = ax.imshow(heat, cmap="hot", aspect="auto")
-                ax.set_title("GradCAM++ Heatmap (brighter = higher model attention)")
-                ax.axis("off")
-                plt.colorbar(im, ax=ax, orientation="horizontal", fraction=0.046, pad=0.1)
-                st.pyplot(fig_hm, use_container_width=True)
-                plt.close(fig_hm)
-
+                    st.info("No polyp region was segmented in this image (the segmentation "
+                            "decoder found no lesion, or no image was provided).")
             st.markdown(
-                """<div class="warn-box" style="margin-top:6px">
-                <b>How to read this honestly:</b> the warm region shows where the AI looked
-                <b>for its predicted class</b> — it does <b>NOT</b> outline the full extent of
-                disease. If the prediction is &quot;polyps&quot; the heatmap shows where the AI thought
-                a polyp was; if the AI is misclassifying an advanced lesion as a polyp, the
-                heatmap will only highlight the bit it thought looked &quot;most polyp-like&quot;,
-                not the whole tumour.  When the prediction is wrong, the heatmap is wrong too.<br>
-                <b>Sanity test:</b> does the warm region overlap with the lesion you'd point at
-                clinically?  If yes, trust the AI for the next step.  If no, don't.
+                """<div class="info-box" style="margin-top:6px">
+                <b>This is the localization to trust.</b> The green region is the segmentation
+                decoder's pixel-level outline of the polyp (cross-vendor IoU ≈ 0.61). It shows
+                <i>where</i> the lesion is, far more precisely than the attention map below.
                 </div>""",
                 unsafe_allow_html=True,
             )
+
+            # ── SECONDARY: GradCAM attention — explanation only, clearly demoted ──
+            with st.expander("Model attention (GradCAM++) — explanation only, NOT the polyp outline"):
+                gc1, gc2 = st.columns(2)
+                with gc1:
+                    if disp_orig is not None:
+                        st.image(disp_orig, caption="Input image", use_container_width=True)
+                with gc2:
+                    if cam is not None:
+                        disp_cam = (cam * 255).astype(np.uint8) if cam.max() <= 1 else cam.astype(np.uint8)
+                        st.image(disp_cam,
+                                 caption="Red = higher attention (coarse 7×7 — not a precise outline)",
+                                 use_container_width=True)
+                    else:
+                        st.info("GradCAM heatmap not available for this analysis.")
+                if heat is not None:
+                    import matplotlib.pyplot as plt
+                    fig_hm, ax = plt.subplots(figsize=(8, 2.5))
+                    im = ax.imshow(heat, cmap="hot", aspect="auto")
+                    ax.set_title("GradCAM++ heatmap (brighter = higher model attention)")
+                    ax.axis("off")
+                    plt.colorbar(im, ax=ax, orientation="horizontal", fraction=0.046, pad=0.1)
+                    st.pyplot(fig_hm, use_container_width=True)
+                    plt.close(fig_hm)
+                st.markdown(
+                    """<div class="warn-box" style="margin-top:6px">
+                    <b>Why this is secondary.</b> GradCAM++ is a coarse 7×7 classifier-attention
+                    map — it shows roughly where the model looked <b>for its predicted class</b>,
+                    not the lesion's true extent. For localization, use the segmentation above.
+                    When the prediction is wrong, the attention map is wrong too.
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
 
             # ── 3D Colon Viewer ─────────────────────────────────────────────
             try:
@@ -5388,18 +5434,16 @@ def page_results():
                           A stylised 3-D model of the colorectum. The pulsing blue marker
                           shows the typical location of the predicted finding —
                           <b>{CLASS_LABELS.get(pclass, pclass)}</b>. Drag to rotate, scroll
-                          to zoom. This is illustrative — the real lesion location is on
-                          the GradCAM image above.
+                          to zoom. This is illustrative — the real lesion location is the
+                          segmentation outline above.
                         </div>""",
                         unsafe_allow_html=True,
                     )
             except Exception:
                 pass
         else:
-            st.info("No image was uploaded. GradCAM analysis requires an endoscopy/colonoscopy image.")
-            pil_in = st.session_state.get("uploaded_image")
-            if pil_in:
-                st.image(pil_in, caption="Uploaded image (demo mode — no GradCAM)", width=400)
+            st.info("No image was uploaded — image-based localization needs an "
+                    "endoscopy/colonoscopy image. See your risk-factor assessment instead.")
 
     # ── Tab 3: Risk Charts ─────────────────────────────────────────────
     with tab3:
