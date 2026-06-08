@@ -4026,12 +4026,19 @@ def page_results():
                         box-shadow:0 2px 8px rgba(15,23,42,0.04);">
               <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.7px;
                           color:#7C3AED;font-weight:800;margin-bottom:6px;">
-                Independent cancer-stage estimate (from clinical features only)
+                Statistical risk pattern — NOT a diagnosis
+              </div>
+              <div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;
+                          padding:8px 11px;font-size:0.82rem;color:#92400E;
+                          margin-bottom:10px;line-height:1.45;">
+                ⚠️ <b>This does NOT mean you have cancer, or this stage.</b> It is only a
+                statistical pattern from your age and lifestyle — not a diagnosis. A real
+                cancer stage can only be found with a biopsy and scans ordered by a doctor.
               </div>
               <div style="font-size:0.95rem;color:#0F172A;line-height:1.5;
                           font-weight:600;margin-bottom:10px;">
-                Based on age, BMI, smoking, family history and other clinical
-                features, the most likely AJCC stage IF cancer were present is
+                If cancer were ever present, this pattern (from age, BMI, smoking and family
+                history only) most resembles
                 <b style='color:#7C3AED;'>{_esc(tse["predicted_stage"])}</b>
                 ({tse.get("confidence", 0)*100:.0f}% confidence).
               </div>
