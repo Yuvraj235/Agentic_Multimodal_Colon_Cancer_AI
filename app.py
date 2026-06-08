@@ -1758,6 +1758,31 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
             predicted_class  = getattr(fd, "pathology_class", None),
         )
         out["safety_verdict"] = _safety.to_dict()
+
+        # ── Trained OOD gate (real out-of-scope detector) ───────────────────
+        # Second safety layer: the endoscopy gate rejects non-endoscopy inputs;
+        # this catches images that ARE endoscopy but are OUTSIDE the 5 trained
+        # findings (e.g. cecum/pylorus/z-line landmarks, bowel-prep views). Head
+        # trained on real out-of-scope HK images (held-out real-OOD AUROC ~0.996).
+        try:
+            from src.app.ood_gate import ood_check
+            _fe_ood = getattr(fd, "fused_embedding", None)
+            _emb_ood = (_fe_ood.detach().cpu().numpy() if hasattr(_fe_ood, "detach")
+                        else (np.asarray(_fe_ood) if _fe_ood is not None else None))
+            _ood = ood_check(_emb_ood)
+            out["ood_gate"] = _ood
+            if _ood.get("is_ood"):
+                sv = out["safety_verdict"]
+                sv["action"] = "abstain"
+                sv["ood_flagged"] = True
+                _flags = sv.get("flags", []) or []
+                _flags.append("This image does not match the model's known findings "
+                              "(out-of-distribution) — a clinician should review it directly.")
+                sv["flags"] = _flags
+                out["safety_verdict"] = sv
+        except Exception as _ood_exc:
+            out["ood_gate_error"] = f"{type(_ood_exc).__name__}: {_ood_exc}"
+
         # Audit log — every prediction recorded for post-hoc review
         try:
             _audit = AuditLog()
