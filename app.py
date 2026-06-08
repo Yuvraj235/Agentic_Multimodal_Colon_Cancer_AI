@@ -265,8 +265,9 @@ html, body, [class*="css"], .stApp, [data-testid="stAppViewContainer"] {
 }
 [data-testid="stHeader"] { background: transparent; }
 
-/* Reduce wide-screen dead-space */
-.block-container { padding-top: 1.4rem !important; padding-bottom: 3rem !important; max-width: 1300px; }
+/* Reduce wide-screen dead-space. Extra bottom padding so page content (e.g. the
+   'Next' button) never sits under the fixed bottom-right Colon Buddy chat FAB. */
+.block-container { padding-top: 1.4rem !important; padding-bottom: 7rem !important; max-width: 1300px; }
 
 /* ── Sidebar ── */
 [data-testid="stSidebar"] {
@@ -289,6 +290,13 @@ html, body, [class*="css"], .stApp, [data-testid="stAppViewContainer"] {
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 .stDeployButton {display: none !important;}
+/* Streamlit >=1.5x renders the Deploy button via testids — the old selector no
+   longer matches, which is why 'Deploy' was overlapping the top-right content
+   (e.g. the 'Load Case C' button). Hide the deploy button + toolbar actions,
+   but keep the run-status widget visible. */
+[data-testid="stAppDeployButton"],
+[data-testid="stToolbarActions"],
+[data-testid="stDecoration"] { display: none !important; }
 
 /* ── Hero banner ── */
 .hero-banner {
