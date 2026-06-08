@@ -1234,17 +1234,21 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
                 "inference_time_ms": 0.0,
                 "recommendation": {
                     "urgency":         "Input Rejected",
-                    "primary_action":  "Please upload a real colonoscopy / endoscopy image.",
+                    "primary_action":  "Please upload a real colonoscopy / endoscopy image "
+                                       "(white-light or NBI).",
                     "surveillance":    [],
                     "referrals":       [],
                     "investigations":  [],
                     "lifestyle_advice": [],
                     "full_report":
-                        "INPUT REJECTED — this image does not look like a colonoscopy frame. "
-                        "ColonAI is trained on HyperKvasir + CVC-ClinicDB endoscopy images only. "
-                        "It cannot give a meaningful prediction on a non-endoscopy image. "
-                        f"Endoscopy-likeness score: {gate['score']*100:.0f}% (need ≥55%). "
-                        "Reasons: " + "  ·  ".join(gate["reasons"]),
+                        "IMAGE NOT ANALYSED — this does not look like a colonoscopy frame. "
+                        f"It looks like: {gate.get('modality_detail', 'an unsupported image type')}. "
+                        "ColonAI only analyses colonoscopy images (white-light or NBI); it cannot "
+                        "give a meaningful prediction on any other image type. "
+                        + ("ColonAI does not read radiology scans (X-ray/CT/MRI) — those require a "
+                           "radiologist. "
+                           if gate.get("modality") == "radiology_grayscale" else "")
+                        + "Reasons: " + "  ·  ".join(gate["reasons"]),
                 },
                 "gradcam_overlay": None,
                 "gradcam_heatmap": None,
@@ -1255,6 +1259,8 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
                     "rejected_reason": "Image failed endoscopy-likeness gate",
                     "endoscopy_score": float(gate["score"]),
                     "endoscopy_threshold": 0.55,
+                    "modality": gate.get("modality", "unknown"),
+                    "modality_detail": gate.get("modality_detail", ""),
                 },
                 "image_readout": {
                     "verdict":           "not_endoscopy",
@@ -2893,21 +2899,15 @@ def page_analysis():
 
     step_placeholder = st.empty()
 
-    if not system.get("ready"):
-        st.error(f"AI system not available: {system.get('error','Unknown error')}")
-        st.markdown(
-            '<div class="warn-box">The model checkpoint may not be present or dependencies '
-            'may be missing. Running in demo mode with simulated results.</div>',
-            unsafe_allow_html=True,
-        )
-        # Demo mode fallback
-        _run_demo_analysis()
-        return
-
+    # No image at all -> honest, rule-based risk-factor assessment (NOT fake demo).
     pil_img = st.session_state.get("uploaded_image")
     if pil_img is None:
-        st.warning("No image uploaded — running text-only analysis in demo mode.")
-        _run_demo_analysis()
+        _run_risk_only_assessment()
+        return
+
+    # Image present but the model failed to load -> honest error, never fake.
+    if not system or not system.get("ready"):
+        _show_model_unavailable(system)
         return
 
     # Lottie loader (or SVG fallback)
@@ -3005,8 +3005,9 @@ def page_analysis():
 
     except Exception as e:
         st.error(f"Analysis error: {e}")
-        st.info("Falling back to demo results...")
-        _run_demo_analysis()
+        st.info("We will not show a fabricated result. Please retry, or try a different image.")
+        if st.button("↻ Retry analysis", type="primary"):
+            st.rerun()
 
 
 def _run_demo_analysis():
@@ -3057,6 +3058,151 @@ def _run_demo_analysis():
     st.session_state["analysis_done"] = True
     st.session_state["step"] = 3
     st.rerun()
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# HONEST SYMPTOMS-ONLY PATH (no image) — replaces the fake demo fallback
+# Rule-based, guideline-informed risk-FACTOR assessment. NOT a diagnosis and
+# NOT a model image prediction — only what history + symptoms genuinely support.
+# ─────────────────────────────────────────────────────────────────────────
+def _assess_risk_factors(patient: dict, symptoms: list, symptom_text: str,
+                         pain_scale: int = 0, symptom_duration: str = "") -> dict:
+    """Transparent CRC risk-factor assessment from history + symptoms only.
+    Every contributing factor is listed explicitly; nothing is fabricated."""
+    sym_join = (" ".join(symptoms or []) + " " + (symptom_text or "")).lower()
+
+    def has(*keys):
+        return any(k in sym_join for k in keys)
+
+    # Symptom red flags (NICE NG12-aligned suspicion features)
+    red_flags = []
+    if has("bleed", "blood in stool"):           red_flags.append(("Rectal bleeding / blood in stool", 3))
+    if has("weight loss"):                         red_flags.append(("Unexplained weight loss", 3))
+    if has("change in bowel", "bowel habit"):      red_flags.append(("Persistent change in bowel habit", 2))
+    if has("anaem", "anemia", "fatigue", "weak"):  red_flags.append(("Fatigue / possible anaemia", 2))
+    if has("pencil", "incomplete", "narrow stool"):red_flags.append(("Narrow / incomplete-evacuation stools", 2))
+    if has("abdominal pain", "cramp"):             red_flags.append(("Abdominal pain / cramping", 1))
+    if has("mucus"):                               red_flags.append(("Mucus in stool", 1))
+
+    # Personal / family risk factors
+    factors = []
+    age = int(patient.get("age", 0) or 0)
+    if age >= 60:   factors.append((f"Age {age} (≥60)", 2))
+    elif age >= 50: factors.append((f"Age {age} (≥50 — screening age)", 1))
+    elif age >= 45: factors.append((f"Age {age} (≥45 — screening now recommended)", 1))
+
+    def _yes(v):
+        s = str(v or "").strip().lower()
+        return s not in ("", "no", "none", "false", "never", "0")
+
+    if _yes(patient.get("family_history")): factors.append(("Family history of colorectal cancer", 3))
+    if _yes(patient.get("prev_polyps")):    factors.append(("Previous polyps diagnosed", 2))
+    sm = str(patient.get("smoking", "")).lower()
+    if "current" in sm or sm == "yes": factors.append(("Current smoker", 2))
+    elif "former" in sm or "ex" in sm: factors.append(("Former smoker", 1))
+    al = str(patient.get("alcohol", "")).lower()
+    if any(k in al for k in ("high", "heavy", "daily")): factors.append(("High alcohol intake", 1))
+    try:
+        bmi = float(patient.get("bmi", 0) or 0)
+        if bmi >= 30: factors.append((f"Obesity (BMI {bmi:.0f})", 1))
+    except Exception:
+        pass
+    if str(patient.get("prev_colonoscopy", "")).strip().lower() in ("never", "", "none") and age >= 45:
+        factors.append(("No prior colonoscopy at screening age", 1))
+
+    rf_score  = sum(w for _, w in red_flags)
+    fac_score = sum(w for _, w in factors)
+    total     = rf_score + fac_score
+    long_dur  = symptom_duration in ("3–6 months", "More than 6 months", "Over 1 year")
+
+    # Conservative tiering — when in doubt, escalate (safer in a clinical tool)
+    if (rf_score >= 3) or (red_flags and (long_dur or fac_score >= 3)):
+        tier, label = "High", "Higher concern — prompt clinical review advised"
+        urgency = "See a doctor promptly"
+        primary = ("Book a GP/clinician appointment soon. Your reported symptoms include "
+                   "features that warrant timely assessment, likely including a colonoscopy.")
+    elif total >= 3:
+        tier, label = "Moderate", "Moderate concern — get checked"
+        urgency = "Arrange a check-up"
+        primary = ("Arrange a FIT (stool) test and a GP review. A colonoscopy may be "
+                   "recommended based on the result and your history.")
+    else:
+        tier, label = "Low", "Lower concern — stay on routine screening"
+        urgency = "Routine"
+        primary = ("Continue routine age-appropriate screening (FIT / colonoscopy). "
+                   "Seek review if new or worsening symptoms appear.")
+
+    return {"tier": tier, "label": label, "urgency": urgency, "primary": primary,
+            "red_flags": red_flags, "factors": factors,
+            "rf_score": rf_score, "fac_score": fac_score, "total": total,
+            "long_duration": long_dur}
+
+
+def _run_risk_only_assessment():
+    """No image provided -> honest, rule-based risk-factor assessment.
+    Replaces the old fake _run_demo_analysis fallback. No pathology class, no
+    fabricated probabilities, no model image prediction."""
+    patient      = st.session_state.get("patient", {})
+    symptoms     = st.session_state.get("symptoms", [])
+    symptom_text = st.session_state.get("symptom_text", "")
+    pain         = int(st.session_state.get("pain_scale", 0) or 0)
+    dur          = str(st.session_state.get("symptom_duration", "") or "")
+    r = _assess_risk_factors(patient, symptoms, symptom_text, pain, dur)
+    st.session_state["analysis"] = {
+        "pathology_class":  "RISK_ASSESSMENT_ONLY",
+        "pathology_probs":  {},
+        "risk_only":        True,
+        "risk_tier":        r["tier"],
+        "risk_label":       r["label"],
+        "risk_factors":     r["factors"],
+        "red_flags":        r["red_flags"],
+        "risk_detail":      r,
+        "stage":            "Not assessed (no image)",
+        "stage_confidence": 0.0,
+        "stage_probs":      {},
+        "confidence":       0.0,
+        "gradcam_overlay":  None, "gradcam_heatmap": None, "original_image": None,
+        "recommendation": {
+            "urgency":        r["urgency"],
+            "primary_action": r["primary"],
+            "referrals":      ["Gastroenterology / GP for clinical review"],
+            "investigations": ["FIT (faecal immunochemical test)",
+                               "Colonoscopy for direct visual assessment"],
+            "lifestyle_advice": [
+                "High-fibre diet (25–35 g/day)", "Limit red / processed meat",
+                "Maintain a healthy weight", "Regular activity (150 min/week)",
+                "Limit alcohol", "Don't smoke",
+            ],
+            "full_report": "Risk-factor assessment from history and symptoms only — no "
+                           "colonoscopy image was provided, so no visual diagnosis was made.",
+        },
+        "_provenance": {
+            "source": "risk_factor_assessment",
+            "note": "Rule-based assessment of established risk factors + symptom red flags. "
+                    "NOT an AI image diagnosis and NOT a substitute for clinical evaluation. "
+                    "A colonoscopy is required to visually assess for polyps/cancer.",
+        },
+    }
+    st.session_state["analysis_done"] = True
+    st.session_state["step"] = 3
+    st.rerun()
+
+
+def _show_model_unavailable(system):
+    """Image present but the AI model could not load -> honest error, never fake."""
+    err = (system or {}).get("error", "the AI model could not be loaded")
+    st.error("The AI image model is currently unavailable, so we cannot analyse the "
+             "uploaded image. We will **not** show a fabricated result.")
+    with st.expander("Technical detail"):
+        st.code(str(err)[:800])
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("↻ Retry loading the model", use_container_width=True, type="primary"):
+            st.session_state.pop("_system", None)
+            st.rerun()
+    with c2:
+        if st.button("Continue with symptoms-only assessment", use_container_width=True):
+            _run_risk_only_assessment()
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -3610,6 +3756,66 @@ def _render_compare_panel():
     return True
 
 
+def _render_risk_only_report(analysis: dict, patient: dict):
+    """Honest report when no image was uploaded — risk factors + symptoms only.
+    No visual diagnosis, no fabricated pathology/stage."""
+    from src.app.security import escape_html as _esc
+    tier = analysis.get("risk_tier", "Low")
+    tier_color = {"High": "#DC2626", "Moderate": "#D97706", "Low": "#059669"}.get(tier, "#1A73E8")
+    render_hero(
+        "Your Risk-Factor Assessment",
+        f"Based on history & symptoms for {_esc(patient.get('name','you'))} — no image uploaded",
+        badges=["History + symptoms only", "Not a diagnosis", "Confirm with a clinician"],
+    )
+    st.markdown(
+        f"""<div style="background:{tier_color}14;border:2px solid {tier_color};
+            border-radius:14px;padding:18px 22px;margin:14px 0;">
+            <div style="font-size:20px;font-weight:800;color:{tier_color};">{tier} concern</div>
+            <div style="color:#334155;font-size:15px;margin-top:4px;">
+            {_esc(analysis.get('risk_label',''))}</div></div>""",
+        unsafe_allow_html=True,
+    )
+    st.info("ℹ️ No colonoscopy image was uploaded, so the AI made **no visual diagnosis**. "
+            "This is a transparent assessment of your risk factors and symptoms only — "
+            "a colonoscopy is needed to actually look for polyps or cancer.")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**Symptom red flags**")
+        rfs = analysis.get("red_flags", [])
+        if rfs:
+            for nm, _w in rfs:
+                st.markdown(f"- {_esc(nm)}")
+        else:
+            st.markdown("- None reported")
+    with col2:
+        st.markdown("**Your risk factors**")
+        facs = analysis.get("risk_factors", [])
+        if facs:
+            for nm, _w in facs:
+                st.markdown(f"- {_esc(nm)}")
+        else:
+            st.markdown("- None notable")
+    rec = analysis.get("recommendation", {})
+    st.markdown(f"### Recommended next step\n**{_esc(rec.get('urgency',''))}** — "
+                f"{_esc(rec.get('primary_action',''))}")
+    if rec.get("investigations"):
+        st.markdown("**Suggested investigations:** "
+                    + ", ".join(_esc(x) for x in rec["investigations"]))
+    st.caption("Rule-based on established risk factors + symptom red flags. Not an AI image "
+               "diagnosis and not a substitute for clinical evaluation.")
+    st.markdown("---")
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("📷 Upload a colonoscopy image for visual analysis",
+                     use_container_width=True, type="primary"):
+            st.session_state["step"] = 1
+            st.rerun()
+    with c2:
+        if st.button("← Start over", use_container_width=True):
+            st.session_state["step"] = 0
+            st.rerun()
+
+
 def page_results():
     analysis = st.session_state.get("analysis")
     if not analysis:
@@ -3671,6 +3877,11 @@ def page_results():
             if st.button("🔬 Try a demo case instead", use_container_width=True):
                 st.session_state["step"] = 1
                 st.rerun()
+        return
+
+    # ── RISK-FACTOR-ONLY report (no image was uploaded) ─────────────────
+    if analysis.get("risk_only") or pclass == "RISK_ASSESSMENT_ONLY":
+        _render_risk_only_report(analysis, patient)
         return
 
     from src.app.security import escape_html as _esc
