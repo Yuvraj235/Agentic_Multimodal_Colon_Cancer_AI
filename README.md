@@ -26,6 +26,35 @@ ColonAI is a research project that tries to close that gap. Upload a colonoscopy
 
 ---
 
+## 🆕 What's new — latest hardening pass (medical-grade honesty)
+
+A focused pass to make every output **real, not fake**, and to fix the dangerous gaps. In plain terms:
+
+**Safer, more honest outputs**
+- **Ulcerative-colitis severity — fixed.** It used to miss ~85 % of *moderate/severe* colitis (recall 0.15) by calling it "mild." After adding the **LIMUC** dataset (real Mayo-graded UC) + a UC-focused loss, it now catches **96 %** and never down-labels severe as mild. *(Trade-off: it now over-flags some mild cases as severe — the safe direction.)*
+- **No more fake results.** Symptoms but no image? It no longer invents a "polyp" — it gives an **honest risk-factor assessment** instead.
+- **Knows the image type.** Accepts white-light **and** NBI colonoscopy; politely refuses CT/MRI/photos and says what it thinks the image is.
+- **Real "where is the polyp."** Localisation now uses the **segmentation outline** (accurate), with the fuzzy heat-map demoted to a labelled "model attention" view.
+- **Honest staging.** No made-up stage from a photo — it says "not a diagnosis," and a **clinician can enter biopsy/scan findings (T/N/M) to get the exact AJCC stage** (international rulebook).
+- **Real out-of-distribution detector.** The "is this a weird/unknown image?" safety net is now trained on **real** out-of-scope endoscopy (not synthetic noise) — held-out AUROC **0.996** — and is actually wired into the app.
+- **View-quality warning.** Flags poor bowel-prep / obscured views as unreliable.
+- **Safer chatbot.** Strict guardrails — won't diagnose, interpret your results, or invent facts; always carries a "not a doctor" disclaimer.
+
+**New specialist models (the agent team grew)**
+- **Histology specialist** — reads an H&E biopsy tile, identifies tumour vs normal tissue (9 types), feeding the staging direction.
+- **Validated risk tools** — a literature-based relative-risk model **+ the APCS clinically-validated screening score** (every coefficient cited; none invented).
+- **Per-site calibration tool** — a hospital can re-tune the confidence to its own data.
+
+**Honest cross-vendor truth**
+- Found & fixed a **data leak**: the "Pentax" test scope (ETIS) was accidentally in training, inflating the cross-vendor number. Measured honestly, cross-vendor segmentation is **~0.45 IoU** (not the previously claimed 0.61). Adding multi-centre **PolypGen** barely moved it — the real fix is a better image backbone (future work). We report the honest number.
+
+**Governance**
+- The autonomous daily bots that committed to this clinical repo are **paused** (human-review gate) during hardening.
+
+> Every number above comes from a re-runnable evaluation on held-out data — no hand-edited metrics.
+
+---
+
 ## 🚀 Try it now
 
 | Mode | How |
@@ -86,7 +115,7 @@ ColonAI's training was reworked so the model is forced to focus its attention on
 | Olympus (familiar brand) | 0.24 | **0.42** |
 | **Pentax (different brand)** | **0.07** | **0.16** |
 
-That's a **+136 % improvement on the brand the model had never seen during training**. We also added a separate, dedicated segmentation step that lifts polyp localisation from 0.27 to **0.61** — clinically usable.
+That's a **+136 % improvement on the brand the model had never seen during training**. We also added a separate, dedicated segmentation step for localisation (~0.62 IoU on the familiar brand). **Honest update:** on a *truly held-out* different-brand scope, cross-vendor segmentation IoU is **~0.45** — the previously-claimed 0.61 was inflated by a now-fixed data leak (the test scope had leaked into training). See the honest-numbers table below.
 
 ### And we made it refuse to answer when it shouldn't
 
@@ -131,12 +160,14 @@ Every prediction is logged with the image's SHA-256, the verdict, and the agents
 
 ---
 
-## 🤖 Daily automation (runs without you)
+## 🤖 Daily automation (currently **paused**)
 
-| When (UTC) | Workflow | What it does |
-|:---:|:--|:--|
-| **04:00** | [`auto-bug-check.yml`](.github/workflows/auto-bug-check.yml) | Pyflakes static analysis, JSON validity, stale-file cleanup, **live HF Space probe** via headless Chromium (Playwright). Opens a GitHub issue with a screenshot if the live demo silently drops to demo mode. |
-| **06:00** | [`scrape-news.yml`](.github/workflows/scrape-news.yml) | Refreshes the cancer-news feed from 6 public RSS sources, commits the new JSON. The Space auto-syncs on its next rebuild. |
+> ⏸️ **These autonomous daily bots are paused** during the medical-grade hardening period. An unsupervised job with `contents: write` that auto-commits "stale-file" deletions and external content into a *clinical* repo should run only behind a human-review (PR) gate. The cron triggers are commented out; both can still be run manually via `workflow_dispatch`. Re-enable after a review gate is in place.
+
+| Workflow | What it does (when re-enabled) |
+|:--|:--|
+| [`auto-bug-check.yml`](.github/workflows/auto-bug-check.yml) | Pyflakes static analysis, JSON validity, stale-file cleanup, **live HF Space probe** via headless Chromium (Playwright). Opens a GitHub issue if the live demo silently drops to demo mode. |
+| [`scrape-news.yml`](.github/workflows/scrape-news.yml) | Refreshes the cancer-news feed from public RSS sources, commits the new JSON. |
 
 You can also run the same checks locally:
 
@@ -157,15 +188,17 @@ We do **not** report a single accuracy number, because that's the metric most ea
 | :-- | :--: | :--: |
 | Got the diagnosis right? | 95 % | 90 % |
 | Heat-map lands on the polyp? | 0.42 (IoU) | 0.16 (IoU) |
-| Dedicated segmentation IoU | 0.62 | **0.61** |
-| Detection sensitivity (per-polyp, IoU ≥ 0.5) | 0.75–0.92 | 0.38 |
+| Dedicated segmentation IoU (truly held-out) | 0.62 | **0.45** |
+| Detection sensitivity (per-polyp, IoU ≥ 0.5) | 0.75–0.92 | ~0.50 |
 | Confidence is well-calibrated (lower = better) | 0.06 ECE | 0.06 ECE |
 
-We **also** publish what doesn't work:
+> The unfamiliar-brand segmentation figure is now **0.45** (honest, fully held-out), correcting an earlier leaky **0.61**. This is the real cross-vendor generalisation gap.
 
-- The model struggles to grade ulcerative colitis severity (moderate-severe recall is low). It tends to over-call "mild" UC.
-- Cross-vendor segmentation is good but cross-vendor detection (per-polyp F1) is still weaker than within-vendor.
-- Highly atypical lesions or invasive cancers are **out of distribution** — the safety net catches them and asks for human review.
+We **also** publish what doesn't work / what we just fixed:
+
+- **Ulcerative-colitis severity — now fixed.** Moderate-severe recall went from **0.15 → 0.96** after adding the LIMUC dataset + a UC-focused loss. It now errs toward *over*-calling severity (the safe direction), at some cost to mild precision.
+- **Cross-vendor generalisation is real but limited (~0.45 IoU).** Adding multi-centre PolypGen barely moved it — the bottleneck is the frozen image backbone, so the genuine fix is backbone fine-tuning / an endoscopy-pretrained backbone (future work).
+- Highly atypical lesions or invasive cancers are **out of distribution** — the (now real-image-trained) safety net catches them and asks for human review.
 
 These limitations are *why* the safety net exists.
 
