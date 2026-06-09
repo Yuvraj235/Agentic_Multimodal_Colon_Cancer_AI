@@ -3192,13 +3192,24 @@ def _assess_risk_factors(patient: dict, symptoms: list, symptom_text: str,
     total     = rf_score + fac_score
     long_dur  = symptom_duration in ("3–6 months", "More than 6 months", "Over 1 year")
 
-    # Conservative tiering — when in doubt, escalate (safer in a clinical tool)
+    # Literature-grounded relative-risk multiplier (cited meta-analytic RRs)
+    try:
+        from src.app.crc_risk_model import relative_risk, rr_to_band
+        _rr = relative_risk(patient)
+        rr_total, rr_factors, rr_band, rr_notes = (
+            _rr["rr_total"], _rr["factors"], rr_to_band(_rr["rr_total"]), _rr["notes"])
+    except Exception:
+        rr_total, rr_factors, rr_band, rr_notes = 1.0, [], "about average", []
+
+    # Conservative tiering — when in doubt, escalate (safer in a clinical tool).
+    # Now also informed by the literature RR multiplier (markedly-elevated risk
+    # warrants at least a check-up even without acute red flags).
     if (rf_score >= 3) or (red_flags and (long_dur or fac_score >= 3)):
         tier, label = "High", "Higher concern — prompt clinical review advised"
         urgency = "See a doctor promptly"
         primary = ("Book a GP/clinician appointment soon. Your reported symptoms include "
                    "features that warrant timely assessment, likely including a colonoscopy.")
-    elif total >= 3:
+    elif total >= 3 or rr_total >= 2.0:
         tier, label = "Moderate", "Moderate concern — get checked"
         urgency = "Arrange a check-up"
         primary = ("Arrange a FIT (stool) test and a GP review. A colonoscopy may be "
@@ -3212,7 +3223,9 @@ def _assess_risk_factors(patient: dict, symptoms: list, symptom_text: str,
     return {"tier": tier, "label": label, "urgency": urgency, "primary": primary,
             "red_flags": red_flags, "factors": factors,
             "rf_score": rf_score, "fac_score": fac_score, "total": total,
-            "long_duration": long_dur}
+            "long_duration": long_dur,
+            "rr_total": rr_total, "rr_factors": rr_factors, "rr_band": rr_band,
+            "rr_notes": rr_notes}
 
 
 def _run_risk_only_assessment():
@@ -3872,6 +3885,31 @@ def _render_risk_only_report(analysis: dict, patient: dict):
                 st.markdown(f"- {_esc(nm)}")
         else:
             st.markdown("- None notable")
+    # Literature-grounded relative-risk multiplier (cited meta-analytic RRs)
+    rd = analysis.get("risk_detail", {})
+    rr_total = rd.get("rr_total")
+    rr_factors = rd.get("rr_factors", [])
+    if rr_total:
+        ups = [f for f in rr_factors if f.get("dir") == "up"]
+        drv = ", ".join(_esc(f["name"]) for f in (ups or rr_factors)[:4]) or "no major modifiable factors"
+        st.markdown(
+            f"""<div style="background:#F8FAFF;border:1px solid #CBD5E1;border-radius:12px;
+                 padding:14px 18px;margin:12px 0;">
+              <div style="font-size:0.74rem;text-transform:uppercase;letter-spacing:.6px;
+                   color:#1A73E8;font-weight:800;">Estimated relative risk (literature-based)</div>
+              <div style="font-size:1.5rem;font-weight:800;color:#0F172A;margin:2px 0;">
+                   ~{rr_total:g}× <span style="font-size:0.9rem;font-weight:600;color:#475569;">
+                   ({_esc(rd.get('rr_band',''))} vs an average person your age)</span></div>
+              <div style="font-size:0.85rem;color:#475569;">Driven by: {drv}.</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+        st.caption("Relative risk from published meta-analytic relative risks (Johnson 2013; "
+                   "smoking Botteri 2008). Educational estimate vs an average same-age person — "
+                   "not an absolute probability or a diagnosis.")
+        for _n in rd.get("rr_notes", []):
+            st.caption("• " + _esc(_n))
+
     rec = analysis.get("recommendation", {})
     st.markdown(f"### Recommended next step\n**{_esc(rec.get('urgency',''))}** — "
                 f"{_esc(rec.get('primary_action',''))}")
