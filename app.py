@@ -3192,14 +3192,16 @@ def _assess_risk_factors(patient: dict, symptoms: list, symptom_text: str,
     total     = rf_score + fac_score
     long_dur  = symptom_duration in ("3–6 months", "More than 6 months", "Over 1 year")
 
-    # Literature-grounded relative-risk multiplier (cited meta-analytic RRs)
+    # Literature-grounded relative-risk multiplier + VALIDATED APCS score
     try:
-        from src.app.crc_risk_model import relative_risk, rr_to_band
+        from src.app.crc_risk_model import relative_risk, rr_to_band, apcs_score
         _rr = relative_risk(patient)
         rr_total, rr_factors, rr_band, rr_notes = (
             _rr["rr_total"], _rr["factors"], rr_to_band(_rr["rr_total"]), _rr["notes"])
+        apcs = apcs_score(patient)
     except Exception:
         rr_total, rr_factors, rr_band, rr_notes = 1.0, [], "about average", []
+        apcs = None
 
     # Conservative tiering — when in doubt, escalate (safer in a clinical tool).
     # Now also informed by the literature RR multiplier (markedly-elevated risk
@@ -3209,7 +3211,7 @@ def _assess_risk_factors(patient: dict, symptoms: list, symptom_text: str,
         urgency = "See a doctor promptly"
         primary = ("Book a GP/clinician appointment soon. Your reported symptoms include "
                    "features that warrant timely assessment, likely including a colonoscopy.")
-    elif total >= 3 or rr_total >= 2.0:
+    elif total >= 3 or rr_total >= 2.0 or (apcs and apcs.get("tier") == "High"):
         tier, label = "Moderate", "Moderate concern — get checked"
         urgency = "Arrange a check-up"
         primary = ("Arrange a FIT (stool) test and a GP review. A colonoscopy may be "
@@ -3225,7 +3227,7 @@ def _assess_risk_factors(patient: dict, symptoms: list, symptom_text: str,
             "rf_score": rf_score, "fac_score": fac_score, "total": total,
             "long_duration": long_dur,
             "rr_total": rr_total, "rr_factors": rr_factors, "rr_band": rr_band,
-            "rr_notes": rr_notes}
+            "rr_notes": rr_notes, "apcs": apcs}
 
 
 def _run_risk_only_assessment():
@@ -3909,6 +3911,22 @@ def _render_risk_only_report(analysis: dict, patient: dict):
                    "not an absolute probability or a diagnosis.")
         for _n in rd.get("rr_notes", []):
             st.caption("• " + _esc(_n))
+
+    # Validated clinical risk score (APCS)
+    apcs = rd.get("apcs")
+    if apcs:
+        ac = {"High": "#DC2626", "Moderate": "#D97706", "Low": "#059669"}.get(apcs.get("tier"), "#1A73E8")
+        bd = " · ".join(f"{_esc(n)} +{p}" for n, p in apcs.get("breakdown", []))
+        st.markdown(
+            f"""<div style="background:#FFFFFF;border:1px solid {ac}55;border-left:4px solid {ac};
+                 border-radius:10px;padding:12px 16px;margin:10px 0;">
+              <div style="font-size:0.74rem;text-transform:uppercase;letter-spacing:.6px;
+                   color:{ac};font-weight:800;">Validated screening score (APCS)</div>
+              <div style="font-size:1.2rem;font-weight:800;color:#0F172A;">
+                   {apcs.get('score')}/7 → {_esc(apcs.get('tier',''))} risk of advanced neoplasia</div>
+              <div style="font-size:0.8rem;color:#64748B;margin-top:3px;">{bd}</div>
+            </div>""", unsafe_allow_html=True)
+        st.caption(_esc(apcs.get("cite", "")) + " — validated for asymptomatic screening.")
 
     rec = analysis.get("recommendation", {})
     st.markdown(f"### Recommended next step\n**{_esc(rec.get('urgency',''))}** — "

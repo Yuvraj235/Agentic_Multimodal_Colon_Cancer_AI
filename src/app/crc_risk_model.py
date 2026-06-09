@@ -106,6 +106,37 @@ def relative_risk(patient: dict, extra: dict | None = None) -> Dict:
     return {"rr_total": round(rr, 2), "factors": factors, "notes": notes}
 
 
+def apcs_score(patient: dict) -> Dict:
+    """Asia-Pacific Colorectal Screening (APCS) score — a VALIDATED tool that
+    stratifies risk of advanced colorectal neoplasia. Exact published points:
+      age   : 40-49 -> 0 ; 50-69 -> 2 ; >=70 -> 3
+      sex   : female 0 ; male 1
+      family history (1st-degree CRC): absent 0 ; present 2
+      smoking: never 0 ; current/past 1
+      total 0-7 -> Low 0-1 | Moderate 2-3 | High 4-7
+    Source: Yeoh KG et al., Gut 2011;60(9):1236-41 (developed across 11 Asian
+    countries); externally validated incl. Western populations (Corte C et al.,
+    J Gastroenterol Hepatol 2016). Validated for ASYMPTOMATIC screening subjects.
+    """
+    breakdown = []
+    age = int(patient.get("age", 0) or 0)
+    a = 3 if age >= 70 else 2 if age >= 50 else 0
+    breakdown.append((f"Age {age}", a))
+    male = str(patient.get("gender", "")).strip().lower().startswith("m")
+    s = 1 if male else 0
+    breakdown.append(("Male sex" if male else "Female sex", s))
+    fh = 2 if _truthy(patient.get("family_history")) else 0
+    breakdown.append(("Family history of CRC (1st-degree)", fh))
+    sm = str(patient.get("smoking", "")).lower()
+    sk = 1 if any(k in sm for k in ("current", "former", "ex", "yes")) else 0
+    breakdown.append(("Current/past smoking", sk))
+    pts = a + s + fh + sk
+    tier = "Low" if pts <= 1 else "Moderate" if pts <= 3 else "High"
+    return {"score": pts, "max": 7, "tier": tier, "breakdown": breakdown,
+            "cite": "APCS score — Yeoh 2011 (Gut); validated incl. Western (Corte 2016)",
+            "scope": "validated for asymptomatic screening; risk of advanced neoplasia"}
+
+
 def rr_to_band(rr_total: float) -> str:
     """Coarse band for the multiplier (relative to average same-age person)."""
     if rr_total >= 2.0:
@@ -131,4 +162,15 @@ if __name__ == "__main__":
     lean = relative_risk({"bmi": 23, "family_history": "No", "smoking": "No"})
     print("lean rr_total:", lean["rr_total"], "->", rr_to_band(lean["rr_total"]))
     assert lean["rr_total"] < 1.0  # BMI below reference is mildly protective
+
+    # APCS validated-score self-test (exact published points)
+    hi = apcs_score({"age": 72, "gender": "Male", "family_history": "Yes", "smoking": "Current"})
+    print("APCS high:", hi["score"], hi["tier"])   # 3+1+2+1 = 7 -> High
+    assert hi["score"] == 7 and hi["tier"] == "High"
+    lo = apcs_score({"age": 45, "gender": "Female", "family_history": "No", "smoking": "No"})
+    print("APCS low:", lo["score"], lo["tier"])     # 0+0+0+0 = 0 -> Low
+    assert lo["score"] == 0 and lo["tier"] == "Low"
+    mid = apcs_score({"age": 55, "gender": "Female", "family_history": "No", "smoking": "No"})
+    print("APCS mid:", mid["score"], mid["tier"])   # 2 -> Moderate
+    assert mid["score"] == 2 and mid["tier"] == "Moderate"
     print("OK")
