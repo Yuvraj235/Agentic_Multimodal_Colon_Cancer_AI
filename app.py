@@ -5870,6 +5870,19 @@ def page_results():
                     for r in referrals:
                         st.markdown(f"• {r}")
 
+                # Guideline basis (smart win #3 — recommendations cite real guidelines)
+                try:
+                    from src.app.guideline_kb import basis_for
+                    _sym_txt = " ".join(st.session_state.get("symptoms", []) or [])
+                    _basis = basis_for(pclass, _sym_txt)
+                    if _basis:
+                        st.markdown('<div class="section-header">📖 Guideline basis</div>',
+                                    unsafe_allow_html=True)
+                        for _g in _basis:
+                            st.markdown(f"- {_esc(_g['statement'])}  \n  *— {_esc(_g['source'])}*")
+                except Exception:
+                    pass
+
             with col_r2:
                 investigations = rec.get("investigations", [])
                 if investigations:
@@ -6592,6 +6605,17 @@ def _chatbot_respond(user_msg: str) -> str:
     # Strong KB match → return curated plain-English answer
     if best_entry and best_score >= 1.0:
         return best_entry["a"]
+
+    # Guideline-grounded layer (smart win #3): prefer a CITED guideline answer
+    # over the free LLM — keeps the bot honest and sourced, no hallucination.
+    try:
+        from src.app.guideline_kb import cited_answer
+        _ga = cited_answer(user_msg)
+        if _ga:
+            return (f"🤖 {_ga['statement']}\n\n📖 Source: {_ga['source']}. "
+                    "This is general guidance — please confirm with your doctor.")
+    except Exception:
+        pass
 
     # Weak / no KB match → try the free LLM
     llm_reply = _llm_ask(user_msg)
