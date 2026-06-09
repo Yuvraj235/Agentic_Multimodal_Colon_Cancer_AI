@@ -236,10 +236,11 @@ def clinician_report(
         "body":   ("• This system is a decision-support tool, not a diagnosis. "
                    "Biopsy remains the gold standard.\n"
                    "• Training data: HyperKvasir + CVC-ClinicDB + TCGA-COAD; "
-                   "performance on out-of-distribution vendors/populations is "
-                   "lower than the headline cross-vendor IoU=0.61 suggests.\n"
-                   "• Stage estimates are population-level, not per-image. "
-                   "See docs/STAGING_ROADMAP.md."),
+                   "on a truly held-out (different-vendor) scope, segmentation "
+                   "localisation is ~0.45 IoU — lower than on familiar scopes.\n"
+                   "• Cancer stage is computed exactly from doctor-entered TNM "
+                   "(AJCC 8th ed.); from an image alone it is only a preliminary "
+                   "invasion-depth impression, pending biopsy. See docs/STAGING_ROADMAP.md."),
         "kind":   "caveats",
     })
 

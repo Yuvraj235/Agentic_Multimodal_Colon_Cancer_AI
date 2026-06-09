@@ -1214,8 +1214,8 @@ def overlay_seg(original_np: np.ndarray, mask: np.ndarray,
     """Overlay a segmentation mask (HxW, [0,1]) as a green region + contour.
 
     This is the PRIMARY localization shown to the user — the segmentation decoder
-    outlines the actual lesion (cross-vendor IoU ~0.61), unlike the coarse 7x7
-    GradCAM attention map. Returns a uint8 RGB image."""
+    outlines the actual lesion (honest held-out cross-vendor IoU ~0.45), unlike the
+    coarse 7x7 GradCAM attention map. Returns a uint8 RGB image."""
     if mask is None:
         return original_np
     try:
@@ -1666,6 +1666,38 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
                 out["seg_mask"] = _seg
         except Exception as exc:
             out["seg_error"] = f"{type(exc).__name__}: {exc}"
+
+        # ── Polyp characterization (CADx): "what kind of polyp is it?" ──────
+        # Optical-diagnosis specialist. Only meaningful for polyp findings, and
+        # only when we have a lesion region to focus on (the segmentation mask).
+        # Crops to the polyp and classifies neoplastic vs non-neoplastic. This is
+        # decision support (resect-and-discard style judgement), never a substitute
+        # for histology. Additive + fail-open.
+        try:
+            _pc = getattr(fd, "pathology_class", "")
+            _seg_m = out.get("seg_mask")
+            if _pc in ("polyps", "therapeutic") and _seg_m is not None:
+                from src.app.characterization import characterize, _bbox_from_mask
+                from PIL import Image as _PILImage
+                _pil = (img_np if isinstance(img_np, _PILImage.Image)
+                        else _PILImage.fromarray(
+                            (img_np * 255).astype(np.uint8) if np.asarray(img_np).max() <= 1
+                            else np.asarray(img_np).astype(np.uint8)))
+                # scale the 224-space seg-mask bbox up to the original image size
+                _m = np.asarray(_seg_m)
+                _mh, _mw = _m.shape[:2]
+                _bb = _bbox_from_mask((_m * 255).astype(np.uint8))
+                _crop = None
+                if _bb is not None:
+                    _W, _H = _pil.size
+                    sx, sy = _W / _mw, _H / _mh
+                    _crop = (int(_bb[0] * sx), int(_bb[1] * sy),
+                             int(_bb[2] * sx), int(_bb[3] * sy))
+                _cadx = characterize(_pil, bbox=_crop)
+                if _cadx.get("available"):
+                    out["characterization"] = _cadx
+        except Exception as exc:
+            out["characterization_error"] = f"{type(exc).__name__}: {exc}"
     except Exception as exc:
         out["trust_report"] = {"error": f"{type(exc).__name__}: {exc}"}
 
@@ -5537,11 +5569,40 @@ def page_results():
             st.markdown(
                 """<div class="info-box" style="margin-top:6px">
                 <b>This is the localization to trust.</b> The green region is the segmentation
-                decoder's pixel-level outline of the polyp (cross-vendor IoU ≈ 0.61). It shows
-                <i>where</i> the lesion is, far more precisely than the attention map below.
+                decoder's pixel-level outline of the polyp (honest cross-vendor IoU ≈ 0.45 on a
+                held-out scanner). It shows <i>where</i> the lesion is, far more precisely than
+                the attention map below.
                 </div>""",
                 unsafe_allow_html=True,
             )
+
+            # ── What kind of polyp? (CADx optical impression) ───────────────
+            cadx = analysis.get("characterization")
+            if isinstance(cadx, dict) and cadx.get("available"):
+                _neo   = cadx.get("kind") == "neoplastic"
+                _conf  = float(cadx.get("confidence", 0.0))
+                _box   = "warn-box" if _neo else "info-box"
+                _head  = ("Looks like a neoplastic polyp" if _neo
+                          else "Looks like a non-neoplastic polyp")
+                _plain = ("This kind can slowly turn cancerous, so the usual step is "
+                          "to remove it and send it to the lab to be certain."
+                          if _neo else
+                          "This kind is usually harmless (for example a hyperplastic "
+                          "polyp) — but the lab still has the final say.")
+                st.markdown(
+                    f"""<div class="{_box}" style="margin-top:10px">
+                    <b>What kind of polyp — optical impression</b><br>
+                    <span style="font-size:1.05rem"><b>{_head}</b>
+                    &nbsp;(model {_conf*100:.0f}% confident)</span><br>
+                    {_plain}<br>
+                    <span style="opacity:.82;font-size:.85rem">
+                    This is an <i>optical</i> impression from the image alone
+                    (specialist trained on the BKAI-IGH NeoPolyp set). It is
+                    decision-support only — the biopsy / histology result is the
+                    final answer, not this.</span>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
 
             # ── SECONDARY: GradCAM attention — explanation only, clearly demoted ──
             with st.expander("Model attention (GradCAM++) — explanation only, NOT the polyp outline"):
