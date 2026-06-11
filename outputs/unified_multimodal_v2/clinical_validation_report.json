@@ -1,0 +1,109 @@
+{
+  "generated": "2026-06-11 21:17:05",
+  "checkpoint_sha16": "8057c26cc9aeaa5d",
+  "seg_decoder_sha16": "d1ed738aac1f76a0",
+  "evidence_legend": {
+    "A_truly_external": "data the model never saw (different scanner/centre or held-out out-of-scope) \u2014 the numbers that count",
+    "B_heldout_split_in_distribution": "honest held-out test split, but same dataset/population (not external)",
+    "C_flagged_optimistic": "known to over-state (tile-level split, or a deliberately-weak baseline kept for contrast)"
+  },
+  "metrics": {
+    "segmentation_localization_ETIS_Pentax": {
+      "tier": "A",
+      "task": "polyp pixel outline (IoU/Dice)",
+      "data": "ETIS-LaribPolypDB (Pentax scanner) \u2014 fully held out of training",
+      "n": 196,
+      "mean_iou": 0.4547,
+      "iou_95ci": [
+        0.4172,
+        0.4935
+      ],
+      "mean_dice": 0.5702,
+      "dice_95ci": [
+        0.5285,
+        0.6127
+      ],
+      "sens_at_iou0.5": 0.5051,
+      "plain": "On a scanner brand it never trained on, the polyp outline overlaps the true polyp about 45% (IoU). This is the honest cross-vendor number \u2014 lower than on familiar scanners (~0.67). Computed fresh here with 95% confidence intervals."
+    },
+    "out_of_scope_detection": {
+      "tier": "A",
+      "task": "flag non-colon / out-of-scope images (abstain)",
+      "data": "held-out REAL out-of-scope endoscopy (cecum, z-line, poor-prep, etc.)",
+      "auroc": 0.9958,
+      "f1": 0.974,
+      "ood_caught_frac": 0.9944,
+      "id_kept_frac": 0.9485,
+      "n_test": 688,
+      "plain": "Catches ~99% of images that aren't a proper colon view and refuses to score them, while keeping ~95% of valid views. Measured on real held-out out-of-scope images."
+    },
+    "view_quality_gate": {
+      "tier": "A",
+      "task": "flag poorly-prepped / unusable views",
+      "data": "held-out BBPS-labelled bowel-prep images",
+      "auroc": 0.9847,
+      "f1": 0.9571,
+      "poor_caught_frac": 0.9571,
+      "n_test": 420,
+      "plain": "Spots ~96% of poorly-prepared views so the system can warn 'image not clear enough to trust'."
+    },
+    "pathology_5class": {
+      "tier": "B",
+      "task": "5-way finding (polyps / UC-mild / UC-mod-sev / Barrett's / therapeutic)",
+      "data": "HyperKvasir + CVC held-out test split (same source as training \u2014 NOT external)",
+      "overall_acc": 0.938,
+      "macro_f1": 0.8349,
+      "per_class_recall": {
+        "polyps": 0.9351,
+        "uc-mild": 0.2703,
+        "uc-moderate-sev": 0.956,
+        "barretts-esoph": 1.0,
+        "therapeutic": 0.9933
+      },
+      "plain": "Overall ~94% accurate on its own held-out split. UC-mild recall is deliberately low (0.27): the safety-first tuning routes uncertain mild cases toward 'moderate-severe' so severity is under-called as little as possible. This split is in-distribution, so the real-world number on other hospitals will be lower \u2014 that's what external validation is for."
+    },
+    "polyp_characterization_CADx": {
+      "tier": "B",
+      "task": "neoplastic vs non-neoplastic (optical diagnosis)",
+      "data": "BKAI-IGH NeoPolyp held-out 80/20 split (same dataset \u2014 not external)",
+      "balanced_acc": 0.8502,
+      "neoplastic": {
+        "precision": 0.9389,
+        "recall": 0.8542,
+        "f1": 0.8945,
+        "support": 144
+      },
+      "non_neoplastic": {
+        "precision": 0.6769,
+        "recall": 0.8462,
+        "f1": 0.7521,
+        "support": 52
+      },
+      "plain": "Balanced accuracy ~0.85. When it says 'neoplastic' it's right ~94%; the 'benign' call is weaker (~32% of benign calls are actually neoplastic), so the benign verdict always defers to histology in the UI."
+    },
+    "staging_from_TNM": {
+      "tier": "B",
+      "task": "AJCC stage from doctor-entered T/N/M",
+      "data": "TCGA-COAD (5-fold); deterministic AJCC mapping",
+      "accuracy": 0.997,
+      "plain": "Near-perfect because AJCC staging from T/N/M is a fixed rule, not a guess. This is the ONLY staging path the system trusts; it needs the doctor's biopsy/imaging inputs."
+    },
+    "histology_tissue_classifier": {
+      "tier": "C",
+      "task": "9-way H&E tissue type (incl. tumour epithelium)",
+      "data": "CRC-VAL-HE-7K, tile-level 80/20 (NOT patient-level \u2014 optimistic)",
+      "overall_acc": 0.9965,
+      "macro_f1": 0.9957,
+      "plain": "~0.996 looks spectacular but the split is tile-level, so tiles from the same slide can sit in both train and test \u2014 this over-states real performance. Flagged as a demonstrator; a strict patient-level split is the honest production test."
+    },
+    "staging_from_demographics_REJECTED": {
+      "tier": "C",
+      "task": "stage from age/sex/BMI alone (deliberately weak baseline)",
+      "data": "TCGA-COAD (5-fold), demographics only",
+      "accuracy": 0.5345,
+      "plain": "~53% \u2014 barely better than guessing. Kept only to show WHY the system refuses to stage from demographics. This path is disabled in the product."
+    }
+  },
+  "headline_honest_summary": "The system's strongest evidence is on the safety machinery (out-of-scope and view-quality gates, ~0.97-0.99 on held-out real data) and on honest cross-vendor localization (ETIS IoU ~0.45). The 5-class finding model is ~94% on its own split but unproven on outside hospitals. Cancer STAGE is trusted only when computed from the doctor's TNM (a fixed rule); it is never guessed from an image or demographics. The biggest open gap is true external validation of the finding model and a strict patient-level histology test.",
+  "elapsed_sec": 24.6
+}
