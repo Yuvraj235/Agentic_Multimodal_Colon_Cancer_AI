@@ -7574,6 +7574,18 @@ def page_live_video():
     tokenizer = system["tokenizer"]
     device    = system["device"]
 
+    # ── Detector status — is the trained real-time YOLO detector active? ──
+    try:
+        from src.app.video_pipeline import detector_available
+        if detector_available():
+            st.success("✅ **Real-time polyp detector active** — using the trained detection model.")
+        else:
+            st.info("ℹ️ Using the fallback detection method. To enable the trained real-time "
+                    "detector, drop `best.pt` at `outputs/unified_multimodal_v2/polyp_detector.pt` "
+                    "(see docs/VIDEO_PHASE.md).")
+    except Exception:
+        pass
+
     # ── Built-in animated walkthrough (LOCAL — no YouTube dependency) ──
     with st.expander("🎬 How Live Video Mode works", expanded=False):
         st.markdown(

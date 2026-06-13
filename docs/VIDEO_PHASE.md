@@ -55,6 +55,28 @@ Training exports **`best.onnx`** and **`best.mlpackage` (CoreML)**. Download the
 The CoreML model runs real-time on your M3 Pro for the live-video mode (next step:
 wiring it into the app's "Live Video Mode" — `src/app/video_pipeline.py`).
 
+## Step 6 — Phase 3: run it live on the Mac
+Once training is done, **download `best.pt`** from the Kaggle Output panel and drop it at:
+```
+outputs/unified_multimodal_v2/polyp_detector.pt
+```
+That single file activates the detector everywhere — both paths auto-detect it (and
+fall back to the old GradCAM method if it's missing, so nothing breaks before then):
+
+- **In the app — "Live Video Mode" (Step 6):** upload a colonoscopy clip → it runs the
+  detector frame-by-frame, draws polyp boxes, tracks each polyp across frames, and
+  returns an annotated video + a per-polyp summary. (`src/app/video_pipeline.py`.)
+- **Standalone real-time (webcam / capture card):**
+  ```
+  python3 scripts/video/live_detect.py                   # webcam
+  python3 scripts/video/live_detect.py --source clip.mp4 # a recorded clip
+  ```
+  Draws live boxes with an FPS counter — the true real-time demo on Apple Silicon.
+
+Both apply the endoscopy gate first (so a non-colon frame is ignored) and require a
+polyp to persist across a few frames before it's "confirmed" (kills single-frame
+false positives).
+
 ## Free-tier playbook
 - **Kaggle** = primary (30 GPU-hrs/week, background runs). **Colab free** = overflow.
   **Lightning's 15 credits** = save for an occasional A100 boost. **Mac** = runs the demo.

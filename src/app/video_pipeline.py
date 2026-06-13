@@ -279,6 +279,118 @@ class PolypTracker:
 
 
 # ─────────────────────────────────────────────────────────────────
+# YOLO polyp DETECTOR  (the real-time detection model trained on Kaggle)
+# ─────────────────────────────────────────────────────────────────
+# This replaces the weak classification+GradCAM box with a proper trained
+# detector. Drop the trained weights at one of these paths (downloaded from the
+# Kaggle run, scripts/video/train_polyp_yolo.py). Fail-open: if no weights are
+# present yet, the pipeline falls back to the old GradCAM method automatically.
+_DETECTOR_PATHS = [
+    Path("outputs/unified_multimodal_v2/polyp_detector.pt"),     # canonical drop-in
+    Path("outputs/yolo_polyp/runs/polyp/weights/best.pt"),       # local training output
+]
+_det_cache: dict = {}
+
+
+def load_polyp_detector():
+    """Lazy-load the trained YOLO detector once. Returns None if not present."""
+    if "model" in _det_cache:
+        return _det_cache["model"]
+    model = None
+    try:
+        from ultralytics import YOLO
+        for p in _DETECTOR_PATHS:
+            if p.exists():
+                model = YOLO(str(p))
+                break
+    except Exception:
+        model = None
+    _det_cache["model"] = model
+    return model
+
+
+def detector_available() -> bool:
+    return load_polyp_detector() is not None
+
+
+def detect_polyps(frame_bgr: np.ndarray, conf: float = 0.25):
+    """Run the trained detector on one BGR frame.
+
+    Returns a list of (x1, y1, x2, y2, confidence) boxes, or None if the
+    detector isn't available (caller then uses the GradCAM fallback)."""
+    model = load_polyp_detector()
+    if model is None:
+        return None
+    try:
+        res = model.predict(frame_bgr, conf=conf, verbose=False)[0]
+        out = []
+        for b in res.boxes:
+            x1, y1, x2, y2 = (int(v) for v in b.xyxy[0].tolist())
+            out.append((x1, y1, x2, y2, float(b.conf[0])))
+        return out
+    except Exception:
+        return []
+
+
+def _annotate_yolo(frame_bgr: np.ndarray, dets: List["FrameDetection"],
+                   total_polyps_seen: int) -> np.ndarray:
+    """Draw all detector boxes + a status bar on a frame (BGR in/out)."""
+    img = frame_bgr.copy()
+    H, W = img.shape[:2]
+    colour = CLASS_BGR["polyps"]
+    for d in dets:
+        if not d.bbox:
+            continue
+        x1, y1, x2, y2 = d.bbox
+        thick = max(2, int(2 + 4 * d.confidence))
+        cv2.rectangle(img, (x1, y1), (x2, y2), colour, thick)
+        label = f"Polyp {d.confidence*100:.0f}%"
+        (lw, lh), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
+        cv2.rectangle(img, (x1, y1 - lh - 10), (x1 + lw + 12, y1), colour, -1)
+        cv2.putText(img, label, (x1 + 6, y1 - 6),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+    bar_h = 38
+    overlay = img.copy()
+    cv2.rectangle(overlay, (0, 0), (W, bar_h), (15, 23, 42), -1)
+    cv2.addWeighted(overlay, 0.75, img, 0.25, 0, img)
+    status = (f"ColonAI detector  |  polyps this frame: {len(dets)}  |  "
+              f"tracked: {total_polyps_seen}")
+    cv2.putText(img, status, (12, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.55,
+                (255, 255, 255), 1, cv2.LINE_AA)
+    if dets:
+        cv2.circle(img, (W - 20, H - 22), 8, (40, 200, 90), -1)
+        cv2.putText(img, "DETECTING", (W - 110, H - 16),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
+    return img
+
+
+def _yolo_process_frame(frame_bgr, frame_idx, timestamp, tracker, conf_thr):
+    """Endoscopy-gate → YOLO-detect → track → annotate one frame.
+
+    Returns (annotated_bgr, [FrameDetection]). Returns (None, None) if the
+    detector isn't available, so the caller falls back to the GradCAM path."""
+    if not detector_available():
+        return None, None
+    from src.app.image_atypicality import is_endoscopy_image
+    H, W = frame_bgr.shape[:2]
+    rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+    gate = is_endoscopy_image(rgb, threshold=0.55)
+    boxes = detect_polyps(frame_bgr, conf=conf_thr) if gate["is_endoscopy"] else []
+    boxes = boxes or []
+    dets: List[FrameDetection] = []
+    for (x1, y1, x2, y2, c) in boxes:
+        det = FrameDetection(
+            frame_idx=frame_idx, timestamp_s=timestamp, class_name="polyps",
+            confidence=c, bbox=(x1, y1, x2, y2),
+            roi_coverage=((x2 - x1) * (y2 - y1)) / float(W * H),
+            is_endoscopy=bool(gate["is_endoscopy"]), endoscopy_score=float(gate["score"]),
+        )
+        tracker.update(det, rgb)
+        dets.append(det)
+    return _annotate_yolo(frame_bgr, dets, len(tracker.polyps)), dets
+
+
+# ─────────────────────────────────────────────────────────────────
 # MAIN ANALYSER — video file mode
 # ─────────────────────────────────────────────────────────────────
 
@@ -351,6 +463,23 @@ def analyse_video_file(
 
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
         timestamp = frame_idx / fps_in if fps_in > 0 else float(frame_idx)
+
+        # ── Real detector path (trained YOLO) — preferred when weights exist ──
+        t_y = time.time()
+        ann_y, dets_y = _yolo_process_frame(frame_bgr, frame_idx, timestamp,
+                                            tracker, confidence_threshold)
+        if ann_y is not None:
+            inference_times.append((time.time() - t_y) * 1000.0)
+            detections.extend(dets_y)
+            writer.write(ann_y)
+            processed += 1
+            if progress_callback is not None and (processed % 5 == 0):
+                try:
+                    progress_callback(frame_idx, total_f, len(tracker.polyps))
+                except Exception:
+                    pass
+            continue
+        # ── else: fall back to the classification + GradCAM path below ───────
 
         # ── 1) Endoscopy gate ────────────────────────────────────
         gate = is_endoscopy_image(frame_rgb, threshold=0.55)
@@ -495,6 +624,31 @@ class LivePolypTransformer:
         H, W = img.shape[:2]
         self.frame_idx += 1
 
+        # ── Real detector path (trained YOLO) — preferred when weights exist ──
+        if detector_available():
+            if self.frame_idx % self.skip == 0:
+                from src.app.image_atypicality import is_endoscopy_image
+                rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                gate = is_endoscopy_image(rgb, threshold=0.55)
+                boxes = detect_polyps(img, conf=self.conf_thr) if gate["is_endoscopy"] else []
+                boxes = boxes or []
+                ts = time.time()
+                dets = []
+                for (x1, y1, x2, y2, c) in boxes:
+                    d = FrameDetection(
+                        frame_idx=self.frame_idx, timestamp_s=ts, class_name="polyps",
+                        confidence=c, bbox=(x1, y1, x2, y2),
+                        roi_coverage=((x2 - x1) * (y2 - y1)) / float(H * W),
+                        is_endoscopy=bool(gate["is_endoscopy"]), endoscopy_score=float(gate["score"]))
+                    self.tracker.update(d, rgb)
+                    dets.append(d)
+                with self._lock:
+                    self._last_dets = dets
+            annotated = _annotate_yolo(img, getattr(self, "_last_dets", []),
+                                       len(self.tracker.polyps))
+            return av.VideoFrame.from_ndarray(annotated, format="bgr24")
+
+        # ── else: classification + GradCAM fallback (no detector weights yet) ──
         # Only run inference every Nth frame to keep ~10 fps on CPU
         if self.frame_idx % self.skip == 0:
             with self._lock:
