@@ -2875,7 +2875,7 @@ def page_symptoms_upload():
         uploaded = st.file_uploader(
             "Drag & drop or click to upload your medical image",
             type=["jpg","jpeg","png"],
-            help="Maximum 20 MB. Image will be resized to 224×224 for AI analysis.",
+            help="Maximum 10 MB. Image will be resized to 224×224 for AI analysis.",
         )
 
         if uploaded is not None:
@@ -6442,7 +6442,7 @@ CHATBOT_KB: List[Dict[str, Any]] = [
     {"k": ["report","pdf","download","generate report"],
      "a": "Step 6 (Download Report) builds an A4 clinical PDF: patient header, symptom log, AI findings (pathology, staging, risk score, modality weights), embedded GradCAM++ heatmap, recommended next steps, suggested specialists and a regulatory disclaimer."},
     {"k": ["upload","image","colonoscopy","endoscopy","histopathology","photo","picture","jpeg","jpg","png"],
-     "a": "Step 2, Upload Images tab: JPG/PNG up to 50 MB. The image is resized to 224×224 with ImageNet normalisation, then routed through both image backbones in parallel for the GradCAM-friendly fused representation."},
+     "a": "Step 2, Upload Images tab: JPG/PNG up to 10 MB. The image is resized to 224×224 with ImageNet normalisation, then routed through both image backbones in parallel for the GradCAM-friendly fused representation."},
     {"k": ["risk","high risk","low risk","malignant","benign","cancer risk","risk score"],
      "a": "Risk score (0-100%) is the binary cancer-vs-benign head's softmax probability. Bands: <25% Low, 25-50% Moderate, 50-75% High, >75% Critical. The Risk Charts tab also shows a multi-dimensional radar combining AI risk + age + smoking + alcohol + family history + prior polyps."},
 
@@ -7491,7 +7491,7 @@ def page_guide():
              "qualified, licensed clinician before any clinical decisions are made."),
             ("What image types can I upload?",
              "JPG and PNG images from colonoscopy, endoscopy, or histopathology. Images are "
-             "automatically resized to 224x224 pixels for analysis. Maximum 20 MB per file."),
+             "automatically resized to 224x224 pixels for analysis. Maximum 10 MB per file."),
             ("Is my data stored or shared?",
              "No. All data (images, patient info, results) is stored only in your browser session "
              "and is lost when you close or refresh the page. Nothing is sent to external servers."),

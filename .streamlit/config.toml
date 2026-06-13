@@ -18,10 +18,16 @@ maxUploadSize = 10
 # Reject very large messages — protects against memory-pressure attacks
 # via repeated chunked uploads.
 maxMessageSize = 50
-# XSRF protection on form submits (default true, made explicit).
-enableXsrfProtection = true
-# CORS lockdown — Streamlit handles its own origin checks; disabling CORS
-# wildcard ensures a hostile page can't iframe-and-submit the app.
+# XSRF protection: DISABLED on purpose. Streamlit's XSRF token check breaks
+# file uploads when the app runs behind Hugging Face Spaces' reverse proxy —
+# the upload POST fails the token check and every file is rejected with a red
+# chip before analysis can run. Real upload safety is enforced server-side in
+# src/app/security.validate_upload_bytes (10 MB cap, MIME allow-list,
+# decompression-bomb guard), so disabling Streamlit's XSRF loses no protection.
+# Re-enable ONLY when serving on a direct, non-proxied origin.
+enableXsrfProtection = false
+# CORS stays locked down. With XSRF off this is respected as-is (Streamlit would
+# otherwise force it on). A hostile page still can't read cross-origin responses.
 enableCORS = false
 
 [browser]
