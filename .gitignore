@@ -15,3 +15,8 @@ data/
 .claude/settings.local.json
 .claude/projects/
 .claude/worktrees/
+
+# Ultralytics training run outputs
+runs/
+yolo11*.pt
+yolov8*.pt
