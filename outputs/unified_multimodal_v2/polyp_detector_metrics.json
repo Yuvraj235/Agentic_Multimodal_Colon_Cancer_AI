@@ -1,0 +1,9 @@
+{
+  "model": "YOLO11s polyp detector (trained free on Kaggle, scripts/video/train_polyp_yolo.py)",
+  "test_set": "ETIS-LaribPolypDB (Pentax) \u2014 held out of training (196 imgs, 208 polyps)",
+  "mAP50": 0.8761,
+  "mAP50_95": 0.6901,
+  "precision": 0.7856,
+  "recall_sensitivity": 0.8221,
+  "note": "honest cross-vendor detection number on a scanner brand never seen in training; verified locally"
+}

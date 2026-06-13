@@ -56,3 +56,7 @@ feedparser>=6.0.0
 
 # Required by src/app/llm_refine.py (Groq LLM rationale rewriting — optional)
 requests>=2.31.0
+
+# Real-time polyp detector for Live Video Mode (src/app/video_pipeline.py).
+# Without it the video pipeline fail-opens to the older GradCAM method.
+ultralytics>=8.3.0

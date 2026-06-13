@@ -45,6 +45,9 @@ A focused pass to make every output **real, not fake**, and to fix the dangerous
 - **Validated risk tools** — a literature-based relative-risk model **+ the APCS clinically-validated screening score** (every coefficient cited; none invented).
 - **Per-site calibration tool** — a hospital can re-tune the confidence to its own data.
 
+**Real-time video detection (new)**
+- A dedicated **YOLO polyp detector** now powers **Live Video Mode** — it draws boxes on a colonoscopy video / webcam feed frame-by-frame and tracks each polyp. Trained for **₹0** on free Kaggle GPU, using the polyp images we already had. Honest score on a **held-out scanner brand** (ETIS / Pentax, never seen in training): **mAP50 0.88 · sensitivity 82 % · precision 79 %** — far above the old heat-map localisation. Runs real-time on Apple Silicon. *(This is frame-by-frame detection; true temporal/video-dataset validation is a later step.)*
+
 **Honest cross-vendor truth**
 - Found & fixed a **data leak**: the "Pentax" test scope (ETIS) was accidentally in training, inflating the cross-vendor number. Measured honestly, cross-vendor segmentation is **~0.45 IoU** (not the previously claimed 0.61). Adding multi-centre **PolypGen** barely moved it — the real fix is a better image backbone (future work). We report the honest number.
 
@@ -201,6 +204,7 @@ Every capability, graded by **how trustworthy its evidence is** — **A** = trul
 | Capability | Evidence | Number | Honest read |
 | :-- | :--: | :--: | :-- |
 | Polyp localization (cross-vendor) | **A** | IoU 0.45 (95% CI 0.42–0.49) | Honest different-scanner number, computed fresh on a held-out Pentax scope |
+| Polyp **detection** (real-time video) | **A** | mAP50 0.88 · sensitivity 0.82 | YOLO detector on held-out ETIS (Pentax) — catches 82% of polyps on an unseen scanner |
 | Out-of-scope gate | **A** | AUROC 0.996 | Catches ~99% of non-colon images and refuses to score them |
 | View-quality gate | **A** | AUROC 0.985 | Flags ~96% of poorly-prepped views |
 | 5-class finding | **B** | macro-F1 0.835 | ~94% accurate on its own split — not yet proven on outside hospitals |
