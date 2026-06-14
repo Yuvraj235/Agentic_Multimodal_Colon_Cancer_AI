@@ -760,6 +760,114 @@ div.stButton > button[kind="primary"]:hover {
 
 /* ── Slider ── */
 [data-baseweb="slider"] [role="slider"] { background: #1A73E8 !important; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   BOLD THEME v2 — elevated, cohesive redesign (cascades over the base above)
+   Design tokens + vivid palette + glassmorphism + animated accents.
+   ════════════════════════════════════════════════════════════════════════ */
+:root {
+  --c-primary:   #1554F0;   --c-primary-2: #0EA5C9;   --c-accent: #7C3AED;
+  --c-teal:      #00A88E;   --c-ink: #0B1530;         --c-muted: #5A6B86;
+  --grad-brand:  linear-gradient(120deg, #1554F0 0%, #0EA5C9 55%, #00A88E 100%);
+  --grad-accent: linear-gradient(120deg, #6D28D9 0%, #1554F0 100%);
+  --shadow-sm:   0 1px 2px rgba(11,21,48,.06), 0 6px 18px -10px rgba(11,21,48,.18);
+  --shadow-md:   0 2px 6px rgba(11,21,48,.07), 0 22px 48px -22px rgba(21,84,240,.30);
+  --radius:      18px;
+  --tr:          .22s cubic-bezier(.4,0,.2,1);
+}
+
+/* Animated, richer page backdrop */
+@keyframes bgFloat { 0%,100%{background-position:0% 0%,100% 0%,0 0} 50%{background-position:6% 4%,94% 6%,0 0} }
+.main, [data-testid="stAppViewContainer"] {
+  background:
+    radial-gradient(1200px 680px at -5% -12%, rgba(21,84,240,.10), transparent 60%),
+    radial-gradient(1000px 560px at 105% -8%, rgba(0,168,142,.10), transparent 60%),
+    linear-gradient(180deg, #F4F8FF 0%, #FBFDFF 60%, #FFFFFF 100%) !important;
+  background-attachment: fixed;
+  animation: bgFloat 26s ease-in-out infinite;
+}
+
+/* Bolder hero with shimmer + floating orb */
+.hero-banner {
+  background:
+    radial-gradient(520px 200px at 88% -30%, rgba(255,255,255,.25), transparent 70%),
+    var(--grad-brand) !important;
+  border-radius: 22px !important;
+  padding: 34px 40px !important;
+  box-shadow: 0 18px 50px -18px rgba(21,84,240,.55), 0 6px 20px rgba(0,168,142,.18) !important;
+}
+.hero-banner::after {
+  content:""; position:absolute; top:-60px; right:-40px; width:220px; height:220px;
+  background: radial-gradient(circle, rgba(255,255,255,.22), transparent 65%);
+  border-radius:50%; animation: bgFloat 14s ease-in-out infinite; pointer-events:none;
+}
+.hero-banner h1 { font-size: 2.15rem !important; letter-spacing:-.8px !important; }
+.hero-badge { background: rgba(255,255,255,.16) !important; transition: var(--tr); }
+.hero-badge:hover { background: rgba(255,255,255,.30) !important; transform: translateY(-1px); }
+
+/* Sidebar nav — gradient pills with hover-slide + active glow */
+[data-testid="stSidebar"] { backdrop-filter: blur(6px); }
+[data-testid="stSidebar"] .stButton button {
+  border-radius: 12px !important; border: 1px solid rgba(21,84,240,.14) !important;
+  font-weight: 700 !important; transition: var(--tr) !important;
+  position: relative; overflow: hidden;
+}
+[data-testid="stSidebar"] .stButton button:hover {
+  background: var(--grad-brand) !important; color: #fff !important;
+  border-color: transparent !important; transform: translateX(4px);
+  box-shadow: 0 10px 22px -10px rgba(21,84,240,.6) !important;
+}
+[data-testid="stSidebar"] .stButton button[kind="primary"] {
+  background: var(--grad-brand) !important; color:#fff !important; border:none !important;
+  box-shadow: 0 10px 24px -10px rgba(21,84,240,.6) !important;
+}
+
+/* Primary action buttons — gradient, lift on hover */
+.stButton > button[kind="primary"], [data-testid="stBaseButton-primary"] {
+  background: var(--grad-brand) !important; border: none !important; color:#fff !important;
+  border-radius: 12px !important; font-weight: 800 !important; letter-spacing:.2px;
+  box-shadow: 0 12px 26px -12px rgba(21,84,240,.65) !important; transition: var(--tr) !important;
+}
+.stButton > button[kind="primary"]:hover, [data-testid="stBaseButton-primary"]:hover {
+  transform: translateY(-2px); filter: saturate(1.1) brightness(1.03);
+  box-shadow: 0 18px 36px -14px rgba(21,84,240,.7) !important;
+}
+.stButton > button:not([kind="primary"]) { border-radius: 12px !important; transition: var(--tr) !important; }
+
+/* Glassy elevated cards */
+.metric-card, .doctor-card {
+  background: rgba(255,255,255,.82) !important; backdrop-filter: blur(10px);
+  border-radius: var(--radius) !important; box-shadow: var(--shadow-sm) !important;
+}
+.metric-card { border-left: 4px solid transparent !important;
+  border-image: var(--grad-brand) 1; }
+.metric-card:hover, .doctor-card:hover { box-shadow: var(--shadow-md) !important; transform: translateY(-3px); }
+
+/* Section header — gradient accent bar + tighter ink */
+.section-header { color: var(--c-ink) !important; font-size: 1.22rem !important; }
+.section-header::before { width:5px !important; height:20px !important;
+  background: var(--grad-brand) !important; box-shadow: 0 2px 8px -2px rgba(21,84,240,.5); }
+
+/* Inputs — soft focus glow */
+[data-baseweb="input"] input, [data-baseweb="select"] > div, [data-baseweb="textarea"] textarea {
+  border-radius: 11px !important; transition: var(--tr) !important;
+}
+[data-baseweb="input"]:focus-within, [data-baseweb="select"] > div:focus-within {
+  box-shadow: 0 0 0 3px rgba(21,84,240,.18) !important;
+}
+
+/* Tabs — pill underline */
+[data-baseweb="tab-list"] { gap: 4px; }
+[data-baseweb="tab"] { border-radius: 10px 10px 0 0 !important; transition: var(--tr); }
+[aria-selected="true"][data-baseweb="tab"] { background: rgba(21,84,240,.07) !important; }
+
+/* Expanders — soft card look */
+[data-testid="stExpander"] { border-radius: 14px !important; overflow:hidden;
+  border: 1px solid rgba(11,21,48,.07) !important; box-shadow: var(--shadow-sm); }
+
+/* Gentle fade-in for page content */
+@keyframes riseIn { from{opacity:0; transform: translateY(8px)} to{opacity:1; transform:none} }
+.block-container > div { animation: riseIn .4s ease both; }
 </style>
 """
 
