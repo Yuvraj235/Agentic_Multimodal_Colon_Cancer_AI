@@ -8647,6 +8647,33 @@ def page_latest_research():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+def _clinician_gate() -> bool:
+    """Password gate for the clinician/admin area ('staff-room door').
+
+    Locked when the COLONAI_CLINICIAN_PASSWORD env var / HF Space secret is set;
+    unset = open (with a visible warning) so local dev + a fresh clone still work.
+    The password is never hard-coded; comparison is constant-time.
+    """
+    import os, hmac
+    pw = os.environ.get("COLONAI_CLINICIAN_PASSWORD", "")
+    if not pw:
+        st.warning("🔓 Clinician area is **unlocked** — no staff password is configured. "
+                   "Set the `COLONAI_CLINICIAN_PASSWORD` secret to restrict it to staff.")
+        return True
+    if st.session_state.get("clinician_authed"):
+        return True
+    st.markdown("### 🔒 Clinician / admin access")
+    st.caption("This area is for clinical staff. Please enter the staff password.")
+    entered = st.text_input("Staff password", type="password", key="clinician_pw")
+    if st.button("Unlock", key="clinician_unlock", type="primary"):
+        if hmac.compare_digest(entered or "", pw):
+            st.session_state["clinician_authed"] = True
+            st.rerun()
+        else:
+            st.error("Incorrect password.")
+    return False
+
+
 def page_recalibration():
     """Clinician/admin tool — re-fit confidence calibration on a hospital's own
     labelled images so confidence is honest for THAT site (handover P-4).
@@ -8662,6 +8689,10 @@ def page_recalibration():
     if st.button("← Back", key="recal_back"):
         st.session_state["show_recalibration"] = False
         st.rerun()
+
+    # ── Staff-room door: gate the clinician/admin tool behind a password ──
+    if not _clinician_gate():
+        return
 
     st.markdown(
         "ColonAI's confidence was calibrated on public research data. Real sites differ "
