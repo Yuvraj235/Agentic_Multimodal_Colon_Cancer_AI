@@ -2467,6 +2467,9 @@ def render_sidebar_progress():
                               type=("primary" if i == step else "secondary"),
                               help=f"Jump to: {label}"):
             st.session_state["step"] = i
+            # Leave any open clinician/admin overlay when navigating via the
+            # main wizard nav (otherwise the recalibration page 'sticks').
+            st.session_state["show_recalibration"] = False
             st.rerun()
 
     st.sidebar.markdown("---")
