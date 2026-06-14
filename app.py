@@ -4226,6 +4226,63 @@ def page_results():
         st.caption("AJCC Cancer Staging Manual, 8th edition. The clinician supplies T/N/M from "
                    "real pathology and imaging; ColonAI only applies the rulebook (it does not "
                    "infer depth or spread from the image).")
+        st.markdown("---")
+        st.selectbox("Anatomical location of the lesion (clinician-entered)",
+                     ["(not specified)", "Cecum", "Ascending colon", "Hepatic flexure",
+                      "Transverse colon", "Splenic flexure", "Descending colon",
+                      "Sigmoid colon", "Rectum"], key="stg_location",
+                     help="Precise location needs the scope position — it cannot be read from "
+                          "the image, so it is clinician-entered.")
+        st.checkbox("The T/N/M above are this patient's REAL biopsy / scan findings "
+                    "(tick to use them for the structured stage below)", key="stg_confirm")
+
+    # ── Structured summary (for clinicians) — honest 5-point extraction ──────
+    # Size / Number / Location / Stage / Treatment, each tagged by source
+    # (measured / estimated / doctor-entered / computed / guideline). Nothing
+    # fabricated; the safety guardrail drives "Requires human review".
+    try:
+        from src.app.structured_report import build_structured_report
+        from src.app.security import escape_html as _esc
+        _locv = st.session_state.get("stg_location")
+        _di = {"location": None if (not _locv or _locv.startswith("(")) else _locv}
+        if st.session_state.get("stg_confirm"):
+            _di.update(T=st.session_state.get("stg_t"), N=st.session_state.get("stg_n"),
+                       M=st.session_state.get("stg_m"))
+        _sr = build_structured_report(analysis, _di)
+        _SRC_COLOR = {"measured": "#16A34A", "estimated": "#D97706",
+                      "doctor-entered": "#2563EB", "computed": "#4F46E5",
+                      "guideline": "#0891B2", "unavailable": "#6B7280"}
+        _LABELS = {"number": "Number", "size": "Size", "location": "Location",
+                   "stage": "Stage", "treatment": "Treatment / next step"}
+        st.markdown('<div class="section-header">Structured summary (for clinicians)</div>',
+                    unsafe_allow_html=True)
+        if _sr["requires_human_review"]:
+            st.markdown(
+                f'<div class="warn-box" style="margin-bottom:8px"><b>⚠️ Requires human review</b>'
+                f' — {_esc(_sr.get("review_reason", "")) }</div>', unsafe_allow_html=True)
+        _rows = ""
+        for _k in ["number", "size", "location", "stage", "treatment"]:
+            _f = _sr["fields"][_k]
+            _val = "—" if _f["value"] is None else _esc(str(_f["value"]))
+            if _f.get("detail"):
+                _val += f" <span style='color:#64748B'>({_esc(str(_f['detail']))})</span>"
+            _col = _SRC_COLOR.get(_f["source"], "#6B7280")
+            _cav = (f"<div style='font-size:.76rem;color:#94A3B8;margin-top:2px'>"
+                    f"{_esc(_f['caveat'])}</div>" if _f.get("caveat") else "")
+            _rows += (
+                "<div style='display:flex;gap:10px;align-items:flex-start;padding:8px 0;"
+                "border-bottom:1px solid #EEF2F7'>"
+                f"<div style='min-width:130px;font-weight:700;color:#334155'>{_LABELS[_k]}</div>"
+                f"<div style='flex:1'>{_val}{_cav}</div>"
+                "<div style='font-size:.66rem;font-weight:800;text-transform:uppercase;"
+                f"letter-spacing:.4px;color:#fff;background:{_col};padding:2px 8px;"
+                f"border-radius:10px;white-space:nowrap'>{_f['source']}</div></div>")
+        st.markdown(
+            f"<div style='background:#fff;border:1px solid #E2E8F0;border-radius:12px;"
+            f"padding:6px 16px'>{_rows}</div>", unsafe_allow_html=True)
+        st.caption(_sr.get("disclaimer", ""))
+    except Exception as _sr_exc:
+        st.caption(f"(structured summary unavailable: {type(_sr_exc).__name__})")
 
     # ── Hierarchical-UC hedge banner (only fires when needed) ─────────
     sp = analysis.get("smart_prediction") or {}

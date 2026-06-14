@@ -214,6 +214,15 @@ async def version():
             "min_endoscopy_score": 0.55,
         },
         "auth_enabled":   bool(os.environ.get(COLONAI_API_KEY_ENV)),
+        "structured_report": {
+            "fields": ["size", "number", "location", "stage", "treatment"],
+            "each_field": {"value": "...", "source": "measured|estimated|"
+                           "doctor-entered|computed|guideline|unavailable",
+                           "detail": "...", "caveat": "..."},
+            "also": ["requires_human_review", "review_reason", "safety_action"],
+            "note": "doctor TNM/location via ?t=T3&n=N1&m=M0&location=...; "
+                    "image-derived fields are filled by the full app, not this REST endpoint",
+        },
     }
 
 
@@ -250,6 +259,26 @@ async def predict(
         result["request_id"] = rid
     except Exception as e:
         return JSONResponse(safe_error(e, rid), status_code=500)
+
+    # 3b) Structured clinician summary (5-point: size/number/location/stage/treatment).
+    # Honest schema for a doctor's dashboard. This REST backend is lightweight
+    # (classifier + safety only), so image-derived fields (size/number) are
+    # 'unavailable' here; doctor TNM/location may be passed as query params
+    # (?t=T3&n=N1&m=M0&location=sigmoid). The full app fills the image-derived fields.
+    try:
+        from src.app.structured_report import build_structured_report
+        qp = request.query_params
+        analysis_min = {
+            "pathology_class": result.get("prediction", {}).get("class", "unknown"),
+            "confidence":      result.get("prediction", {}).get("confidence", 0.0),
+            "uncertainty":     result.get("prediction", {}).get("uncertainty", 0.0),
+            "safety_verdict":  verdict.to_dict(),
+        }
+        result["structured"] = build_structured_report(analysis_min, {
+            "location": qp.get("location"), "T": qp.get("t"),
+            "N": qp.get("n"), "M": qp.get("m")})
+    except Exception as e:
+        result["structured_error"] = f"{type(e).__name__}: {e}"
 
     # 4) Audit log (best-effort)
     try:

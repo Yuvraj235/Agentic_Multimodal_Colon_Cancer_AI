@@ -89,8 +89,17 @@ class SafetyVerdict:
     confidence:  float = 0.0
     uncertainty: float = 0.0
 
+    @property
+    def requires_human_review(self) -> bool:
+        """True whenever we are NOT confidently showing a result — i.e. abstain
+        or reject. The dashboard shows 'Suspicious / Requires human review'
+        instead of a (possibly false) Clear/Negative."""
+        return self.action != "show"
+
     def to_dict(self) -> Dict:
-        return asdict(self)
+        d = asdict(self)
+        d["requires_human_review"] = self.requires_human_review
+        return d
 
 
 _DISCLAIMER_BASE = (
@@ -390,6 +399,22 @@ if __name__ == "__main__":
     for name, args in cases:
         v = evaluate_safety(**args)
         print(f"  {name:35s} → {v.action:7s}  ({v.reason})")
+
+    # ── Regression: sensitivity-first guardrail must NEVER show a result below
+    #    threshold (a false "Clear/Negative" is the dangerous failure mode) ──
+    print("\n─ Guardrail regression (never show below threshold) ─")
+    _good = dict(endoscopy_score=0.9, gradcam_focus=0.4, agent_agreement=1.0)
+    for conf in (0.0, 0.30, 0.50, 0.74):
+        v = evaluate_safety(confidence=conf, uncertainty=0.10, **_good)
+        assert v.action != "show", f"FAIL: confidence {conf} returned 'show'"
+        assert v.requires_human_review is True
+    for unc in (0.31, 0.50, 0.90):
+        v = evaluate_safety(confidence=0.95, uncertainty=unc, **_good)
+        assert v.action != "show", f"FAIL: uncertainty {unc} returned 'show'"
+    # a clean high-confidence case still shows
+    v_ok = evaluate_safety(confidence=0.92, uncertainty=0.05, **_good)
+    assert v_ok.action == "show" and v_ok.requires_human_review is False
+    print("  ✓ below-confidence / high-uncertainty inputs all abstain (never 'show')")
 
     print("\n─ Live debouncer self-test ─")
     dbn = LivePolypDebouncer(min_frames=3)
