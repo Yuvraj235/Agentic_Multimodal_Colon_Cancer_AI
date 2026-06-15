@@ -21,7 +21,8 @@ import argparse, glob, json, time
 from pathlib import Path
 import numpy as np
 
-TUMOR_LABELS = {2}          # confirm from INSPECT (2 = cancerous rectum; 1 ≈ normal)
+TUMOR_LABELS = None         # None = any non-zero label is tumour (CARE released masks
+                            # are binary 0/1). Override for multi-class via --tumor-labels.
 
 
 def _find_npz(root: Path):
@@ -45,7 +46,10 @@ def _img_to_uint8_3ch(img):
 
 
 def _mask_tumor(label):
-    return np.isin(np.asarray(label), list(TUMOR_LABELS)).astype("float32")
+    lab = np.asarray(label)
+    if TUMOR_LABELS is None:          # binary masks: 0 = bg, non-zero = tumour
+        return (lab > 0).astype("float32")
+    return np.isin(lab, list(TUMOR_LABELS)).astype("float32")
 
 
 def inspect(root: Path):
@@ -63,7 +67,7 @@ def inspect(root: Path):
     if "image" in z.files:
         im = z["image"]; print(f"    image: shape={im.shape} dtype={im.dtype} range=[{float(im.min()):.1f},{float(im.max()):.1f}]")
     if "label" in z.files:
-        lb = z["label"]; print(f"    label: shape={lb.shape} unique={sorted(np.unique(lb).tolist())[:8]}  → TUMOR_LABELS={TUMOR_LABELS}")
+        lb = z["label"]; print(f"    label: shape={lb.shape} unique={sorted(np.unique(lb).tolist())[:8]}  → tumour={'any non-zero' if TUMOR_LABELS is None else TUMOR_LABELS}")
     return tr, te
 
 
@@ -75,10 +79,16 @@ def main():
     ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--imgsz", type=int, default=384)
     ap.add_argument("--out", default="/content/drive/MyDrive/CARE/care_ct_seg.pt")
+    ap.add_argument("--tumor-labels", default="",
+                    help="comma-separated label values that are tumour; empty = any non-zero")
     ap.add_argument("--inspect-only", action="store_true")
     ap.add_argument("--resume", action="store_true")
     args = ap.parse_args()
     root = Path(args.root)
+
+    global TUMOR_LABELS
+    if args.tumor_labels.strip():
+        TUMOR_LABELS = {float(x) for x in args.tumor_labels.split(",")}
 
     tr_files, te_files = inspect(root)
     if args.inspect_only:
