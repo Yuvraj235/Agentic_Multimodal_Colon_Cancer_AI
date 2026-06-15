@@ -3,24 +3,26 @@
 The RC4 dataset has no public download — access is "on reasonable request to the
 authors." This is the request to send them. **Two placeholders to fill in first.**
 
-## Step 1 — find the corresponding author + email
-Open the paper (your library, ResearchGate, or the authors' institutional page —
-ScienceDirect blocks automated access, so I couldn't fetch it):
+## Step 1 — who to send it to (+ how to get the address)
+**Authors** (Expert Systems with Applications, Elsevier, 2024 · id `S0957417424016014`):
+**Yu Qiu, Haotian Lu, Jie Mei, Sixu Bao, Jing Xu.**
+Corresponding author is most likely **Yu Qiu** (lead + funding) or **Jing Xu**
+(supervision / project administration).
 
-- **Title:** *Towards semi-supervised multi-modal rectal cancer segmentation: a
-  large-scale dataset and a multi-teacher uncertainty-aware network*
-- **Journal:** Expert Systems with Applications (Elsevier), 2024
-- **DOI / id:** S0957417424016014
-
-On the paper's first page look for the **"Corresponding author"** (has the ✉ email),
-and the **"Data availability"** statement (it names the contact + any terms). Put
-those into the `[...]` slots below.
+Two easy ways to reach them (I couldn't fetch the email — ScienceDirect is paywalled,
+and no address is exposed online; do NOT guess one):
+1. **ResearchGate (no email needed, easiest):** search the paper title or "Yu Qiu
+   rectal cancer segmentation," open an author profile, click **Message**, paste the
+   note below.
+2. **The paper's first page** (via a library / the authors' university page): the
+   corresponding author has a ✉ email, and the **"Data availability"** statement names
+   the exact contact + any terms. Use that address.
 
 ## Step 2 — email to send
 
 > **Subject:** Request for access to the RC4 rectal-cancer MRI dataset (research use)
 >
-> Dear Dr. **[Corresponding Author surname]**,
+> Dear Dr. **Qiu** (or Dr. **Xu**),
 >
 > I read your paper *"Towards semi-supervised multi-modal rectal cancer
 > segmentation: a large-scale dataset and a multi-teacher uncertainty-aware
