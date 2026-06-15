@@ -27,9 +27,14 @@ The inspect step prints the folder tree, file types, **mask label values**, and 
 many image/mask pairs it auto-detected.
 
 ## Step 3 — adjust if needed, then train
-- If it found pairs and the mask values look like `[0,1,2]` (0 bg, 1 normal rectum,
-  2 tumour), open `train_care_ct_colab.py` and set **`TUMOR_LABELS = {2}`** (segment
-  the tumour only). If pairs = 0, fix `IMG_HINTS` / `MASK_HINTS` from the printout.
+CARE ships as **`.npz` files** (`train/train_npz/*.npz`, `test/test_npz/*.npz`; each
+npz holds `image` + `label`). The script already knows this format and uses CARE's
+**own train/test split** as the honest held-out.
+- The inspect step prints the label values (expect `[0, 1, 2]`). The tumour is
+  **label 2** (1 ≈ normal rectum) and is the **pre-set default** (`TUMOR_LABELS = {2}`).
+  Only change it if the printout shows the tumour is a different value.
+- If `test_npz files: 0`, the data unzipped somewhere else — fix `--root` to the folder
+  that contains `train/` and `test/`.
 - Then train (saves to Drive, resumable):
 ```python
 !python train_care_ct_colab.py --root "/content/drive/MyDrive/CARE" \
