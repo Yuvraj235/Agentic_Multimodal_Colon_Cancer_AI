@@ -158,14 +158,16 @@ def main():
         if iou > best:
             best = iou
             torch.save({"state_dict": model.state_dict(), "encoder": args.encoder,
-                        "iou": best, "imgsz": args.imgsz, "tumor_labels": list(TUMOR_LABELS)}, args.out)
+                        "iou": best, "imgsz": args.imgsz,
+                        "tumor_labels": (sorted(TUMOR_LABELS) if TUMOR_LABELS is not None else "non-zero")}, args.out)
 
     model.load_state_dict(torch.load(args.out, map_location=dev)["state_dict"])
     ei, ed = ev(); im_, ilo, ihi = ci(ei); dm_, dlo, dhi = ci(ed)
     rep = {"dataset": "CARE rectal CT (official held-out test split)", "encoder": args.encoder,
            "n": int(ei.size), "mean_iou": round(im_,4), "iou_95ci": [round(ilo,4), round(ihi,4)],
            "mean_dice": round(dm_,4), "sens_at_iou0.5": round(float((ei>=0.5).mean()),4),
-           "tumor_labels": list(TUMOR_LABELS), "elapsed_min": round((time.time()-t0)/60,1)}
+           "tumor_labels": (sorted(TUMOR_LABELS) if TUMOR_LABELS is not None else "non-zero"),
+           "elapsed_min": round((time.time()-t0)/60,1)}
     Path(str(args.out).replace(".pt","_metrics.json")).write_text(json.dumps(rep, indent=2))
     print(f"\n=== CARE held-out test: IoU={rep['mean_iou']} 95%CI{rep['iou_95ci']} "
           f"Dice={rep['mean_dice']} sens@0.5={rep['sens_at_iou0.5']} (n={rep['n']}) ===\nSaved → {args.out}")
