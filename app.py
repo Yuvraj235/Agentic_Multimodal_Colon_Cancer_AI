@@ -1344,6 +1344,61 @@ def overlay_seg(original_np: np.ndarray, mask: np.ndarray,
         return original_np
 
 
+def _build_ct_result(ct: dict, img_np, gate: dict) -> dict:
+    """Assemble a results dict for the CT rectal-tumour segmentation specialist.
+
+    This is a SEPARATE modality path. We keep pathology_class = NOT_ENDOSCOPY
+    (so every colonoscopy-specific downstream stays off — no fake polyp/UC
+    claims) and carry the honest CT segmentation in `ct_segmentation`. The
+    results page renders a dedicated CT card. requires_human_review is always
+    True. Nothing here touches the colonoscopy pipeline.
+    """
+    area_pct = float(ct.get("tumor_area_frac", 0.0)) * 100.0
+    m = ct.get("metrics", {}) or {}
+    iou = m.get("mean_iou")
+    iou_txt = f"{iou:.2f}" if isinstance(iou, (int, float)) else "n/a"
+    if ct.get("tumor_present_hint"):
+        headline = "candidate tumour region outlined"
+        primary = ("A candidate tumour region was segmented on this CT slice. "
+                   "A radiologist must confirm — this tool cannot diagnose cancer.")
+    else:
+        headline = "no clear tumour region segmented"
+        primary = ("No region passed the tumour threshold on this slice. Absence "
+                   "is NOT exclusion of disease — a radiologist must confirm.")
+    return {
+        "pathology_class":   "NOT_ENDOSCOPY",   # not a colonoscopy class
+        "ct_analysis":       True,
+        "ct_segmentation":   ct,
+        "input_rejected":    True,              # colonoscopy classifier correctly NOT run
+        "rejection_reasons": gate.get("reasons", []),
+        "rejection_score":   float(gate.get("score", 0.0)),
+        "confidence":        0.0,
+        "uncertainty":       1.0,
+        "original_image":    img_np,
+        "gradcam_overlay":   None,
+        "gradcam_heatmap":   None,
+        "requires_human_review": True,
+        "recommendation": {
+            "urgency":         "Radiologist review required",
+            "primary_action":  primary,
+            "surveillance": [], "referrals": [], "investigations": [], "lifestyle_advice": [],
+            "full_report":
+                f"CT RECTAL-TUMOUR SEGMENTATION (experimental specialist) — {headline}. "
+                f"Segmented area ≈ {area_pct:.1f}% of the slice; mean probability "
+                f"{float(ct.get('mean_prob', 0.0)):.2f}. Model: CARE U-Net (resnet34), "
+                f"held-out IoU {iou_txt} on the CARE official test split. Decision-support "
+                f"only — it assumes a rectal/pelvic CT slice, is a SEGMENTER (not a cancer "
+                f"detector), and a radiologist must confirm every finding.",
+        },
+        "_provenance": {
+            "source": "ct_specialist",
+            "model": "CARE U-Net (resnet34) — CT rectal-tumour segmentation",
+            "held_out_iou": iou,
+            "modality": "radiology_grayscale_CT",
+        },
+    }
+
+
 def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
                  symptoms: List[str], symptom_text: str,
                  pain_scale: int = 0,
@@ -1368,6 +1423,21 @@ def run_analysis(system: dict, pil_img: Image.Image, patient: dict,
         from src.app.image_atypicality import is_endoscopy_image
         gate = is_endoscopy_image(img_np, threshold=0.55)
         if not gate["is_endoscopy"]:
+            # ── CT rectal-tumour specialist (SEPARATE modality path) ────────
+            # A radiology scan is no use to the colonoscopy classifier, but if
+            # it's a rectal/pelvic CT slice the CARE U-Net can outline the
+            # tumour. Fully fail-open: if the model/deps are missing, segment_ct
+            # returns None and we fall straight through to the normal rejection.
+            if gate.get("modality") == "radiology_grayscale":
+                try:
+                    from src.app.care_ct_seg import segment_ct, ct_segmenter_available
+                    if ct_segmenter_available():
+                        ct = segment_ct(img_np)
+                        if ct is not None:
+                            return _build_ct_result(ct, img_np, gate)
+                except Exception as exc:
+                    import logging
+                    logging.warning(f"CT specialist path failed: {type(exc).__name__}: {exc}")
             return {
                 "pathology_class":  "NOT_ENDOSCOPY",
                 "pathology_probs":  {},
@@ -4092,6 +4162,109 @@ def _render_risk_only_report(analysis: dict, patient: dict):
             st.rerun()
 
 
+def _render_ct_segmentation_report(analysis: dict, patient: dict):
+    """Dedicated card for the CT rectal-tumour segmentation specialist (CARE).
+
+    This is a SEPARATE modality path from the colonoscopy classifier. It is
+    honest by construction: a segmenter (not a cancer detector), in-distribution
+    to CARE only, always requiring radiologist review. No fabricated stage/risk.
+    """
+    from src.app.security import escape_html as _esc
+    ct = analysis.get("ct_segmentation", {}) or {}
+    m = ct.get("metrics", {}) or {}
+    iou = m.get("mean_iou")
+    dice = m.get("mean_dice")
+    sens = m.get("sens_at_iou0.5")
+    area_pct = float(ct.get("tumor_area_frac", 0.0)) * 100.0
+    present = bool(ct.get("tumor_present_hint"))
+
+    render_hero(
+        "CT Rectal-Tumour Segmentation",
+        f"Experimental imaging specialist · {_esc(patient.get('name','Patient'))} · "
+        f"{datetime.now().strftime('%d %b %Y, %H:%M')}",
+        badges=["Separate CT path — not the colonoscopy model",
+                "Decision-support only", "Radiologist must confirm"],
+    )
+
+    # Always-on review banner (sensitivity-first; this never returns "clear")
+    st.markdown(
+        f"""<div style="background:linear-gradient(135deg,#EEF2FF 0%,#FEF3C7 100%);
+             border:2px solid #4338CA;border-radius:14px;padding:16px 22px;margin:14px 0;
+             box-shadow:0 6px 18px rgba(67,56,202,0.15);">
+          <div style="font-size:20px;font-weight:800;color:#3730A3;margin-bottom:4px;">
+            🩻 Requires radiologist review
+          </div>
+          <div style="color:#3730A3;font-size:14px;line-height:1.55;">
+            This tool <strong>segments</strong> the most tumour-like region on a rectal/pelvic
+            CT slice — it is <strong>not a cancer detector</strong> and cannot tell you whether a
+            scan contains cancer. {"A candidate tumour region was outlined below." if present else
+            "No region passed the tumour threshold on this slice — <strong>absence is not exclusion</strong>."}
+          </div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
+
+    # Original slice + overlay, side by side
+    col1, col2 = st.columns(2)
+    orig = analysis.get("original_image")
+    overlay = ct.get("overlay")
+    with col1:
+        st.markdown("**Uploaded CT slice**")
+        if orig is not None:
+            st.image(orig, use_container_width=True, clamp=True)
+    with col2:
+        st.markdown("**Segmentation overlay** (red = candidate tumour)")
+        if overlay is not None:
+            st.image(overlay, use_container_width=True, clamp=True)
+
+    # Quantitative readout (measured, honestly labelled)
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.metric("Segmented area", f"{area_pct:.1f}%", help="Fraction of the slice "
+                  "flagged as tumour-like. A measurement, not a diagnosis.")
+    with c2:
+        st.metric("Mean probability", f"{float(ct.get('mean_prob',0.0)):.2f}",
+                  help="Average model confidence inside the flagged region.")
+    with c3:
+        st.metric("Held-out IoU (CARE)", f"{iou:.2f}" if isinstance(iou,(int,float)) else "n/a",
+                  help="Accuracy of this model on the CARE official held-out test split.")
+
+    # Honest caveats
+    st.markdown("#### Important caveats")
+    for cav in ct.get("caveats", []):
+        st.markdown(f"- {_esc(cav)}")
+
+    # Provenance / metrics
+    iou_txt = f"{iou:.4f}" if isinstance(iou, (int, float)) else "n/a"
+    dice_txt = f"{dice:.4f}" if isinstance(dice, (int, float)) else "n/a"
+    sens_txt = f"{sens:.3f}" if isinstance(sens, (int, float)) else "n/a"
+    with st.expander("Model & validation details"):
+        st.markdown(
+            f"""
+            - **Model:** CARE U-Net (resnet34 encoder), CT rectal-tumour segmentation
+            - **Held-out (CARE official test split, patient-disjoint, n={m.get('n','?')}):**
+              IoU **{iou_txt}** (95% CI {m.get('iou_95ci', ['?','?'])[0]}–{m.get('iou_95ci', ['?','?'])[1]}),
+              Dice **{dice_txt}**, sensitivity@0.5 **{sens_txt}**
+            - **Scope:** in-distribution to the CARE cohort only — **not** externally validated
+              on other scanners/centres. CC BY-NC 4.0 (research / non-commercial).
+            - **Not** part of the colonoscopy pipeline; it does not affect any polyp/UC/Barrett's result.
+            """
+        )
+    st.caption("Decision-support only. A radiologist must confirm every finding. "
+               "This is not a diagnosis and not a substitute for clinical evaluation.")
+
+    st.markdown("---")
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("⬅ Upload a different image", use_container_width=True, type="primary"):
+            st.session_state["step"] = 1
+            st.rerun()
+    with c2:
+        if st.button("← Start over", use_container_width=True):
+            st.session_state["step"] = 0
+            st.rerun()
+
+
 def page_results():
     analysis = st.session_state.get("analysis")
     if not analysis:
@@ -4107,6 +4280,11 @@ def page_results():
 
     # ── HARD STOP: if the uploaded image was not a colonoscopy frame ─────
     if analysis.get("input_rejected") or pclass == "NOT_ENDOSCOPY":
+        # CT rectal-tumour specialist ran on a radiology slice → show its
+        # dedicated card instead of the plain "rejected" screen.
+        if analysis.get("ct_segmentation"):
+            _render_ct_segmentation_report(analysis, patient)
+            return
         score = analysis.get("rejection_score", 0.0) * 100
         reasons = analysis.get("rejection_reasons", []) or [
             "Image did not pass the endoscopy-likeness gate."
