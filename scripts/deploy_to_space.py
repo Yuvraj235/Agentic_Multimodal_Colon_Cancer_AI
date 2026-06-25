@@ -28,8 +28,10 @@ CHECKPOINT = "outputs/unified_multimodal_v2/checkpoints/best_model.pth"   # → 
 SPACE_BAKED_CHECKPOINT = CHECKPOINT                                        # delete from Space
 
 # Code: app entrypoint + README (carries the Space YAML header) + full src/ tree
-# + scripts/ (reproducibility). Build files are identical on the Space → skipped.
-CODE_SINGLES = ["app.py", "README.md"]
+# + scripts/ (reproducibility). requirements.txt IS included because it changed
+# (added segmentation-models-pytorch + albumentations for the CT specialist) —
+# the docker Space rebuilds and pip-installs it on the next commit.
+CODE_SINGLES = ["app.py", "README.md", "requirements.txt"]
 CODE_TREES = ["src", "scripts"]
 
 # Small weights + thresholds the specialists load at runtime (all << 1 GB budget).
@@ -48,6 +50,11 @@ WEIGHTS = [
     "outputs/unified_multimodal_v2/clinical_validation_report.json",
     "outputs/unified_multimodal_v2/clinical_validation_report.md",
     "outputs/unified_multimodal_v2/figures/validation_scorecard.png",
+    # CT rectal-tumour specialist (CARE) — baked into the Space (~93 MB, well
+    # under the 1 GB cap). The loader reads this local path, so no runtime
+    # download is needed; if it were ever absent the CT path just fail-opens.
+    "outputs/unified_multimodal_v2/care_ct_seg.pt",
+    "outputs/unified_multimodal_v2/care_ct_seg_metrics.json",
 ]
 
 
@@ -60,16 +67,22 @@ def _iter_tree(d: Path):
 def main():
     api = HfApi()
     print("auth:", api.whoami().get("name"))
+    skip_ckpt = "--skip-checkpoint" in sys.argv
 
     # ── Part 1: uc-fix checkpoint → MODEL repo (overwrite old) ──────────────
-    ck = ROOT / CHECKPOINT
-    print(f"\n[1/2] Uploading uc-fix checkpoint ({ck.stat().st_size/1e6:.0f} MB) → {MODEL}")
-    print("      (600 MB LFS upload — this is the slow part) …")
-    api.upload_file(
-        path_or_fileobj=str(ck), path_in_repo="best_model.pth",
-        repo_id=MODEL, repo_type="model",
-        commit_message="Promote uc-fix checkpoint (UC-severity recall fix)")
-    print("      ✓ checkpoint live in model repo")
+    # The 600 MB checkpoint is unchanged across most code deploys, so allow
+    # skipping the slow re-upload with --skip-checkpoint.
+    if skip_ckpt:
+        print("\n[1/2] --skip-checkpoint: leaving the model-repo checkpoint untouched.")
+    else:
+        ck = ROOT / CHECKPOINT
+        print(f"\n[1/2] Uploading uc-fix checkpoint ({ck.stat().st_size/1e6:.0f} MB) → {MODEL}")
+        print("      (600 MB LFS upload — this is the slow part) …")
+        api.upload_file(
+            path_or_fileobj=str(ck), path_in_repo="best_model.pth",
+            repo_id=MODEL, repo_type="model",
+            commit_message="Promote uc-fix checkpoint (UC-severity recall fix)")
+        print("      ✓ checkpoint live in model repo")
 
     # ── Part 2: lean Space — delete baked-in checkpoint, add code + heads ────
     ops, total = [CommitOperationDelete(path_in_repo=SPACE_BAKED_CHECKPOINT)], 0
