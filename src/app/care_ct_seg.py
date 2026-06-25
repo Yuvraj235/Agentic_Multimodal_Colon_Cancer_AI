@@ -214,6 +214,11 @@ def segment_ct(image, device: str = "cpu",
         # A *hint* only — never a diagnosis. A meaningful region (≥0.3% of slice).
         present_hint = bool(area_frac >= 0.003)
 
+        # Tight bounding box of the detected region (for a zoom inset). None if empty.
+        ys, xs = np.where(flagged)
+        bbox = (int(ys.min()), int(xs.min()), int(ys.max()) + 1, int(xs.max()) + 1) \
+            if ys.size else None
+
         return {
             "available": True,
             "tumor_area_frac": area_frac,
@@ -222,6 +227,9 @@ def segment_ct(image, device: str = "cpu",
             "max_prob": max_prob,
             "overlay": _overlay(u3, mask_full),
             "mask": mask_full,
+            "prob_map": prob_full,        # full-res probability (for the heatmap)
+            "bbox": bbox,                 # (y0,x0,y1,x1) of the detected region or None
+            "base_rgb": u3,               # the grayscale CT as 3ch (for zoom crops)
             "metrics": metrics() or {"mean_iou": _meta.get("iou")},
             "caveats": list(_CAVEATS),
             "requires_human_review": True,

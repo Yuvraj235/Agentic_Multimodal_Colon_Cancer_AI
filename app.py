@@ -4162,6 +4162,38 @@ def _render_risk_only_report(analysis: dict, patient: dict):
             st.rerun()
 
 
+def _ct_heatmap(base_rgb, prob_map):
+    """Confidence heatmap (TURBO) blended over the grayscale CT — colour appears
+    only where the model is active, fading to the scan elsewhere."""
+    try:
+        import cv2
+        p = np.clip(np.asarray(prob_map, dtype=np.float32), 0.0, 1.0)
+        hm = cv2.applyColorMap((p * 255).astype(np.uint8), cv2.COLORMAP_TURBO)
+        hm = cv2.cvtColor(hm, cv2.COLOR_BGR2RGB)
+        a = (p[..., None] * 0.85).astype(np.float32)
+        return (a * hm + (1 - a) * base_rgb.astype(np.float32)).astype(np.uint8)
+    except Exception:
+        return base_rgb
+
+
+def _ct_zoom(rgb, bbox, pad_frac=0.9, out=256):
+    """Crop around the detected region (with padding) and upscale — so a tiny
+    lesion is actually visible."""
+    try:
+        import cv2
+        H, W = rgb.shape[:2]
+        y0, x0, y1, x1 = bbox
+        py, px = int((y1 - y0) * pad_frac) + 10, int((x1 - x0) * pad_frac) + 10
+        yy0, xx0 = max(0, y0 - py), max(0, x0 - px)
+        yy1, xx1 = min(H, y1 + py), min(W, x1 + px)
+        crop = rgb[yy0:yy1, xx0:xx1]
+        if crop.size == 0:
+            return rgb
+        return cv2.resize(crop, (out, out), interpolation=cv2.INTER_LINEAR)
+    except Exception:
+        return rgb
+
+
 def _render_ct_segmentation_report(analysis: dict, patient: dict):
     """Dedicated card for the CT rectal-tumour segmentation specialist (CARE).
 
@@ -4172,79 +4204,141 @@ def _render_ct_segmentation_report(analysis: dict, patient: dict):
     from src.app.security import escape_html as _esc
     ct = analysis.get("ct_segmentation", {}) or {}
     m = ct.get("metrics", {}) or {}
-    iou = m.get("mean_iou")
-    dice = m.get("mean_dice")
-    sens = m.get("sens_at_iou0.5")
+    iou = m.get("mean_iou"); dice = m.get("mean_dice"); sens = m.get("sens_at_iou0.5")
+    n = m.get("n", "?"); ci = m.get("iou_95ci", [None, None]) or [None, None]
     area_pct = float(ct.get("tumor_area_frac", 0.0)) * 100.0
+    conf_pct = float(ct.get("mean_prob", 0.0)) * 100.0   # avg (not peak) → representative
     present = bool(ct.get("tumor_present_hint"))
+    iou_txt = f"{iou:.2f}" if isinstance(iou, (int, float)) else "n/a"
+    dice_txt = f"{dice:.4f}" if isinstance(dice, (int, float)) else "n/a"
+    sens_txt = f"{sens:.3f}" if isinstance(sens, (int, float)) else "n/a"
+    ci_txt = (f"{ci[0]}–{ci[1]}" if ci[0] is not None else "n/a")
+    when = datetime.now().strftime("%d %b %Y, %H:%M")
 
-    render_hero(
-        "CT Rectal-Tumour Segmentation",
-        f"Experimental imaging specialist · {_esc(patient.get('name','Patient'))} · "
-        f"{datetime.now().strftime('%d %b %Y, %H:%M')}",
-        badges=["Separate CT path — not the colonoscopy model",
-                "Decision-support only", "Radiologist must confirm"],
-    )
-
-    # Always-on review banner (sensitivity-first; this never returns "clear")
+    # ── Clinical-teal hero (distinct identity from the colonoscopy report) ──
     st.markdown(
-        f"""<div style="background:linear-gradient(135deg,#EEF2FF 0%,#FEF3C7 100%);
-             border:2px solid #4338CA;border-radius:14px;padding:16px 22px;margin:14px 0;
-             box-shadow:0 6px 18px rgba(67,56,202,0.15);">
-          <div style="font-size:20px;font-weight:800;color:#3730A3;margin-bottom:4px;">
-            🩻 Requires radiologist review
-          </div>
-          <div style="color:#3730A3;font-size:14px;line-height:1.55;">
-            This tool <strong>segments</strong> the most tumour-like region on a rectal/pelvic
-            CT slice — it is <strong>not a cancer detector</strong> and cannot tell you whether a
-            scan contains cancer. {"A candidate tumour region was outlined below." if present else
-            "No region passed the tumour threshold on this slice — <strong>absence is not exclusion</strong>."}
+        f"""<div style="background:linear-gradient(135deg,#0E7490 0%,#0891B2 45%,#22D3EE 100%);
+             border-radius:18px;padding:26px 30px;margin:6px 0 16px;color:#fff;
+             box-shadow:0 10px 30px rgba(8,145,178,.28);position:relative;overflow:hidden;">
+          <div style="position:absolute;right:6px;top:-18px;font-size:120px;opacity:.13;">🩻</div>
+          <div style="font-size:12.5px;letter-spacing:1.4px;text-transform:uppercase;
+               opacity:.92;font-weight:800;">AI-assisted CT reading</div>
+          <div style="font-size:30px;font-weight:800;margin:2px 0 6px;line-height:1.1;">
+               Rectal-Tumour Segmentation</div>
+          <div style="font-size:13.5px;opacity:.95;">{_esc(patient.get('name','Patient'))}
+               · {when} · separate CT path — does not touch the colonoscopy model</div>
+          <div style="margin-top:13px;display:flex;gap:8px;flex-wrap:wrap;">
+            <span style="background:rgba(255,255,255,.18);padding:5px 13px;border-radius:20px;
+                 font-size:12px;font-weight:700;">Decision-support only</span>
+            <span style="background:rgba(255,255,255,.18);padding:5px 13px;border-radius:20px;
+                 font-size:12px;font-weight:700;">Radiologist must confirm</span>
+            <span style="background:rgba(255,255,255,.18);padding:5px 13px;border-radius:20px;
+                 font-size:12px;font-weight:700;">CARE held-out IoU {iou_txt}</span>
           </div>
         </div>""",
         unsafe_allow_html=True,
     )
 
-    # Original slice + overlay, side by side
-    col1, col2 = st.columns(2)
+    # ── Status banner (region found vs none) — but always "review required" ──
+    if present:
+        bg, bd, tc, icon = "linear-gradient(135deg,#ECFEFF,#CFFAFE)", "#0891B2", "#155E75", "🎯"
+        title = "Candidate tumour region detected"
+        body = ("The model outlined the most tumour-like region (below). This is a "
+                "<strong>localisation aid, not a diagnosis</strong> — a radiologist must confirm.")
+    else:
+        bg, bd, tc, icon = "linear-gradient(135deg,#FFFBEB,#FEF3C7)", "#D97706", "#92400E", "⚠️"
+        title = "No region above the tumour threshold"
+        body = ("Nothing crossed the detection threshold on this slice. "
+                "<strong>Absence is not exclusion</strong> — a radiologist must confirm.")
+    st.markdown(
+        f"""<div style="background:{bg};border:1.5px solid {bd};border-left:6px solid {bd};
+             border-radius:13px;padding:14px 20px;margin:4px 0 16px;">
+          <div style="font-size:17px;font-weight:800;color:{tc};margin-bottom:3px;">{icon} {title}</div>
+          <div style="color:{tc};font-size:13.5px;line-height:1.55;">{body} It is a
+            <strong>segmenter, not a cancer detector</strong> — it assumes the image is a
+            rectal/pelvic CT slice.</div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
+
+    # ── Metric chips (custom, teal) ─────────────────────────────────────
+    def _chip(label, value, sub, color):
+        return (f"<div style='flex:1;min-width:150px;background:#fff;border:1px solid #E2E8F0;"
+                f"border-top:4px solid {color};border-radius:14px;padding:14px 16px;"
+                f"box-shadow:0 4px 14px rgba(15,23,42,.06);'>"
+                f"<div style='font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;"
+                f"color:#64748B;font-weight:800;'>{label}</div>"
+                f"<div style='font-size:26px;font-weight:800;color:{color};line-height:1.1;"
+                f"margin:3px 0;'>{value}</div>"
+                f"<div style='font-size:12px;color:#94A3B8;'>{sub}</div></div>")
+    region_val = f"{area_pct:.1f}%" if present else "None"
+    st.markdown(
+        "<div style='display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;'>"
+        + _chip("Detected region", region_val, "of CT slice (measured)", "#0891B2")
+        + _chip("Segmentation confidence", f"{conf_pct:.0f}%", "avg in detected region", "#0E7490")
+        + _chip("Validation accuracy", iou_txt, f"IoU · CARE held-out (n={n})", "#0D9488")
+        + "</div>",
+        unsafe_allow_html=True,
+    )
+
+    # ── Imagery: original | detection, then zoom + heatmap ──────────────
     orig = analysis.get("original_image")
-    overlay = ct.get("overlay")
-    with col1:
-        st.markdown("**Uploaded CT slice**")
+    overlay = ct.get("overlay"); prob_map = ct.get("prob_map"); base = ct.get("base_rgb")
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("**① Uploaded CT slice**")
         if orig is not None:
             st.image(orig, use_container_width=True, clamp=True)
-    with col2:
-        st.markdown("**Segmentation overlay** (red = candidate tumour)")
+    with c2:
+        st.markdown("**② Detected tumour** — red outline")
         if overlay is not None:
             st.image(overlay, use_container_width=True, clamp=True)
 
-    # Quantitative readout (measured, honestly labelled)
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.metric("Segmented area", f"{area_pct:.1f}%", help="Fraction of the slice "
-                  "flagged as tumour-like. A measurement, not a diagnosis.")
-    with c2:
-        st.metric("Mean probability", f"{float(ct.get('mean_prob',0.0)):.2f}",
-                  help="Average model confidence inside the flagged region.")
-    with c3:
-        st.metric("Held-out IoU (CARE)", f"{iou:.2f}" if isinstance(iou,(int,float)) else "n/a",
-                  help="Accuracy of this model on the CARE official held-out test split.")
+    if prob_map is not None and base is not None:
+        bbox = ct.get("bbox")
+        hm = _ct_heatmap(base, prob_map)
+        if present and bbox is not None:
+            z1, z2, z3 = st.columns(3)
+            with z1:
+                st.markdown("**🔍 Zoom — CT**")
+                st.image(_ct_zoom(base, bbox), use_container_width=True, clamp=True)
+            with z2:
+                st.markdown("**🔍 Zoom — detection**")
+                st.image(_ct_zoom(overlay, bbox), use_container_width=True, clamp=True)
+            with z3:
+                st.markdown("**③ Confidence heatmap**")
+                st.image(hm, use_container_width=True, clamp=True)
+        else:
+            st.markdown("**③ Confidence heatmap** — model activation across the slice")
+            st.image(hm, use_container_width=True, clamp=True)
+    st.caption("Red = the model's candidate region. Heatmap = where the model is most "
+               "confident (blue → red). The zoom magnifies the detected region so a small "
+               "lesion is visible.")
 
-    # Honest caveats
+    # ── Validation strip (IoU / Dice / sensitivity) ─────────────────────
+    st.markdown(
+        f"""<div style="background:#F0FDFA;border:1px solid #99F6E4;border-radius:12px;
+             padding:11px 18px;margin:12px 0;font-size:13px;color:#0F766E;">
+          <strong>Validated on the CARE official held-out test split (n={n}):</strong>
+          IoU <strong>{iou_txt}</strong> (95% CI {ci_txt}) · Dice <strong>{dice_txt}</strong> ·
+          Sensitivity@0.5 <strong>{sens_txt}</strong>. In-distribution to CARE only — not
+          externally validated on other scanners/centres.</div>""",
+        unsafe_allow_html=True,
+    )
+
+    # ── Honest caveats (icons) ──────────────────────────────────────────
     st.markdown("#### Important caveats")
-    for cav in ct.get("caveats", []):
-        st.markdown(f"- {_esc(cav)}")
+    _icons = ["🔬", "🚫", "🏥", "🧑‍⚕️"]
+    for i, cav in enumerate(ct.get("caveats", [])):
+        st.markdown(f"{_icons[i] if i < len(_icons) else '•'} &nbsp;{_esc(cav)}",
+                    unsafe_allow_html=True)
 
-    # Provenance / metrics
-    iou_txt = f"{iou:.4f}" if isinstance(iou, (int, float)) else "n/a"
-    dice_txt = f"{dice:.4f}" if isinstance(dice, (int, float)) else "n/a"
-    sens_txt = f"{sens:.3f}" if isinstance(sens, (int, float)) else "n/a"
     with st.expander("Model & validation details"):
         st.markdown(
             f"""
             - **Model:** CARE U-Net (resnet34 encoder), CT rectal-tumour segmentation
-            - **Held-out (CARE official test split, patient-disjoint, n={m.get('n','?')}):**
-              IoU **{iou_txt}** (95% CI {m.get('iou_95ci', ['?','?'])[0]}–{m.get('iou_95ci', ['?','?'])[1]}),
-              Dice **{dice_txt}**, sensitivity@0.5 **{sens_txt}**
+            - **Held-out (CARE official test split, patient-disjoint, n={n}):**
+              IoU **{iou_txt}** (95% CI {ci_txt}), Dice **{dice_txt}**, sensitivity@0.5 **{sens_txt}**
             - **Scope:** in-distribution to the CARE cohort only — **not** externally validated
               on other scanners/centres. CC BY-NC 4.0 (research / non-commercial).
             - **Not** part of the colonoscopy pipeline; it does not affect any polyp/UC/Barrett's result.
