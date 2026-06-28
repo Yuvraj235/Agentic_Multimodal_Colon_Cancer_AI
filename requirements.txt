@@ -62,7 +62,8 @@ requests>=2.31.0
 ultralytics>=8.3.0
 
 # CT rectal-tumour segmentation specialist (src/app/care_ct_seg.py).
-# Without these (and the care_ct_seg.pt weights) the CT path fail-opens to the
-# existing radiology rejection — the colonoscopy pipeline is unaffected either way.
+# Only the U-Net library is needed; preprocessing uses the OpenCV already in deps
+# (albumentations is intentionally NOT used — its albucore/stringzilla dep needs a
+# C compiler the slim Space image lacks). Without smp (or the care_ct_seg.pt
+# weights) the CT path fail-opens; the colonoscopy pipeline is unaffected either way.
 segmentation-models-pytorch>=0.3.3
-albumentations>=1.4.0

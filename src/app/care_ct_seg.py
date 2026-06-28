@@ -21,9 +21,9 @@ HONESTY NOTES — read before trusting any output (these are not boilerplate):
     externally validated on other centres or modalities. Decision-support
     only — a radiologist must confirm every finding.
   • Does NOT touch the colonoscopy pipeline. Fully fail-open: if the weights
-    or the deps (segmentation-models-pytorch / albumentations) are missing,
-    every entry point returns "unavailable" and the caller keeps its existing
-    behaviour (the radiology rejection).
+    or the deps (segmentation-models-pytorch; preprocessing uses OpenCV) are
+    missing, every entry point returns "unavailable" and the caller keeps its
+    existing behaviour (the radiology rejection).
 
 The result ALWAYS carries requires_human_review=True.
 """
@@ -216,25 +216,32 @@ def segment_ct(image, device: str = "cpu",
 
     try:
         import torch
-        import albumentations as A
-        from albumentations.pytorch import ToTensorV2
+        import cv2
     except Exception as exc:
         logger.warning("CT segmenter inference deps missing (%s).", exc)
         return None
 
     try:
         imgsz = int(_meta.get("imgsz", 384))
-        tf = A.Compose([
-            A.Resize(imgsz, imgsz),
-            A.CLAHE(p=1.0),
-            A.Normalize(_MEAN, _STD),
-            ToTensorV2(),
-        ])
-        x = tf(image=u3)["image"].unsqueeze(0).to(device)
+        # Preprocess WITHOUT albumentations (its albucore→stringzilla dep needs a
+        # C compiler the slim Space image lacks). These are the exact OpenCV ops
+        # behind A.Resize + A.CLAHE + A.Normalize + ToTensorV2, so the result
+        # matches the training-time pipeline.
+        img = cv2.resize(u3, (imgsz, imgsz), interpolation=cv2.INTER_LINEAR)
+        # CLAHE on the L channel (LAB) — same as albumentations A.CLAHE. Training
+        # sampled clip_limit ~U(1,4) per image (augmentation), so the model is
+        # robust across that range; we FIX the midpoint 2.5 for deterministic,
+        # reproducible inference (a clinical tool must give the same image the
+        # same result every run).
+        lab = cv2.cvtColor(img, cv2.COLOR_RGB2LAB)
+        lab[:, :, 0] = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8)).apply(lab[:, :, 0])
+        img = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+        arr = (img.astype(np.float32) / 255.0
+               - np.array(_MEAN, np.float32)) / np.array(_STD, np.float32)
+        x = torch.from_numpy(arr.transpose(2, 0, 1)).unsqueeze(0).to(device)
         with torch.no_grad():
             prob_small = torch.sigmoid(model(x))[0, 0].cpu().numpy().astype(np.float32)
 
-        import cv2
         prob_full = cv2.resize(prob_small, (W, H), interpolation=cv2.INTER_LINEAR)
         mask_full = (prob_full >= 0.5).astype(np.float32)
 
