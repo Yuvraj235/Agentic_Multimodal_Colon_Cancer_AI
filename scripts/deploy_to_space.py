@@ -50,10 +50,9 @@ WEIGHTS = [
     "outputs/unified_multimodal_v2/clinical_validation_report.json",
     "outputs/unified_multimodal_v2/clinical_validation_report.md",
     "outputs/unified_multimodal_v2/figures/validation_scorecard.png",
-    # CT rectal-tumour specialist (CARE) — baked into the Space (~93 MB, well
-    # under the 1 GB cap). The loader reads this local path, so no runtime
-    # download is needed; if it were ever absent the CT path just fail-opens.
-    "outputs/unified_multimodal_v2/care_ct_seg.pt",
+    # CT rectal-tumour specialist (CARE): only the tiny metrics JSON goes in the
+    # Space. The 93 MB weights live in the MODEL repo (colonai-v2) and are pulled
+    # at runtime via COLONAI_CT_SEG_HF_REPO/FILE — keeps the Space under 1 GB.
     "outputs/unified_multimodal_v2/care_ct_seg_metrics.json",
 ]
 
@@ -85,7 +84,16 @@ def main():
         print("      ✓ checkpoint live in model repo")
 
     # ── Part 2: lean Space — delete baked-in checkpoint, add code + heads ────
-    ops, total = [CommitOperationDelete(path_in_repo=SPACE_BAKED_CHECKPOINT)], 0
+    # Only delete the baked-in checkpoint if it's still on the Space (older
+    # deploys already removed it — an unconditional delete 404s).
+    try:
+        space_files = set(api.list_repo_files(SPACE, repo_type="space"))
+    except Exception:
+        space_files = set()
+    ops, total = [], 0
+    if SPACE_BAKED_CHECKPOINT in space_files:
+        ops.append(CommitOperationDelete(path_in_repo=SPACE_BAKED_CHECKPOINT))
+        print(f"  will delete stale baked checkpoint: {SPACE_BAKED_CHECKPOINT}")
     seen = set()
 
     def add(local: Path, repo_path: str):
@@ -106,8 +114,8 @@ def main():
     for w in WEIGHTS:
         add(ROOT / w, w)
 
-    print(f"\n[2/2] Space commit: delete baked-in checkpoint + {len(ops)-1} files "
-          f"({total/1e6:.0f} MB) → {SPACE}")
+    n_add = sum(1 for o in ops if isinstance(o, CommitOperationAdd))
+    print(f"\n[2/2] Space commit: {n_add} files ({total/1e6:.0f} MB) → {SPACE}")
     big = sorted([o for o in ops if isinstance(o, CommitOperationAdd)],
                  key=lambda o: -os.path.getsize(o.path_or_fileobj))[:5]
     for o in big:

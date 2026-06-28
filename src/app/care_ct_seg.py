@@ -30,6 +30,7 @@ The result ALWAYS carries requires_human_review=True.
 from __future__ import annotations
 
 import logging
+import os
 import threading
 from pathlib import Path
 from typing import Dict, Optional, Any
@@ -37,6 +38,13 @@ from typing import Dict, Optional, Any
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+# On the Hugging Face Space the 93 MB weights are NOT baked in (1 GB cap) — they
+# live in the model repo and are pulled at runtime, mirroring the main checkpoint.
+# Set on the Space:  COLONAI_CT_SEG_HF_REPO=Yuvraj2319/colonai-v2
+#                    COLONAI_CT_SEG_HF_FILE=care_ct_seg.pt
+_CT_HF_REPO = "COLONAI_CT_SEG_HF_REPO"
+_CT_HF_FILE = "COLONAI_CT_SEG_HF_FILE"
 
 # Where the trained weights live (same dir as the other specialist heads).
 _DEFAULT_WEIGHTS = (
@@ -78,8 +86,31 @@ def metrics() -> Dict[str, Any]:
 
 
 def ct_segmenter_available(weights: Optional[Path] = None) -> bool:
-    """True iff the weights file exists (cheap check; does not import torch)."""
-    return Path(weights or _DEFAULT_WEIGHTS).exists()
+    """Cheap check (no torch import): True if the weights are present locally OR
+    a model-repo is configured to download them at runtime."""
+    if weights:
+        return Path(weights).exists()
+    return _DEFAULT_WEIGHTS.exists() or bool(os.environ.get(_CT_HF_REPO))
+
+
+def _resolve_weights(weights: Optional[Path] = None) -> Optional[Path]:
+    """Local file if present, else download from the configured HF model repo.
+    Returns a Path or None (caller then fail-opens). Never raises."""
+    if weights:
+        p = Path(weights)
+        return p if p.exists() else None
+    if _DEFAULT_WEIGHTS.exists():
+        return _DEFAULT_WEIGHTS
+    repo = os.environ.get(_CT_HF_REPO)
+    if repo:
+        fname = os.environ.get(_CT_HF_FILE, "care_ct_seg.pt")
+        try:
+            from huggingface_hub import hf_hub_download
+            logger.info("Downloading CT seg weights %s/%s …", repo, fname)
+            return Path(hf_hub_download(repo_id=repo, filename=fname))
+        except Exception as exc:
+            logger.warning("CT seg weights download failed (%s) — disabled.", exc)
+    return None
 
 
 def load_ct_segmenter(weights: Optional[Path] = None, device: str = "cpu"):
@@ -93,9 +124,9 @@ def load_ct_segmenter(weights: Optional[Path] = None, device: str = "cpu"):
             return _model  # previous attempt failed; don't retry every call
         _load_attempted = True
 
-        wpath = Path(weights or _DEFAULT_WEIGHTS)
-        if not wpath.exists():
-            logger.info("CT segmenter weights not found at %s — disabled.", wpath)
+        wpath = _resolve_weights(weights)
+        if wpath is None or not wpath.exists():
+            logger.info("CT segmenter weights unavailable (local + HF) — disabled.")
             return None
         try:
             import torch
